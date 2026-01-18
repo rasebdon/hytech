@@ -1,4 +1,4 @@
-package com.rasebdon.hytech.energy;
+package com.rasebdon.hytech.energy.container;
 
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -7,17 +7,19 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.protocol.BlockPosition;
+import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
+import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
-import com.rasebdon.hytech.energy.container.EnergyContainerComponent;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.Nonnull;
 
-public class EnergyTransferSystem extends EntityTickingSystem<ChunkStore> {
+public class EnergyContainerTransferSystem extends EntityTickingSystem<ChunkStore> {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     private final ComponentType<ChunkStore, EnergyContainerComponent> energyContainerType;
 
-    public EnergyTransferSystem(ComponentType<ChunkStore, EnergyContainerComponent> energyContainerType) {
+    public EnergyContainerTransferSystem(ComponentType<ChunkStore, EnergyContainerComponent> energyContainerType) {
         this.energyContainerType = energyContainerType;
     }
 
@@ -27,6 +29,7 @@ public class EnergyTransferSystem extends EntityTickingSystem<ChunkStore> {
                      @Nonnull ArchetypeChunk<ChunkStore> archetypeChunk,
                      @Nonnull Store<ChunkStore> store,
                      @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
+        var ref = archetypeChunk.getReferenceTo(index);
         var energyContainer = archetypeChunk.getComponent(index, this.energyContainerType);
 
         assert energyContainer != null;

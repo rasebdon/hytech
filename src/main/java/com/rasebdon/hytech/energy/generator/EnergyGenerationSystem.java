@@ -1,10 +1,6 @@
 package com.rasebdon.hytech.energy.generator;
 
-import com.hypixel.hytale.component.Archetype;
-import com.hypixel.hytale.component.ArchetypeChunk;
-import com.hypixel.hytale.component.CommandBuffer;
-import com.hypixel.hytale.component.ComponentType;
-import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
@@ -28,6 +24,8 @@ public class EnergyGenerationSystem extends EntityTickingSystem<ChunkStore> {
                      @Nonnull ArchetypeChunk<ChunkStore> archetypeChunk,
                      @Nonnull Store<ChunkStore> store,
                      @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
+        Ref<ChunkStore> ref = archetypeChunk.getReferenceTo(index);
+
 
         var generator = archetypeChunk.getComponent(index, this.generatorType);
         var container = archetypeChunk.getComponent(index, this.containerType);
