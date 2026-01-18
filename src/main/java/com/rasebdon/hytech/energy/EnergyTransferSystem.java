@@ -8,6 +8,7 @@ import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
+import com.rasebdon.hytech.energy.container.EnergyContainerComponent;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.Nonnull;

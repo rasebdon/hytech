@@ -1,4 +1,4 @@
-package com.rasebdon.hytech.energy;
+package com.rasebdon.hytech.energy.container;
 
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;

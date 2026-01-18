@@ -9,6 +9,9 @@ import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.event.events.ecs.PlaceBlockEvent;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.rasebdon.hytech.energy.container.EnergyContainerComponent;
+import com.rasebdon.hytech.energy.generator.EnergyGenerationSystem;
+import com.rasebdon.hytech.energy.generator.EnergyGeneratorComponent;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
@@ -20,17 +23,17 @@ public class EnergyModule
     @Nullable
     private static EnergyModule INSTANCE;
 
-    @Nonnull
-    private final ComponentType<ChunkStore, EnergyContainerComponent> energyContainerComponentType;
-    public ComponentType<ChunkStore, EnergyContainerComponent> getEnergyContainerComponentType() {
-        return this.energyContainerComponentType;
-    }
-
     private EnergyModule(@Nonnull ComponentRegistryProxy<ChunkStore> registry) {
-        this.energyContainerComponentType = registry.registerComponent(
+        ComponentType<ChunkStore, EnergyContainerComponent> energyContainerType = registry.registerComponent(
                 EnergyContainerComponent.class, "hytech:energy:container", EnergyContainerComponent.CODEC);
-        registry.registerSystem(new EnergyTransferSystem(this.energyContainerComponentType));
-        LOGGER.atInfo().log("Registered: " + this.energyContainerComponentType);
+
+        ComponentType<ChunkStore, EnergyGeneratorComponent> energyGeneratorType = registry.registerComponent(
+                EnergyGeneratorComponent.class, "hytech:energy:generator", EnergyGeneratorComponent.CODEC);
+
+        registry.registerSystem(new EnergyTransferSystem(energyContainerType));
+        registry.registerSystem(new EnergyGenerationSystem(energyGeneratorType, energyContainerType));
+
+        LOGGER.atInfo().log("Energy Module Systems Registered");
     }
 
     public static void init(@Nonnull ComponentRegistryProxy<ChunkStore> registry) {

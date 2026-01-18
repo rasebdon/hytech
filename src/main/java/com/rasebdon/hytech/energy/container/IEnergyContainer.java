@@ -1,4 +1,4 @@
-package com.rasebdon.hytech.energy;
+package com.rasebdon.hytech.energy.container;
 
 public interface IEnergyContainer {
     long getEnergyStored();

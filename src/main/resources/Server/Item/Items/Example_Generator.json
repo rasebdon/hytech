@@ -1,9 +1,8 @@
 {
   "TranslationProperties": {
-    "Name": "server.items.Example_Block.name"
+    "Name": "server.items.Example_Generator.name"
   },
   "ItemLevel": 600,
-  "Icon": "Icons/ItemsGenerated/Example_Block.png",
   "Categories": [
     "Blocks.Soils"
   ],
@@ -40,7 +39,7 @@
     "BlockParticleSetId": "Sand",
     "Textures": [
       {
-        "All": "BlockTextures/Example_Block.png",
+        "All": "BlockTextures/Example_Generator.png",
         "Weight": 1
       }
     ],
@@ -54,12 +53,16 @@
     ],
     "BlockEntity": {
       "Components": {
+        "hytech:energy:generator": {
+          "GenerationRate": 5
+        },
         "hytech:energy:container": {
-          "MaxEnergy": 5000,
-          "MaxReceive": 500,
-          "MaxExtract": 250
+          "MaxEnergy": 7500,
+          "MaxReceive": 3,
+          "MaxExtract": 5
         }
       }
     }
-  }
+  },
+  "Icon": "Icons/ItemsGenerated/Example_Generator.png"
 }
