@@ -62,7 +62,8 @@
           "MaxExtract": 5
         }
       }
-    }
+    },
+    "VariantRotation": "UpDownNESW"
   },
   "Icon": "Icons/ItemsGenerated/Example_Generator.png"
 }

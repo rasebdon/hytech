@@ -4,6 +4,7 @@ import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.rasebdon.hytech.energy.util.EnergyUtils;
 import org.jetbrains.annotations.Nullable;
@@ -27,16 +28,24 @@ public class EnergyContainerTransferSystem extends EntityTickingSystem<ChunkStor
         var blockRef = archetypeChunk.getReferenceTo(index);
 
         var energyContainer = store.getComponent(blockRef, this.energyContainerType);
-        if (energyContainer != null) {
-            LOGGER.atInfo().log(energyContainer.toString());
-        }
+        assert energyContainer != null;
 
-        var worldPos = EnergyUtils.getBlockLocation(blockRef, store);
-        if (worldPos != null) {
-            LOGGER.atInfo().log(worldPos.toString());
-        }
+        var world = store.getExternalData().getWorld();
+        var blockLocation = EnergyUtils.getBlockLocation(blockRef, store);
+        assert blockLocation != null;
 
-        // TODO : Transfer
+        for (var side : Vector3i.BLOCK_SIDES) {
+            var neighborWorldPos = side.clone().add(blockLocation.worldPos());
+
+            // Use the util to find the neighbor's energy container
+            var energyContainerNeighbor = EnergyUtils.getComponentAtBlock(world, neighborWorldPos, energyContainerType);
+
+            if (energyContainerNeighbor != null) {
+                long toSend = Math.min(energyContainer.getMaxExtract(), energyContainerNeighbor.getMaxReceive());
+                long accepted = energyContainerNeighbor.receiveEnergy(toSend, false);
+                energyContainer.extractEnergy(accepted, false);
+            }
+        }
     }
 
     @Override

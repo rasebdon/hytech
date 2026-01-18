@@ -59,7 +59,8 @@
           "MaxExtract": 250
         }
       }
-    }
+    },
+    "VariantRotation": "UpDownNESW"
   },
   "Icon": "Icons/ItemsGenerated/Example_Battery.png"
 }

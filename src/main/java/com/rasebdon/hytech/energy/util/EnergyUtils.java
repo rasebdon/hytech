@@ -6,7 +6,9 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.protocol.BlockFace;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.RotationTuple;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -82,6 +84,8 @@ public class EnergyUtils {
         // Transform to world coordinates
         int worldX = ChunkUtil.worldCoordFromLocalCoord(worldChunk.getX(), localX);
         int worldZ = ChunkUtil.worldCoordFromLocalCoord(worldChunk.getZ(), localZ);
+
+        // var rotation = RotationTuple.get(worldChunk.getRotationIndex(localX, localY, localZ));
 
         return new BlockLocation(
                 new Vector3i(worldX, localY, worldZ),
