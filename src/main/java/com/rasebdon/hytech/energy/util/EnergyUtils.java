@@ -3,12 +3,15 @@ package com.rasebdon.hytech.energy.util;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.BlockComponentChunk;
+import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
@@ -56,5 +59,35 @@ public class EnergyUtils {
         if (player != null) {
             player.sendMessage(Message.raw(text));
         }
+    }
+
+    /**
+     * Gets the World position (global coordinates) of a block entity.
+     */
+    @Nullable
+    public static BlockLocation getBlockLocation(@Nonnull Ref<ChunkStore> blockRef, @Nonnull Store<ChunkStore> store) {
+        var info = store.getComponent(blockRef, BlockModule.BlockStateInfo.getComponentType());
+        if (info == null) return null;
+
+        var worldChunk = store.getComponent(info.getChunkRef(), WorldChunk.getComponentType());
+        if (worldChunk == null) return null;
+
+        int blockIndex = info.getIndex();
+
+        // Local coordinates within the chunk
+        int localX = ChunkUtil.xFromBlockInColumn(blockIndex);
+        int localY = ChunkUtil.yFromBlockInColumn(blockIndex);
+        int localZ = ChunkUtil.zFromBlockInColumn(blockIndex);
+
+        // Transform to world coordinates
+        int worldX = ChunkUtil.worldCoordFromLocalCoord(worldChunk.getX(), localX);
+        int worldZ = ChunkUtil.worldCoordFromLocalCoord(worldChunk.getZ(), localZ);
+
+        return new BlockLocation(
+                new Vector3i(worldX, localY, worldZ),
+                new Vector3i(localX, localY, localZ),
+                worldChunk.getX(),
+                worldChunk.getZ()
+        );
     }
 }
