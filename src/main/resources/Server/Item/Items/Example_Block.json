@@ -9,10 +9,28 @@
   ],
   "PlayerAnimationsId": "Block",
   "Set": "Soil",
+  "Tags": {
+    "Type": [
+      "Soil"
+    ]
+  },
+  "ItemSoundSetId": "ISS_Blocks_Soft",
+  "IconProperties": {
+    "Scale": 0.58823,
+    "Rotation": [
+      22.5,
+      45,
+      22.5
+    ],
+    "Translation": [
+      0,
+      -13.5
+    ]
+  },
   "BlockType": {
     "Material": "Solid",
     "DrawType": "Cube",
-    "Group": "Dirt",
+    "Group": "Soil",
     "Flags": {},
     "Gathering": {
       "Breaking": {
@@ -33,24 +51,15 @@
       "Stone",
       "Lava",
       "Dirt"
-    ]
-  },
-  "Tags": {
-    "Type": [
-      "Soil"
-    ]
-  },
-  "ItemSoundSetId": "ISS_Blocks_Soft",
-  "IconProperties": {
-    "Scale": 0.58823,
-    "Rotation": [
-      22.5,
-      45,
-      22.5
     ],
-    "Translation": [
-      0,
-      -13.5
-    ]
+    "BlockEntity": {
+      "Components": {
+        "hytech:energy:container": {
+          "MaxEnergy": 5000,
+          "MaxReceive": 500,
+          "MaxExtract": 250
+        }
+      }
+    }
   }
 }
