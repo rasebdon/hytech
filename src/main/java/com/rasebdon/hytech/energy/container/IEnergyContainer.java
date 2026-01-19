@@ -9,10 +9,6 @@ public interface IEnergyContainer {
 
     long getMaxExtract();
 
-    boolean canReceive();
-
-    boolean canExtract();
-
     long receiveEnergy(long var1, boolean var3);
 
     long extractEnergy(long var1, boolean var3);

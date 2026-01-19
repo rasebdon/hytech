@@ -1,26 +1,16 @@
-package com.rasebdon.hytech.energy.multimeter;
+package com.rasebdon.hytech.energy.interaction;
 
 import com.hypixel.hytale.codec.builder.BuilderCodec;
-import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.component.CommandBuffer;
-import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.block.BlockUtil;
-import com.hypixel.hytale.math.util.ChunkUtil;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector3i;
-import com.hypixel.hytale.protocol.Interaction;
+import com.hypixel.hytale.protocol.BlockFace;
 import com.hypixel.hytale.protocol.InteractionType;
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
-import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHandler;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.client.SimpleBlockInteraction;
-import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.chunk.BlockComponentChunk;
-import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
-import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.rasebdon.hytech.energy.EnergyModule;
 import com.rasebdon.hytech.energy.util.EnergyUtils;
@@ -28,14 +18,16 @@ import com.rasebdon.hytech.energy.util.EnergyUtils;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class ReadEnergyContainerBlockInteraction extends SimpleBlockInteraction {
+public class WrenchBlockInteraction extends SimpleBlockInteraction {
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+
     @Nonnull
-    public static final BuilderCodec<ReadEnergyContainerBlockInteraction> CODEC =
+    public static final BuilderCodec<WrenchBlockInteraction> CODEC =
             BuilderCodec.builder(
-                    ReadEnergyContainerBlockInteraction.class,
-                    ReadEnergyContainerBlockInteraction::new,
+                    WrenchBlockInteraction.class,
+                    WrenchBlockInteraction::new,
                     SimpleBlockInteraction.CODEC)
-            .documentation("Attempts to read the target blocks energy container.").build();
+            .documentation("Attempts to configure the target block energy container.").build();
 
     @Override
     protected void interactWithBlock(
@@ -64,26 +56,17 @@ public class ReadEnergyContainerBlockInteraction extends SimpleBlockInteraction 
             @Nonnull World world,
             @Nonnull Vector3i targetBlock) {
 
-        var energyContainer = EnergyUtils.getComponentAtBlock(
-                world,
-                targetBlock,
-                EnergyModule.get().getEnergyContainerComponentType()
-        );
+        var energyContainer = EnergyUtils.getComponentAtBlock(world, targetBlock,
+                EnergyModule.get().getEnergyContainerComponentType());
 
         if (energyContainer != null) {
-            EnergyUtils.sendPlayerMessage(context.getEntity(), energyContainer.toString());
+            var clientState = context.getClientState();
+            assert clientState != null;
+
+            var face = clientState.blockFace;
+            energyContainer.cycleSideConfig(face);
+
+            LOGGER.atInfo().log("Side %s changed to: %s", face.name(), energyContainer.getSideConfig(face).name());
         }
-    }
-
-    @Nonnull
-    @Override
-    protected Interaction generatePacket() {
-        return new com.hypixel.hytale.protocol.UseBlockInteraction();
-    }
-
-    @Nonnull
-    @Override
-    public String toString() {
-        return "ReadEnergyContainerBlockInteraction{} " + super.toString();
     }
 }

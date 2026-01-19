@@ -5,6 +5,7 @@ import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.protocol.BlockFace;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.rasebdon.hytech.energy.util.EnergyUtils;
 import org.jetbrains.annotations.Nullable;
@@ -42,8 +43,8 @@ public class EnergyContainerTransferSystem extends EntityTickingSystem<ChunkStor
 
             if (energyContainerNeighbor != null) {
                 long toSend = Math.min(energyContainer.getMaxExtract(), energyContainerNeighbor.getMaxReceive());
-                long accepted = energyContainerNeighbor.receiveEnergy(toSend, false);
-                energyContainer.extractEnergy(accepted, false);
+                long accepted = energyContainerNeighbor.receiveEnergy(BlockFace.None, toSend, false);
+                energyContainer.extractEnergy(BlockFace.None, accepted, false);
             }
         }
     }

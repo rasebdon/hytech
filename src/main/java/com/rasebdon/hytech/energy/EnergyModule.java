@@ -3,26 +3,27 @@ package com.rasebdon.hytech.energy;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
-import com.hypixel.hytale.server.core.modules.interaction.interaction.config.client.PickBlockInteraction;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.rasebdon.hytech.energy.container.EnergyContainerComponent;
 import com.rasebdon.hytech.energy.container.EnergyContainerTransferSystem;
 import com.rasebdon.hytech.energy.generator.EnergyGenerationSystem;
 import com.rasebdon.hytech.energy.generator.EnergyGeneratorComponent;
-import com.rasebdon.hytech.energy.multimeter.ReadEnergyContainerBlockInteraction;
+import com.rasebdon.hytech.energy.interaction.ReadEnergyContainerBlockInteraction;
+import com.rasebdon.hytech.energy.interaction.WrenchBlockInteraction;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 // Thanks to notnotnotswipez for supporting on the official Hytale Discord
 
-public class EnergyModule
-{
+public class EnergyModule {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+
     @Nullable
     private static EnergyModule INSTANCE;
 
     private final ComponentType<ChunkStore, EnergyContainerComponent> energyContainerComponentType;
+
     public ComponentType<ChunkStore, EnergyContainerComponent> getEnergyContainerComponentType() {
         return this.energyContainerComponentType;
     }
@@ -41,6 +42,10 @@ public class EnergyModule
                 "ReadEnergyContainer",
                 ReadEnergyContainerBlockInteraction.class,
                 ReadEnergyContainerBlockInteraction.CODEC);
+        Interaction.CODEC.register(
+                "Wrench",
+                WrenchBlockInteraction.class,
+                WrenchBlockInteraction.CODEC);
 
         LOGGER.atInfo().log("Energy Module Systems Registered");
     }

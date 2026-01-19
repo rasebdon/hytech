@@ -3,6 +3,7 @@ package com.rasebdon.hytech.energy.generator;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
+import com.hypixel.hytale.protocol.BlockFace;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.rasebdon.hytech.energy.container.EnergyContainerComponent;
 import javax.annotation.Nonnull;
@@ -32,7 +33,7 @@ public class EnergyGenerationSystem extends EntityTickingSystem<ChunkStore> {
 
         if (generator != null && container != null) {
             // Add energy to the container based on the generator's rate
-            container.receiveEnergy(generator.getGenerationRate(), false);
+            container.receiveEnergy(BlockFace.None, generator.getGenerationRate(), false);
         }
     }
 
