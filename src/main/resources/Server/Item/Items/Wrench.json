@@ -1,0 +1,42 @@
+{
+  "TranslationProperties": {
+    "Name": "server.items.Tool_Repair_Kit_Crude.name",
+    "Description": "server.items.Tool_Repair_Kit_Crude.description"
+  },
+  "Categories": [
+    "Items.Tools"
+  ],
+  "PlayerAnimationsId": "Item",
+  "Model": "Items/Tools/Hatchet/Iron.blockymodel",
+  "Texture": "Items/Tools/Hatchet/Iron_Texture.png",
+  "IconProperties": {
+    "Scale": 0.485,
+    "Rotation": [
+      360,
+      45,
+      330
+    ],
+    "Translation": [
+      -11,
+      -27
+    ]
+  },
+  "Interactions": {
+    "Secondary": {
+      "Interactions": [
+        {
+          "Type": "Wrench"
+        }
+      ]
+    }
+  },
+  "Quality": "Common",
+  "MaxStack": 1,
+  "Tags": {
+    "Type": [
+      "Tool"
+    ]
+  },
+  "ItemSoundSetId": "ISS_Weapons_Wood",
+  "Icon": "Icons/ItemsGenerated/Wrench.png"
+}
