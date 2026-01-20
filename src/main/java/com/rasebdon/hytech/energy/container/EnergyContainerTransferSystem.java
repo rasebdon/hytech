@@ -27,24 +27,45 @@ public class EnergyContainerTransferSystem extends EntityTickingSystem<ChunkStor
                      @Nonnull Store<ChunkStore> store,
                      @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
         var blockRef = archetypeChunk.getReferenceTo(index);
-
         var energyContainer = store.getComponent(blockRef, this.energyContainerType);
-        assert energyContainer != null;
+        if (energyContainer == null) return;
 
         var world = store.getExternalData().getWorld();
-        var blockLocation = EnergyUtils.getBlockLocation(blockRef, store);
-        assert blockLocation != null;
+        var blockLocation = EnergyUtils.getBlockTransform(blockRef, store);
+        if (blockLocation == null) return;
 
-        for (var side : Vector3i.BLOCK_SIDES) {
-            var neighborWorldPos = side.clone().add(blockLocation.worldPos());
+        for (var worldSide : Vector3i.BLOCK_SIDES) {
+            // 1. Get local face of current block
+            BlockFace localFace = EnergyUtils.getLocalFace(worldSide, blockLocation.rotation());
 
-            // Use the util to find the neighbor's energy container
-            var energyContainerNeighbor = EnergyUtils.getComponentAtBlock(world, neighborWorldPos, energyContainerType);
+            // Ensure this face is allowed to extract (Logic inside your component)
+            if (!energyContainer.canExtract(localFace)) continue;
 
-            if (energyContainerNeighbor != null) {
-                long toSend = Math.min(energyContainer.getMaxExtract(), energyContainerNeighbor.getMaxReceive());
-                long accepted = energyContainerNeighbor.receiveEnergy(BlockFace.None, toSend, false);
-                energyContainer.extractEnergy(BlockFace.None, accepted, false);
+            var neighborWorldPos = worldSide.clone().add(blockLocation.worldPos());
+            var neighborRef = EnergyUtils.getBlockEntityRef(world, neighborWorldPos);
+            if (neighborRef == null) continue;
+
+            var neighborLoc = EnergyUtils.getBlockTransform(neighborRef, store);
+            var neighborContainer = store.getComponent(neighborRef, energyContainerType);
+
+            if (neighborContainer != null && neighborLoc != null) {
+                // 2. Get local face of neighbor (hit from opposite world direction)
+                Vector3i oppositeWorldDir = worldSide.clone().negate();
+                BlockFace neighborLocalFace = EnergyUtils.getLocalFace(oppositeWorldDir, neighborLoc.rotation());
+
+                // 3. Priority and Sidedness Check
+                if (neighborContainer.canReceive(neighborLocalFace)) {
+                    // Only push if neighbor priority is higher, or if this container is full/near-full
+                    // Prio: 0 = Cable, 1 = Battery/Producer, 2 = Consumer
+                    if (neighborContainer.getPriority() >= energyContainer.getPriority() || energyContainer.isFull()) {
+
+                        long toSend = Math.min(energyContainer.getMaxExtract(), neighborContainer.getMaxReceive());
+
+                        // 4. Perform the transfer using the translated local faces
+                        long accepted = neighborContainer.receiveEnergy(neighborLocalFace, toSend, false);
+                        energyContainer.extractEnergy(localFace, accepted, false);
+                    }
+                }
             }
         }
     }

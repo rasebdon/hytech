@@ -8,6 +8,7 @@ import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.BlockFace;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.Rotation;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.RotationTuple;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
@@ -63,11 +64,8 @@ public class EnergyUtils {
         }
     }
 
-    /**
-     * Gets the World position (global coordinates) of a block entity.
-     */
     @Nullable
-    public static BlockLocation getBlockLocation(@Nonnull Ref<ChunkStore> blockRef, @Nonnull Store<ChunkStore> store) {
+    public static BlockTransform getBlockTransform(@Nonnull Ref<ChunkStore> blockRef, @Nonnull Store<ChunkStore> store) {
         var info = store.getComponent(blockRef, BlockModule.BlockStateInfo.getComponentType());
         if (info == null) return null;
 
@@ -85,13 +83,34 @@ public class EnergyUtils {
         int worldX = ChunkUtil.worldCoordFromLocalCoord(worldChunk.getX(), localX);
         int worldZ = ChunkUtil.worldCoordFromLocalCoord(worldChunk.getZ(), localZ);
 
-        // var rotation = RotationTuple.get(worldChunk.getRotationIndex(localX, localY, localZ));
+        var rotation = worldChunk.getRotation(worldX, localY, worldZ);
 
-        return new BlockLocation(
+        return new BlockTransform(
                 new Vector3i(worldX, localY, worldZ),
                 new Vector3i(localX, localY, localZ),
+                rotation,
                 worldChunk.getX(),
                 worldChunk.getZ()
         );
+    }
+
+    public static BlockFace getLocalFace(Vector3i worldDirection, RotationTuple rotation) {
+        // To go from World to Local, we apply the inverse rotations
+        Rotation invYaw = Rotation.None.subtract(rotation.yaw());
+        Rotation invPitch = Rotation.None.subtract(rotation.pitch());
+        Rotation invRoll = Rotation.None.subtract(rotation.roll());
+
+        // Use the Rotation class to rotate the vector by the inverse values
+        Vector3i localVec = Rotation.rotate(worldDirection, invYaw, invPitch, invRoll);
+
+        // Map the resulting vector to your BlockFace enum
+        if (localVec.x == 0 && localVec.y == 1 && localVec.z == 0) return BlockFace.Up;
+        if (localVec.x == 0 && localVec.y == -1 && localVec.z == 0) return BlockFace.Down;
+        if (localVec.x == 0 && localVec.y == 0 && localVec.z == -1) return BlockFace.North;
+        if (localVec.x == 0 && localVec.y == 0 && localVec.z == 1) return BlockFace.South;
+        if (localVec.x == 1 && localVec.y == 0 && localVec.z == 0) return BlockFace.East;
+        if (localVec.x == -1 && localVec.y == 0 && localVec.z == 0) return BlockFace.West;
+
+        return BlockFace.None;
     }
 }

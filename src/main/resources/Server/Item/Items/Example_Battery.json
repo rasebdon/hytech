@@ -60,7 +60,7 @@
         }
       }
     },
-    "VariantRotation": "UpDownNESW"
+    "VariantRotation": "NESW"
   },
   "Icon": "Icons/ItemsGenerated/Example_Battery.png"
 }
