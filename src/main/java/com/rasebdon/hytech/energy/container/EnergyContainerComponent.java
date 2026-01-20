@@ -21,11 +21,11 @@ public class EnergyContainerComponent implements Component<ChunkStore> {
     // Priority: 0 = Cable, 25 = Producer, 50 = Storage, 75 = Consumer
     private int priority = 2;
 
-    private int[] sideConfigs;
+    private SideConfig[] sideConfigs;
     private boolean isMultiblockStorage;
 
     public EnergyContainerComponent(long energyStored, long maxEnergy, long maxReceive, long maxExtract,
-                                    int[] sideConfigs, int priority) {
+                                    SideConfig[] sideConfigs, int priority) {
         if (sideConfigs.length != 7) {
             throw new IllegalArgumentException("sideConfigs must have length of 7");
         } else if (priority < 0) {
@@ -48,11 +48,17 @@ public class EnergyContainerComponent implements Component<ChunkStore> {
         this(0L, 10000L, 1000L, 1000L, getDefaultSideConfig(), 50);
     }
 
-    private static int[] getDefaultSideConfig() {
-        return new int[]
-        {
-            SideConfig.NONE.getType(), 0, 0, 0, 0, 0, 0
-        };
+    private static SideConfig[] getDefaultSideConfig() {
+        return new SideConfig[]
+                {
+                        SideConfig.BOTH,
+                        SideConfig.BOTH,
+                        SideConfig.BOTH,
+                        SideConfig.BOTH,
+                        SideConfig.BOTH,
+                        SideConfig.BOTH,
+                        SideConfig.BOTH,
+                };
     }
 
     public long getEnergyStored() {
@@ -72,13 +78,13 @@ public class EnergyContainerComponent implements Component<ChunkStore> {
     }
 
     public SideConfig getSideConfig(BlockFace face) {
-        return SideConfig.fromType(sideConfigs[face.getValue()]);
+        return sideConfigs[face.getValue()];
     }
 
     public void cycleSideConfig(BlockFace face) {
         var index = face.getValue();
         var oldValue = getSideConfig(face);
-        this.sideConfigs[index] = oldValue.next().getType();
+        this.sideConfigs[index] = oldValue.next();
     }
 
     public int getPriority() {
@@ -145,7 +151,7 @@ public class EnergyContainerComponent implements Component<ChunkStore> {
     }
 
     public String toString() {
-        var sides = Arrays.stream(this.sideConfigs).mapToObj(s -> SideConfig.fromType(s).name()).collect(Collectors.joining(", "));
+        var sides = Arrays.stream(this.sideConfigs).map(Enum::name).collect(Collectors.joining(", "));
         return String.format("Energy: %d/%d RF (Prio: %d) | Sides: [%s]",
                 energyStored, maxEnergy, priority, sides);
     }
@@ -174,8 +180,8 @@ public class EnergyContainerComponent implements Component<ChunkStore> {
                     .addValidator(Validators.greaterThanOrEqual(0L))
                     .documentation("Maximum energy extracted per extract call").add()
                     .append(new KeyedCodec<>("SideConfigs", Codec.INT_ARRAY),
-                            (c, v) -> c.sideConfigs = v,
-                            (c) -> c.sideConfigs)
+                            EnergyContainerComponent::setSideConfigs,
+                            EnergyContainerComponent::getSideConfigsAsIntArray)
                     .addValidator(Validators.intArraySize(7))
                     .documentation("Side configuration for Input/Output sides").add()
                     .append(new KeyedCodec<>("Priority", Codec.INTEGER),
@@ -184,4 +190,12 @@ public class EnergyContainerComponent implements Component<ChunkStore> {
                     .addValidator(Validators.greaterThanOrEqual(0))
                     .documentation("Priority for energy transfer, lower means energy is transferred first").add()
                     .build();
+
+    private void setSideConfigs(int[] v) {
+        this.sideConfigs = Arrays.stream(v).mapToObj(SideConfig::fromType).toArray(SideConfig[]::new);
+    }
+
+    private int[] getSideConfigsAsIntArray() {
+        return Arrays.stream(this.sideConfigs).mapToInt(SideConfig::getType).toArray();
+    }
 }
