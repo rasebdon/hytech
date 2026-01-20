@@ -8,7 +8,7 @@ public enum SideConfig {
     NONE(0),   // No connection
     INPUT(1),  // Only receive
     OUTPUT(2), // Only extract
-    BOTH(4);   // Both receive and extract
+    BOTH(3);   // Both receive and extract
 
     private final int type;
 
