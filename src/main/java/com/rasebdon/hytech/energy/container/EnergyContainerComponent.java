@@ -26,13 +26,13 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
 
     public static final BuilderCodec<EnergyContainerComponent> CODEC =
             BuilderCodec.builder(EnergyContainerComponent.class, EnergyContainerComponent::new)
-                    .append(new KeyedCodec<>("EnergyStored", Codec.LONG),
+                    .append(new KeyedCodec<>("Energy", Codec.LONG),
                             (c, v) -> c.energy = v,
                             (c) -> c.energy)
                     .addValidator(Validators.greaterThanOrEqual(0L))
                     .documentation("Currently stored energy")
                     .add()
-                    .append(new KeyedCodec<>("MaxEnergy", Codec.LONG),
+                    .append(new KeyedCodec<>("TotalCapacity", Codec.LONG),
                             (c, v) -> c.totalCapacity = v,
                             (c) -> c.totalCapacity)
                     .addValidator(Validators.greaterThanOrEqual(0L))
@@ -52,10 +52,22 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
                             (c) -> c.transferPriority)
                     .addValidator(Validators.greaterThanOrEqual(0))
                     .documentation("Priority for energy transfer, lower means energy is extracted first").add()
+                    .append(new KeyedCodec<>("CanReceiveEnergy", Codec.BOOLEAN),
+                            (c, v) -> c.canReceiveEnergy = v,
+                            (c) -> c.canReceiveEnergy)
+                    .documentation("Global override for block so that it can never receive energy externally").add()
+                    .append(new KeyedCodec<>("CanExtractEnergy", Codec.BOOLEAN),
+                            (c, v) -> c.canExtractEnergy = v,
+                            (c) -> c.canExtractEnergy)
+                    .documentation("Global override for block so that it can never extract energy externally").add()
                     .build();
+
     private long energy;
     private long totalCapacity;
     private long transferSpeed;
+
+    private boolean canReceiveEnergy;
+    private boolean canExtractEnergy;
 
     private SideConfig[] sideConfigs;
     private int transferPriority;
@@ -64,7 +76,8 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
     private ArrayList<IEnergyContainer> extractTargets;
 
     public EnergyContainerComponent(long energy, long totalCapacity, long maxTransfer,
-                                    SideConfig[] sideConfigs, int simulationPriority) {
+                                    SideConfig[] sideConfigs, int simulationPriority,
+                                    boolean canReceiveEnergy, boolean canExtractEnergy) {
         if (sideConfigs.length != 7) {
             throw new IllegalArgumentException("sideConfigs must have length of 7");
         } else if (simulationPriority < 0) {
@@ -82,12 +95,15 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
         this.totalCapacity = totalCapacity;
         this.energy = Math.min(energy, this.totalCapacity);
         this.transferSpeed = maxTransfer;
+        this.canReceiveEnergy = canReceiveEnergy;
+        this.canExtractEnergy = canExtractEnergy;
     }
 
     // IEnergyContainer Methods
 
     public EnergyContainerComponent() {
-        this(0L, 0L, 0L, SideConfig.getDefault(), EnergyTransferSimulationPriority.CABLE);
+        this(0L, 0L, 0L, SideConfig.getDefault(),
+                EnergyTransferSimulationPriority.CABLE, false, false);
     }
 
     public long getEnergy() {
@@ -96,6 +112,14 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
 
     public long getTotalCapacity() {
         return this.totalCapacity;
+    }
+
+    public boolean canReceiveEnergy() {
+        return this.canReceiveEnergy;
+    }
+
+    public boolean canExtractEnergy() {
+        return this.canExtractEnergy;
     }
 
     public long getRemainingCapacity() {
@@ -111,18 +135,18 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
     }
 
     public boolean canReceiveFromFace(BlockFace face) {
-        return transferSpeed > 0 && getSideConfig(face).canReceive();
+        return this.canReceiveEnergy && this.transferSpeed > 0 && this.getSideConfig(face).canReceive();
     }
 
     public boolean canExtractFromFace(BlockFace face) {
-        return transferSpeed > 0 && getSideConfig(face).canExtract();
+        return this.canExtractEnergy && this.transferSpeed > 0 && this.getSideConfig(face).canExtract();
     }
 
-    // TODO : Add method to transfer to multiple containers
-
     public void transferEnergyTo(IEnergyContainer other) {
+        if (!other.canReceiveEnergy() || !this.canExtractEnergy) return;
+
         // Calculate energy to transfer (always try to transfer at max speed)
-        var maxTransferSpeed = Math.min(transferSpeed, other.getTransferSpeed());
+        var maxTransferSpeed = Math.min(this.transferSpeed, other.getTransferSpeed());
         var maxEnergyToTransfer = Math.min(this.energy, other.getRemainingCapacity());
         var energyToTransfer = Math.min(maxEnergyToTransfer, maxTransferSpeed);
 
@@ -132,13 +156,13 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
     }
 
     public void transferEnergyTo(Collection<IEnergyContainer> targets) {
-        if (targets.isEmpty() || this.energy <= 0) {
+        if (!this.canExtractEnergy || targets.isEmpty() || this.energy <= 0) {
             return;
         }
 
         // Filter containers that can actually receive energy
         var validTargets = targets.stream()
-                .filter(t -> t.getRemainingCapacity() > 0)
+                .filter(t -> t.getRemainingCapacity() > 0 && t.canReceiveEnergy())
                 .toList();
 
         if (validTargets.isEmpty()) {
@@ -210,7 +234,8 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
     @Override
     public Component<ChunkStore> clone() {
         return new EnergyContainerComponent(this.energy, this.totalCapacity,
-                this.transferSpeed, this.sideConfigs.clone(), this.transferPriority);
+                this.transferSpeed, this.sideConfigs.clone(), this.transferPriority,
+                this.canReceiveEnergy, this.canExtractEnergy);
     }
 
     public String toString() {
@@ -253,12 +278,12 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
                 var oppositeWorldDir = worldSide.clone().negate();
                 var neighborLocalFace = EnergyUtils.getLocalFace(oppositeWorldDir, neighborLoc.rotation());
 
-                if (triggerReloadInTargets) {
+                if (canReceiveEnergy && triggerReloadInTargets) {
                     neighborContainer.reloadTransferTargets(neighborRef, store, false);
                 }
 
                 // If neighbor can receive -> Add to extract targets
-                if (canExtractFromFace(localFace) && neighborContainer.canReceiveFromFace(neighborLocalFace)) {
+                if (this.canExtractFromFace(localFace) && neighborContainer.canReceiveFromFace(neighborLocalFace)) {
                     LOGGER.atInfo().log("%s adding %s as extract target", toString(), neighborContainer.toString());
 
                     this.extractTargets.add(neighborContainer);

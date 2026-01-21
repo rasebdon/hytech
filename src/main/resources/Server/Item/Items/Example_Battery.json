@@ -59,7 +59,10 @@
           "MaxExtract": 250,
           "ExtractPriority": 25,
           "MaxTransfer": 10,
-          "TransferPriority": 25
+          "TransferPriority": 25,
+          "CanReceiveEnergy": true,
+          "CanExtractEnergy": true,
+          "TotalCapacity": 25000
         }
       }
     },

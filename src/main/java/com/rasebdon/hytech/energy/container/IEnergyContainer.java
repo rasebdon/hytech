@@ -11,6 +11,10 @@ public interface IEnergyContainer {
 
     long getTransferSpeed();
 
+    boolean canReceiveEnergy();
+
+    boolean canExtractEnergy();
+
     void transferEnergyTo(IEnergyContainer other);
 
     void transferEnergyTo(Collection<IEnergyContainer> other);
