@@ -4,7 +4,7 @@
   },
   "ItemLevel": 600,
   "Categories": [
-    "Blocks.Soils"
+    "Technic.General"
   ],
   "PlayerAnimationsId": "Block",
   "Set": "Soil",
@@ -54,9 +54,10 @@
     "BlockEntity": {
       "Components": {
         "hytech:energy:container": {
-          "MaxEnergy": 5000,
+          "MaxEnergy": 25000,
           "MaxReceive": 500,
-          "MaxExtract": 250
+          "MaxExtract": 250,
+          "ExtractPriority": 25
         }
       }
     },

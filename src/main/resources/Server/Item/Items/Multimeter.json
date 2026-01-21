@@ -5,7 +5,7 @@
   },
   "Icon": "Icons/ItemsGenerated/Tool_Repair_Kit_Crude.png",
   "Categories": [
-    "Items.Tools"
+    "Technic.General"
   ],
   "PlayerAnimationsId": "Item",
   "Model": "Items/Tools/Repair_Kit/Repair_Kit_Crude.blockymodel",

@@ -28,7 +28,7 @@ public class EnergyContainerComponent implements Component<ChunkStore> {
     private long maxReceive;
     private long maxExtract;
 
-    // Priority: 0 = Cable, 25 = Producer, 50 = Storage, 75 = Consumer
+    // Priority: 0 = Producer, 25 = Battery, 50 = Cable, 75 = Consumer
     private int extractPriority = 2;
 
     private SideConfig[] sideConfigs;
@@ -212,11 +212,6 @@ public class EnergyContainerComponent implements Component<ChunkStore> {
         return Arrays.stream(this.sideConfigs).mapToInt(SideConfig::getType).toArray();
     }
 
-    public EnergyContainerComponent[] getExtractTargets() {
-        EnergyContainerComponent[] arr = new EnergyContainerComponent[this.extractTargets.size()];
-        return this.extractTargets.toArray(arr);
-    }
-
     public void reloadExtractTargets(Ref<ChunkStore> blockRef, Store<ChunkStore> store, boolean triggerReloadInTargets) {
         this.extractTargets = new ArrayList<>();
 
@@ -273,6 +268,33 @@ public class EnergyContainerComponent implements Component<ChunkStore> {
             if (neighborContainer != null && neighborLoc != null) {
                 LOGGER.atInfo().log("%s removing %s as extract target", toString(), neighborContainer.toString());
                 neighborContainer.extractTargets.remove(this);
+            }
+        }
+    }
+
+    public void tryExtractToTargets() {
+        if (extractTargets.isEmpty()) return;
+
+        LOGGER.atInfo().log("Source: %s", toString());
+
+        for (var targetContainer : extractTargets) {
+            if (targetContainer == null || targetContainer.isFull())
+            {
+                LOGGER.atInfo().log("Target container null!");
+                continue;
+            }
+
+            LOGGER.atInfo().log("Target: %s", targetContainer.toString());
+
+
+            var actualMaxExtract = Math.min(maxExtract, targetContainer.getMaxReceive());
+            var toSend = Math.min(energyStored, actualMaxExtract);
+
+            long accepted = targetContainer.receiveEnergy(toSend, false);
+            long extracted = this.extractEnergy(accepted, false);
+
+            if (accepted != extracted) {
+                LOGGER.atWarning().log("accepted (%s) != extracted (%s)", accepted, extracted);
             }
         }
     }

@@ -1,0 +1,11 @@
+{
+  "Icon": "Icons/ItemCategories/Items-Tools.png",
+  "Children": [
+    {
+      "Id": "General",
+      "Name": "server.ui.itemcategory.tools",
+      "Icon": "Icons/ItemCategories/Items-Tools.png"
+    }
+  ],
+  "Order": 5
+}
