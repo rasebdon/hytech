@@ -29,31 +29,26 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
                             (c, v) -> c.energy = v,
                             (c) -> c.energy)
                     .addValidator(Validators.greaterThanOrEqual(0L))
-                    .documentation("Current stored energy")
+                    .documentation("Currently stored energy")
                     .add()
                     .append(new KeyedCodec<>("MaxEnergy", Codec.LONG),
                             (c, v) -> c.totalCapacity = v,
                             (c) -> c.totalCapacity)
                     .addValidator(Validators.greaterThan(0L))
                     .documentation("Maximum energy capacity").add()
-                    .append(new KeyedCodec<>("MaxReceive", Codec.LONG),
-                            (c, v) -> c.maxReceive = v,
-                            (c) -> c.maxReceive)
-                    .addValidator(Validators.greaterThanOrEqual(0L))
-                    .documentation("Maximum energy accepted per receive call").add()
                     .append(new KeyedCodec<>("MaxTransfer", Codec.LONG),
                             (c, v) -> c.transferSpeed = v,
                             (c) -> c.transferSpeed)
                     .addValidator(Validators.greaterThanOrEqual(0L))
-                    .documentation("Maximum energy extracted per extract call").add()
+                    .documentation("Maximum energy transferred per tick").add()
                     .append(new KeyedCodec<>("SideConfigs", Codec.INT_ARRAY),
                             EnergyContainerComponent::setSideConfigs,
                             EnergyContainerComponent::getSideConfigsAsIntArray)
                     .addValidator(Validators.intArraySize(7))
                     .documentation("Side configuration for Input/Output sides").add()
                     .append(new KeyedCodec<>("TransferPriority", Codec.INTEGER),
-                            (c, v) -> c.simulationPriority = v,
-                            (c) -> c.simulationPriority)
+                            (c, v) -> c.transferPriority = v,
+                            (c) -> c.transferPriority)
                     .addValidator(Validators.greaterThanOrEqual(0))
                     .documentation("Priority for energy transfer, lower means energy is extracted first").add()
                     .build();
@@ -62,7 +57,7 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
     private long transferSpeed;
 
     private SideConfig[] sideConfigs;
-    private int simulationPriority;
+    private int transferPriority;
 
     private boolean isMultiblockStorage;
     private ArrayList<IEnergyContainer> extractTargets;
@@ -82,7 +77,7 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
         }
 
         this.sideConfigs = sideConfigs;
-        this.simulationPriority = simulationPriority;
+        this.transferPriority = simulationPriority;
         this.totalCapacity = totalCapacity;
         this.energy = Math.min(energy, this.totalCapacity);
         this.transferSpeed = maxTransfer;
@@ -111,11 +106,7 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
     }
 
     public int getTransferPriority() {
-        return simulationPriority;
-    }
-
-    public void setTransferPriority(int extractPriority) {
-        this.simulationPriority = extractPriority;
+        return transferPriority;
     }
 
     public boolean canReceiveFromFace(BlockFace face) {
@@ -173,14 +164,14 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
     @Nonnull
     @Override
     public Component<ChunkStore> clone() {
-        return new EnergyContainerComponent(this.energy, this.totalCapacity, this.maxReceive,
-                this.transferSpeed, this.sideConfigs.clone(), this.simulationPriority);
+        return new EnergyContainerComponent(this.energy, this.totalCapacity,
+                this.transferSpeed, this.sideConfigs.clone(), this.transferPriority);
     }
 
     public String toString() {
         var sides = Arrays.stream(this.sideConfigs).map(Enum::name).collect(Collectors.joining(", "));
         return String.format("Energy: %d/%d RF (Prio: %d) | Sides: [%s]",
-                energy, totalCapacity, simulationPriority, sides);
+                energy, totalCapacity, transferPriority, sides);
     }
 
     private void setSideConfigs(int[] v) {

@@ -9,7 +9,7 @@ public interface IEnergyContainer {
 
     long getTransferSpeed();
 
-    void transferEnergyTo(IEnergyContainer other, long amount);
+    void transferEnergyTo(IEnergyContainer other);
 
     void addEnergy(long amount);
 
