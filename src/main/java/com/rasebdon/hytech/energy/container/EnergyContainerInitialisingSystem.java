@@ -3,7 +3,6 @@ package com.rasebdon.hytech.energy.container;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.RefSystem;
-import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -24,7 +23,7 @@ public class EnergyContainerInitialisingSystem extends RefSystem<ChunkStore> {
         var energyContainer = store.getComponent(ref, this.energyContainerComponentType);
         assert energyContainer != null;
 
-        energyContainer.reloadExtractTargets(ref, store, true);
+        energyContainer.reloadTransferTargets(ref, store, true);
     }
 
     @Override
@@ -36,7 +35,7 @@ public class EnergyContainerInitialisingSystem extends RefSystem<ChunkStore> {
         var energyContainer = store.getComponent(ref, this.energyContainerComponentType);
         assert energyContainer != null;
 
-        energyContainer.removeAsExtractTargetFromNeighbors(ref, store);
+        energyContainer.removeAsTransferTargetFromNeighbors(ref, store);
     }
 
     @Override

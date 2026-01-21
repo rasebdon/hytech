@@ -20,78 +20,143 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-public class EnergyContainerComponent implements Component<ChunkStore> {
+public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyContainer {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
-    private long energyStored;
-    private long maxEnergy;
-    private long maxReceive;
-    private long maxExtract;
-
-    // Priority: 0 = Producer, 25 = Battery, 50 = Cable, 75 = Consumer
-    private int extractPriority = 2;
+    public static final BuilderCodec<EnergyContainerComponent> CODEC =
+            BuilderCodec.builder(EnergyContainerComponent.class, EnergyContainerComponent::new)
+                    .append(new KeyedCodec<>("EnergyStored", Codec.LONG),
+                            (c, v) -> c.energy = v,
+                            (c) -> c.energy)
+                    .addValidator(Validators.greaterThanOrEqual(0L))
+                    .documentation("Current stored energy")
+                    .add()
+                    .append(new KeyedCodec<>("MaxEnergy", Codec.LONG),
+                            (c, v) -> c.totalCapacity = v,
+                            (c) -> c.totalCapacity)
+                    .addValidator(Validators.greaterThan(0L))
+                    .documentation("Maximum energy capacity").add()
+                    .append(new KeyedCodec<>("MaxReceive", Codec.LONG),
+                            (c, v) -> c.maxReceive = v,
+                            (c) -> c.maxReceive)
+                    .addValidator(Validators.greaterThanOrEqual(0L))
+                    .documentation("Maximum energy accepted per receive call").add()
+                    .append(new KeyedCodec<>("MaxTransfer", Codec.LONG),
+                            (c, v) -> c.transferSpeed = v,
+                            (c) -> c.transferSpeed)
+                    .addValidator(Validators.greaterThanOrEqual(0L))
+                    .documentation("Maximum energy extracted per extract call").add()
+                    .append(new KeyedCodec<>("SideConfigs", Codec.INT_ARRAY),
+                            EnergyContainerComponent::setSideConfigs,
+                            EnergyContainerComponent::getSideConfigsAsIntArray)
+                    .addValidator(Validators.intArraySize(7))
+                    .documentation("Side configuration for Input/Output sides").add()
+                    .append(new KeyedCodec<>("TransferPriority", Codec.INTEGER),
+                            (c, v) -> c.simulationPriority = v,
+                            (c) -> c.simulationPriority)
+                    .addValidator(Validators.greaterThanOrEqual(0))
+                    .documentation("Priority for energy transfer, lower means energy is extracted first").add()
+                    .build();
+    private long energy;
+    private long totalCapacity;
+    private long transferSpeed;
 
     private SideConfig[] sideConfigs;
-
-    private ArrayList<EnergyContainerComponent> extractTargets;
+    private int simulationPriority;
 
     private boolean isMultiblockStorage;
+    private ArrayList<IEnergyContainer> extractTargets;
 
-    public EnergyContainerComponent(long energyStored, long maxEnergy, long maxReceive, long maxExtract,
-                                    SideConfig[] sideConfigs, int priority) {
+    public EnergyContainerComponent(long energy, long totalCapacity, long maxTransfer,
+                                    SideConfig[] sideConfigs, int simulationPriority) {
         if (sideConfigs.length != 7) {
             throw new IllegalArgumentException("sideConfigs must have length of 7");
-        } else if (priority < 0) {
-            throw new IllegalArgumentException("priority must be >= 0");
-        } else if (maxEnergy <= 0L) {
-            throw new IllegalArgumentException("maxEnergy must be > 0");
-        } else if (energyStored < 0L) {
-            throw new IllegalArgumentException("energyStored must be >= 0");
+        } else if (simulationPriority < 0) {
+            throw new IllegalArgumentException("simulationPriority must be >= 0");
+        } else if (totalCapacity < 0L) {
+            throw new IllegalArgumentException("totalCapacity must be >= 0");
+        } else if (energy < 0L) {
+            throw new IllegalArgumentException("energy must be >= 0");
+        } else if (maxTransfer < 0L) {
+            throw new IllegalArgumentException("maxTransfer must be >= 0");
         }
 
         this.sideConfigs = sideConfigs;
-        this.extractPriority = priority;
-        this.energyStored = Math.min(energyStored, maxEnergy);
-        this.maxEnergy = maxEnergy;
-        this.maxReceive = Math.max(0L, maxReceive);
-        this.maxExtract = Math.max(0L, maxExtract);
+        this.simulationPriority = simulationPriority;
+        this.totalCapacity = totalCapacity;
+        this.energy = Math.min(energy, this.totalCapacity);
+        this.transferSpeed = maxTransfer;
     }
+
+    // IEnergyContainer Methods
 
     public EnergyContainerComponent() {
-        this(0L, 10000L, 1000L, 1000L, getDefaultSideConfig(), 50);
+        this(0L, 0L, 0L, SideConfig.getDefault(), EnergyTransferSimulationPriority.CABLE);
     }
 
-    private static SideConfig[] getDefaultSideConfig() {
-        return new SideConfig[]
-                {
-                        SideConfig.BOTH,
-                        SideConfig.BOTH,
-                        SideConfig.BOTH,
-                        SideConfig.BOTH,
-                        SideConfig.BOTH,
-                        SideConfig.BOTH,
-                        SideConfig.BOTH,
-                };
+    public long getEnergy() {
+        return this.energy;
     }
 
-    public long getEnergyStored() {
-        return this.energyStored;
+    public long getTotalCapacity() {
+        return this.totalCapacity;
     }
 
-    public long getMaxEnergyStored() {
-        return this.maxEnergy;
+    public long getRemainingCapacity() {
+        return this.totalCapacity - this.energy;
     }
 
-    public long getMaxReceive() {
-        return this.maxReceive;
+    public long getTransferSpeed() {
+        return this.transferSpeed;
     }
 
-    public long getMaxExtract() {
-        return this.maxExtract;
+    public int getTransferPriority() {
+        return simulationPriority;
     }
 
-    public SideConfig getSideConfig(BlockFace face) {
-        return sideConfigs[face.getValue()];
+    public void setTransferPriority(int extractPriority) {
+        this.simulationPriority = extractPriority;
+    }
+
+    public boolean canReceiveFromFace(BlockFace face) {
+        return transferSpeed > 0 && getSideConfig(face).canReceive();
+    }
+
+    public boolean canTransferFromFace(BlockFace face) {
+        return transferSpeed > 0 && getSideConfig(face).canExtract();
+    }
+
+    public void transferEnergyTo(IEnergyContainer other) {
+        // Calculate energy to transfer (always try to transfer at max speed)
+        var maxTransferSpeed = Math.min(transferSpeed, other.getTransferSpeed());
+        var maxEnergyToTransfer = Math.min(this.energy, other.getRemainingCapacity());
+        var energyToTransfer = Math.min(maxEnergyToTransfer, maxTransferSpeed);
+
+        // Transfer
+        other.addEnergy(energyToTransfer);
+        this.reduceEnergy(energyToTransfer);
+    }
+
+    public void addEnergy(long amount) {
+        if (amount <= 0) return;
+        this.energy = Math.min(this.totalCapacity, this.energy + amount);
+    }
+
+    public void reduceEnergy(long amount) {
+        if (amount <= 0) return;
+        this.energy = Math.max(0, this.energy - amount);
+    }
+
+    public float getFillRatio() {
+        return (float) this.energy / (float) this.totalCapacity;
+    }
+
+    public boolean isFull() {
+        return this.energy >= this.totalCapacity;
+    }
+
+    public boolean isEmpty() {
+        return this.energy == 0L;
     }
 
     public void cycleSideConfig(BlockFace face) {
@@ -100,109 +165,23 @@ public class EnergyContainerComponent implements Component<ChunkStore> {
         this.sideConfigs[index] = oldValue.next();
     }
 
-    public int getExtractPriority() {
-        return extractPriority;
-    }
-
-    public void setExtractPriority(int extractPriority) {
-        this.extractPriority = extractPriority;
-    }
-
-    public boolean canReceiveFromFace(BlockFace face) {
-        return maxExtract > 0 && getSideConfig(face).canReceive();
-    }
-
-    public boolean canExtractFromFace(BlockFace face) {
-        return maxReceive > 0 && getSideConfig(face).canExtract();
-    }
-
-    public long receiveEnergy(long amount, boolean simulate) {
-        if (amount > 0L) {
-            long accepted = Math.min(amount, this.maxReceive);
-            long space = this.maxEnergy - this.energyStored;
-            long inserted = Math.min(space, accepted);
-            if (!simulate && inserted > 0L) {
-                this.energyStored += inserted;
-            }
-
-            return inserted;
-        } else {
-            return 0L;
-        }
-    }
-
-    public long extractEnergy(long amount, boolean simulate) {
-        if (amount > 0L) {
-            long extracted = Math.min(amount, Math.min(this.maxExtract, this.energyStored));
-            if (!simulate && extracted > 0L) {
-                this.energyStored -= extracted;
-            }
-
-            return extracted;
-        } else {
-            return 0L;
-        }
-    }
-
-    public float getFillRatio() {
-        return (float) this.energyStored / (float) this.maxEnergy;
-    }
-
-    public boolean isFull() {
-        return this.energyStored >= this.maxEnergy;
-    }
-
-    public boolean isEmpty() {
-        return this.energyStored <= 0L;
+    // Side Config Methods
+    public SideConfig getSideConfig(BlockFace face) {
+        return sideConfigs[face.getValue()];
     }
 
     @Nonnull
     @Override
     public Component<ChunkStore> clone() {
-        return new EnergyContainerComponent(this.energyStored, this.maxEnergy, this.maxReceive,
-                this.maxExtract, this.sideConfigs.clone(), this.extractPriority);
+        return new EnergyContainerComponent(this.energy, this.totalCapacity, this.maxReceive,
+                this.transferSpeed, this.sideConfigs.clone(), this.simulationPriority);
     }
 
     public String toString() {
         var sides = Arrays.stream(this.sideConfigs).map(Enum::name).collect(Collectors.joining(", "));
         return String.format("Energy: %d/%d RF (Prio: %d) | Sides: [%s]",
-                energyStored, maxEnergy, extractPriority, sides);
+                energy, totalCapacity, simulationPriority, sides);
     }
-
-    public static final BuilderCodec<EnergyContainerComponent> CODEC =
-            BuilderCodec.builder(EnergyContainerComponent.class, EnergyContainerComponent::new)
-                    .append(new KeyedCodec<>("EnergyStored", Codec.LONG),
-                            (c, v) -> c.energyStored = v,
-                            (c) -> c.energyStored)
-                    .addValidator(Validators.greaterThanOrEqual(0L))
-                    .documentation("Current stored energy")
-                    .add()
-                    .append(new KeyedCodec<>("MaxEnergy", Codec.LONG),
-                            (c, v) -> c.maxEnergy = v,
-                            (c) -> c.maxEnergy)
-                    .addValidator(Validators.greaterThan(0L))
-                    .documentation("Maximum energy capacity").add()
-                    .append(new KeyedCodec<>("MaxReceive", Codec.LONG),
-                            (c, v) -> c.maxReceive = v,
-                            (c) -> c.maxReceive)
-                    .addValidator(Validators.greaterThanOrEqual(0L))
-                    .documentation("Maximum energy accepted per receive call").add()
-                    .append(new KeyedCodec<>("MaxExtract", Codec.LONG),
-                            (c, v) -> c.maxExtract = v,
-                            (c) -> c.maxExtract)
-                    .addValidator(Validators.greaterThanOrEqual(0L))
-                    .documentation("Maximum energy extracted per extract call").add()
-                    .append(new KeyedCodec<>("SideConfigs", Codec.INT_ARRAY),
-                            EnergyContainerComponent::setSideConfigs,
-                            EnergyContainerComponent::getSideConfigsAsIntArray)
-                    .addValidator(Validators.intArraySize(7))
-                    .documentation("Side configuration for Input/Output sides").add()
-                    .append(new KeyedCodec<>("ExtractPriority", Codec.INTEGER),
-                            (c, v) -> c.extractPriority = v,
-                            (c) -> c.extractPriority)
-                    .addValidator(Validators.greaterThanOrEqual(0))
-                    .documentation("Priority for energy transfer, lower means energy is extracted first").add()
-                    .build();
 
     private void setSideConfigs(int[] v) {
         this.sideConfigs = Arrays.stream(v).mapToObj(SideConfig::fromType).toArray(SideConfig[]::new);
@@ -212,7 +191,7 @@ public class EnergyContainerComponent implements Component<ChunkStore> {
         return Arrays.stream(this.sideConfigs).mapToInt(SideConfig::getType).toArray();
     }
 
-    public void reloadExtractTargets(Ref<ChunkStore> blockRef, Store<ChunkStore> store, boolean triggerReloadInTargets) {
+    public void reloadTransferTargets(Ref<ChunkStore> blockRef, Store<ChunkStore> store, boolean triggerReloadInTargets) {
         this.extractTargets = new ArrayList<>();
 
         var world = store.getExternalData().getWorld();
@@ -224,7 +203,7 @@ public class EnergyContainerComponent implements Component<ChunkStore> {
             var localFace = EnergyUtils.getLocalFace(worldSide, blockLocation.rotation());
 
             // Ensure this face is allowed to extract (Logic inside your component)
-            if (!canExtractFromFace(localFace) && !canReceiveFromFace(localFace)) continue;
+            if (!canTransferFromFace(localFace) && !canReceiveFromFace(localFace)) continue;
 
             var neighborWorldPos = worldSide.clone().add(blockLocation.worldPos());
             var neighborRef = EnergyUtils.getBlockEntityRef(world, neighborWorldPos);
@@ -239,11 +218,11 @@ public class EnergyContainerComponent implements Component<ChunkStore> {
                 var neighborLocalFace = EnergyUtils.getLocalFace(oppositeWorldDir, neighborLoc.rotation());
 
                 if (triggerReloadInTargets) {
-                    neighborContainer.reloadExtractTargets(neighborRef, store, false);
+                    neighborContainer.reloadTransferTargets(neighborRef, store, false);
                 }
 
                 // If neighbor can receive -> Add to extract targets
-                if (canExtractFromFace(localFace) && neighborContainer.canReceiveFromFace(neighborLocalFace)) {
+                if (canTransferFromFace(localFace) && neighborContainer.canReceiveFromFace(neighborLocalFace)) {
                     LOGGER.atInfo().log("%s adding %s as extract target", toString(), neighborContainer.toString());
 
                     this.extractTargets.add(neighborContainer);
@@ -252,7 +231,7 @@ public class EnergyContainerComponent implements Component<ChunkStore> {
         }
     }
 
-    public void removeAsExtractTargetFromNeighbors(@NotNull Ref<ChunkStore> blockRef, @NotNull Store<ChunkStore> store) {
+    public void removeAsTransferTargetFromNeighbors(@NotNull Ref<ChunkStore> blockRef, @NotNull Store<ChunkStore> store) {
         var world = store.getExternalData().getWorld();
         var blockLocation = EnergyUtils.getBlockTransform(blockRef, store);
         if (blockLocation == null) return;
@@ -272,30 +251,15 @@ public class EnergyContainerComponent implements Component<ChunkStore> {
         }
     }
 
-    public void tryExtractToTargets() {
+    public void tryTransferToTargets() {
         if (extractTargets.isEmpty()) return;
 
-        LOGGER.atInfo().log("Source: %s", toString());
-
         for (var targetContainer : extractTargets) {
-            if (targetContainer == null || targetContainer.isFull())
-            {
-                LOGGER.atInfo().log("Target container null!");
+            if (targetContainer == null || targetContainer.isFull()) {
                 continue;
             }
 
-            LOGGER.atInfo().log("Target: %s", targetContainer.toString());
-
-
-            var actualMaxExtract = Math.min(maxExtract, targetContainer.getMaxReceive());
-            var toSend = Math.min(energyStored, actualMaxExtract);
-
-            long accepted = targetContainer.receiveEnergy(toSend, false);
-            long extracted = this.extractEnergy(accepted, false);
-
-            if (accepted != extracted) {
-                LOGGER.atWarning().log("accepted (%s) != extracted (%s)", accepted, extracted);
-            }
+            this.transferEnergyTo(targetContainer);
         }
     }
 }

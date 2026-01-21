@@ -1,17 +1,19 @@
 package com.rasebdon.hytech.energy.container;
 
 public interface IEnergyContainer {
-    long getEnergyStored();
+    long getEnergy();
 
-    long getMaxEnergyStored();
+    long getTotalCapacity();
 
-    long getMaxReceive();
+    long getRemainingCapacity();
 
-    long getMaxExtract();
+    long getTransferSpeed();
 
-    long receiveEnergy(long var1, boolean var3);
+    void transferEnergyTo(IEnergyContainer other, long amount);
 
-    long extractEnergy(long var1, boolean var3);
+    void addEnergy(long amount);
+
+    void reduceEnergy(long amount);
 
     float getFillRatio();
 

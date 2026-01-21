@@ -1,19 +1,13 @@
 package com.rasebdon.hytech.energy.container;
 
-import com.hypixel.hytale.component.*;
-import com.hypixel.hytale.component.query.Query;
-import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
+import com.hypixel.hytale.component.Archetype;
+import com.hypixel.hytale.component.ComponentType;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.system.tick.TickingSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.math.vector.Vector3i;
-import com.hypixel.hytale.protocol.BlockFace;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
-import com.rasebdon.hytech.energy.util.EnergyUtils;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -38,11 +32,11 @@ public class EnergyContainerTransferSystem extends TickingSystem<ChunkStore> {
             }
 
             containers = Arrays.stream(containers)
-                    .sorted(Comparator.comparingInt(EnergyContainerComponent::getExtractPriority))
+                    .sorted(Comparator.comparingInt(EnergyContainerComponent::getTransferPriority))
                     .toArray(EnergyContainerComponent[]::new);
 
             for (var container : containers) {
-                container.tryExtractToTargets();
+                container.tryTransferToTargets();
             }
         });
     }
