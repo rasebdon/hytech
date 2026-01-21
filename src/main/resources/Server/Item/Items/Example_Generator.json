@@ -60,7 +60,9 @@
           "MaxEnergy": 500,
           "MaxExtract": 15,
           "ExtractPriority": 25,
-          "MaxReceive": 0
+          "MaxReceive": 0,
+          "MaxTransfer": 25,
+          "TransferPriority": 0
         }
       }
     },

@@ -18,6 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.stream.Collectors;
 
 public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyContainer {
@@ -34,7 +35,7 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
                     .append(new KeyedCodec<>("MaxEnergy", Codec.LONG),
                             (c, v) -> c.totalCapacity = v,
                             (c) -> c.totalCapacity)
-                    .addValidator(Validators.greaterThan(0L))
+                    .addValidator(Validators.greaterThanOrEqual(0L))
                     .documentation("Maximum energy capacity").add()
                     .append(new KeyedCodec<>("MaxTransfer", Codec.LONG),
                             (c, v) -> c.transferSpeed = v,
@@ -113,9 +114,11 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
         return transferSpeed > 0 && getSideConfig(face).canReceive();
     }
 
-    public boolean canTransferFromFace(BlockFace face) {
+    public boolean canExtractFromFace(BlockFace face) {
         return transferSpeed > 0 && getSideConfig(face).canExtract();
     }
+
+    // TODO : Add method to transfer to multiple containers
 
     public void transferEnergyTo(IEnergyContainer other) {
         // Calculate energy to transfer (always try to transfer at max speed)
@@ -126,6 +129,48 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
         // Transfer
         other.addEnergy(energyToTransfer);
         this.reduceEnergy(energyToTransfer);
+    }
+
+    public void transferEnergyTo(Collection<IEnergyContainer> targets) {
+        if (targets.isEmpty() || this.energy <= 0) {
+            return;
+        }
+
+        // Filter containers that can actually receive energy
+        var validTargets = targets.stream()
+                .filter(t -> t.getRemainingCapacity() > 0)
+                .toList();
+
+        if (validTargets.isEmpty()) {
+            return;
+        }
+
+        // Total transferable energy this tick (limited by source)
+        var targetCount = validTargets.size();
+        var totalTransferable = Math.min(this.energy, this.transferSpeed * targetCount);
+
+        var energyPerTarget = totalTransferable / targetCount;
+
+        if (energyPerTarget <= 0) {
+            return;
+        }
+
+        var transferredTotal = 0L;
+
+        for (var target : validTargets) {
+            var maxTransferSpeed = Math.min(this.transferSpeed, target.getTransferSpeed());
+            var maxEnergyToTransfer = Math.min(target.getRemainingCapacity(), maxTransferSpeed);
+
+            var energyToTransfer = Math.min(energyPerTarget, maxEnergyToTransfer);
+            if (energyToTransfer <= 0) {
+                continue;
+            }
+
+            target.addEnergy(energyToTransfer);
+            transferredTotal += energyToTransfer;
+        }
+
+        this.reduceEnergy(transferredTotal);
     }
 
     public void addEnergy(long amount) {
@@ -194,7 +239,7 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
             var localFace = EnergyUtils.getLocalFace(worldSide, blockLocation.rotation());
 
             // Ensure this face is allowed to extract (Logic inside your component)
-            if (!canTransferFromFace(localFace) && !canReceiveFromFace(localFace)) continue;
+            if (!canExtractFromFace(localFace) && !canReceiveFromFace(localFace)) continue;
 
             var neighborWorldPos = worldSide.clone().add(blockLocation.worldPos());
             var neighborRef = EnergyUtils.getBlockEntityRef(world, neighborWorldPos);
@@ -213,7 +258,7 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
                 }
 
                 // If neighbor can receive -> Add to extract targets
-                if (canTransferFromFace(localFace) && neighborContainer.canReceiveFromFace(neighborLocalFace)) {
+                if (canExtractFromFace(localFace) && neighborContainer.canReceiveFromFace(neighborLocalFace)) {
                     LOGGER.atInfo().log("%s adding %s as extract target", toString(), neighborContainer.toString());
 
                     this.extractTargets.add(neighborContainer);
@@ -244,13 +289,6 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
 
     public void tryTransferToTargets() {
         if (extractTargets.isEmpty()) return;
-
-        for (var targetContainer : extractTargets) {
-            if (targetContainer == null || targetContainer.isFull()) {
-                continue;
-            }
-
-            this.transferEnergyTo(targetContainer);
-        }
+        this.transferEnergyTo(extractTargets);
     }
 }

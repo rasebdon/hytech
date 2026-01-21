@@ -1,5 +1,7 @@
 package com.rasebdon.hytech.energy.container;
 
+import java.util.Collection;
+
 public interface IEnergyContainer {
     long getEnergy();
 
@@ -10,6 +12,8 @@ public interface IEnergyContainer {
     long getTransferSpeed();
 
     void transferEnergyTo(IEnergyContainer other);
+
+    void transferEnergyTo(Collection<IEnergyContainer> other);
 
     void addEnergy(long amount);
 
