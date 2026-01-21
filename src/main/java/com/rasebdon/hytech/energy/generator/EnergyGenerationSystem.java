@@ -32,8 +32,7 @@ public class EnergyGenerationSystem extends EntityTickingSystem<ChunkStore> {
         var container = archetypeChunk.getComponent(index, this.containerType);
 
         if (generator != null && container != null) {
-            // Add energy to the container based on the generator's rate
-            container.receiveEnergy(BlockFace.None, generator.getGenerationRate(), false);
+            container.receiveEnergy(generator.getGenerationRate(), false);
         }
     }
 

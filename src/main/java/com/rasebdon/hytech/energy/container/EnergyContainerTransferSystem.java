@@ -30,6 +30,30 @@ public class EnergyContainerTransferSystem extends EntityTickingSystem<ChunkStor
         var energyContainer = store.getComponent(blockRef, this.energyContainerType);
         if (energyContainer == null) return;
 
+        var extractTargets = energyContainer.getExtractTargets();
+        if (extractTargets.length == 0) return;
+
+        LOGGER.atInfo().log("Source: %s", energyContainer.toString());
+
+        for (var targetContainer : extractTargets) {
+            if (targetContainer == null)
+            {
+                LOGGER.atInfo().log("Target container null!");
+                continue;
+            }
+
+            LOGGER.atInfo().log("Target: %s", targetContainer.toString());
+
+            long toSend = Math.min(energyContainer.getMaxExtract(), targetContainer.getMaxReceive());
+
+            long accepted = targetContainer.receiveEnergy(toSend, false);
+            long extracted = energyContainer.extractEnergy(accepted, false);
+
+            if (accepted != extracted) {
+                LOGGER.atWarning().log("accepted (%s) != extracted (%s)", accepted, extracted);
+            }
+        }
+
         var world = store.getExternalData().getWorld();
         var blockLocation = EnergyUtils.getBlockTransform(blockRef, store);
         if (blockLocation == null) return;
@@ -39,7 +63,7 @@ public class EnergyContainerTransferSystem extends EntityTickingSystem<ChunkStor
             BlockFace localFace = EnergyUtils.getLocalFace(worldSide, blockLocation.rotation());
 
             // Ensure this face is allowed to extract (Logic inside your component)
-            if (!energyContainer.canExtract(localFace)) continue;
+            if (!energyContainer.canExtractFromFace(localFace)) continue;
 
             var neighborWorldPos = worldSide.clone().add(blockLocation.worldPos());
             var neighborRef = EnergyUtils.getBlockEntityRef(world, neighborWorldPos);
@@ -54,16 +78,11 @@ public class EnergyContainerTransferSystem extends EntityTickingSystem<ChunkStor
                 BlockFace neighborLocalFace = EnergyUtils.getLocalFace(oppositeWorldDir, neighborLoc.rotation());
 
                 // 3. Priority and Sidedness Check
-                if (neighborContainer.canReceive(neighborLocalFace)) {
+                if (neighborContainer.canReceiveFromFace(neighborLocalFace)) {
                     // Only push if neighbor priority is higher, or if this container is full/near-full
                     // Prio: 0 = Cable, 1 = Battery/Producer, 2 = Consumer
-                    if (neighborContainer.getPriority() >= energyContainer.getPriority() || energyContainer.isFull()) {
+                    if (neighborContainer.getExtractPriority() >= energyContainer.getExtractPriority() || energyContainer.isFull()) {
 
-                        long toSend = Math.min(energyContainer.getMaxExtract(), neighborContainer.getMaxReceive());
-
-                        // 4. Perform the transfer using the translated local faces
-                        long accepted = neighborContainer.receiveEnergy(neighborLocalFace, toSend, false);
-                        energyContainer.extractEnergy(localFace, accepted, false);
                     }
                 }
             }
