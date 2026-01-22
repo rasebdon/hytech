@@ -40,7 +40,7 @@
     "CustomModel": "Blocks/Example_Cable/Example_Cable.blockymodel",
     "CustomModelTexture": [
       {
-        "Texture": "Blocks/Structures/Tubes/Long_Simple_UV_Textures/Sandstone_Brick.png",
+        "Texture": "BlockTextures/Example_Cable.png",
         "Weight": 1
       }
     ],

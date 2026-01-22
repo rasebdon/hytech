@@ -19,6 +19,7 @@ import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyContainer {
@@ -62,6 +63,12 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
                     .documentation("Global override for block so that it can never extract energy externally").add()
                     .build();
 
+    private static final int SIDES = 7;
+    private static final int BITS_PER_SIDE = 2;
+    private static final int SIDE_MASK = 0b11;
+
+    private final List<IEnergyContainer> extractTargets = new ArrayList<>();
+
     private long energy;
     private long totalCapacity;
     private long transferSpeed;
@@ -72,26 +79,28 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
     private int sideConfigBitmap;
     private int transferPriority;
 
-    private ArrayList<IEnergyContainer> extractTargets;
+    public EnergyContainerComponent(
+            long energy,
+            long totalCapacity,
+            long transferSpeed,
+            int sideConfigBitmap,
+            int transferPriority,
+            boolean canReceiveEnergy,
+            boolean canExtractEnergy
+    ) {
+        requireNonNegative(energy, "energy");
+        requireNonNegative(totalCapacity, "totalCapacity");
+        requireNonNegative(transferSpeed, "transferSpeed");
 
-    public EnergyContainerComponent(long energy, long totalCapacity, long maxTransfer,
-                                    int sideConfigBitmap, int simulationPriority,
-                                    boolean canReceiveEnergy, boolean canExtractEnergy) {
-        if (simulationPriority < 0) {
-            throw new IllegalArgumentException("simulationPriority must be >= 0");
-        } else if (totalCapacity < 0L) {
-            throw new IllegalArgumentException("totalCapacity must be >= 0");
-        } else if (energy < 0L) {
-            throw new IllegalArgumentException("energy must be >= 0");
-        } else if (maxTransfer < 0L) {
-            throw new IllegalArgumentException("maxTransfer must be >= 0");
+        if (transferPriority < 0) {
+            throw new IllegalArgumentException("transferPriority must be >= 0");
         }
 
-        this.sideConfigBitmap = sideConfigBitmap;
-        this.transferPriority = simulationPriority;
         this.totalCapacity = totalCapacity;
-        this.energy = Math.min(energy, this.totalCapacity);
-        this.transferSpeed = maxTransfer;
+        this.energy = Math.min(energy, totalCapacity);
+        this.transferSpeed = transferSpeed;
+        this.sideConfigBitmap = sideConfigBitmap;
+        this.transferPriority = transferPriority;
         this.canReceiveEnergy = canReceiveEnergy;
         this.canExtractEnergy = canExtractEnergy;
     }
@@ -101,7 +110,9 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
                 false, false);
     }
 
-    // IEnergyContainer Methods
+    private static void requireNonNegative(long value, String name) {
+        if (value < 0) throw new IllegalArgumentException(name + " must be >= 0");
+    }
 
     public long getEnergy() {
         return this.energy;
@@ -117,10 +128,6 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
 
     public boolean canExtractEnergy() {
         return this.canExtractEnergy;
-    }
-
-    public long getRemainingCapacity() {
-        return this.totalCapacity - this.energy;
     }
 
     public long getTransferSpeed() {
@@ -139,59 +146,27 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
         return this.canExtractEnergy && this.transferSpeed > 0 && this.getSideConfig(face).canExtract();
     }
 
-    public void transferEnergyTo(IEnergyContainer other) {
-        if (!other.canReceiveEnergy() || !this.canExtractEnergy) return;
-
-        // Calculate energy to transfer (always try to transfer at max speed)
-        var maxTransferSpeed = Math.min(this.transferSpeed, other.getTransferSpeed());
-        var maxEnergyToTransfer = Math.min(this.energy, other.getRemainingCapacity());
-        var energyToTransfer = Math.min(maxEnergyToTransfer, maxTransferSpeed);
-
-        // Transfer
-        other.addEnergy(energyToTransfer);
-        this.reduceEnergy(energyToTransfer);
+    private static int sideShift(BlockFace face) {
+        return face.getValue() * BITS_PER_SIDE;
     }
 
-    public void transferEnergyTo(Collection<IEnergyContainer> targets) {
-        if (!this.canExtractEnergy || targets.isEmpty() || this.energy <= 0) {
-            return;
+    @Override
+    public long transferEnergyTo(IEnergyContainer other) {
+        if (!canExtractEnergy || !other.canReceiveEnergy() ||
+                energy <= 0 || transferSpeed <= 0) {
+            return 0;
         }
 
-        // Filter containers that can actually receive energy
-        var validTargets = targets.stream()
-                .filter(t -> t.getRemainingCapacity() > 0 && t.canReceiveEnergy())
-                .toList();
+        long transferable = Math.min(
+                Math.min(transferSpeed, other.getTransferSpeed()),
+                Math.min(energy, other.getRemainingCapacity())
+        );
 
-        if (validTargets.isEmpty()) {
-            return;
-        }
+        if (transferable <= 0) return 0;
 
-        // Total transferable energy this tick (limited by source)
-        var targetCount = validTargets.size();
-        var totalTransferable = Math.min(this.energy, this.transferSpeed * targetCount);
-
-        var energyPerTarget = totalTransferable / targetCount;
-
-        if (energyPerTarget <= 0) {
-            return;
-        }
-
-        var transferredTotal = 0L;
-
-        for (var target : validTargets) {
-            var maxTransferSpeed = Math.min(this.transferSpeed, target.getTransferSpeed());
-            var maxEnergyToTransfer = Math.min(target.getRemainingCapacity(), maxTransferSpeed);
-
-            var energyToTransfer = Math.min(energyPerTarget, maxEnergyToTransfer);
-            if (energyToTransfer <= 0) {
-                continue;
-            }
-
-            target.addEnergy(energyToTransfer);
-            transferredTotal += energyToTransfer;
-        }
-
-        this.reduceEnergy(transferredTotal);
+        other.addEnergy(transferable);
+        reduceEnergy(transferable);
+        return transferable;
     }
 
     public void addEnergy(long amount) {
@@ -202,28 +177,6 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
     public void reduceEnergy(long amount) {
         if (amount <= 0) return;
         this.energy = Math.max(0, this.energy - amount);
-    }
-
-    public float getFillRatio() {
-        return (float) this.energy / (float) this.totalCapacity;
-    }
-
-    public boolean isFull() {
-        return this.energy >= this.totalCapacity;
-    }
-
-    public boolean isEmpty() {
-        return this.energy == 0L;
-    }
-
-    private static int shiftForSide(BlockFace face) {
-        return face.getValue() * 2;
-    }
-
-    public SideConfig getSideConfig(BlockFace face) {
-        int shift = shiftForSide(face);
-        int bits = (sideConfigBitmap >> shift) & 0b11;
-        return SideConfig.fromBits(bits);
     }
 
     public SideConfig[] getSideConfigsAsArray() {
@@ -237,10 +190,47 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
         return result;
     }
 
+    @Override
+    public long transferEnergyTo(Collection<? extends IEnergyContainer> targets) {
+        if (!canExtractEnergy || energy <= 0 || transferSpeed <= 0) return 0;
+
+        var validTargets = targets.stream()
+                .filter(IEnergyContainer::canReceiveEnergy)
+                .filter(t -> t.getRemainingCapacity() > 0)
+                .toList();
+
+        if (validTargets.isEmpty()) return 0;
+
+        long totalTransferred = 0;
+        long maxPerTarget = transferSpeed;
+
+        for (var target : validTargets) {
+            if (energy <= 0) break;
+
+            long transferable = Math.min(
+                    Math.min(maxPerTarget, target.getTransferSpeed()),
+                    Math.min(energy, target.getRemainingCapacity())
+            );
+
+            if (transferable > 0) {
+                target.addEnergy(transferable);
+                energy -= transferable;
+                totalTransferred += transferable;
+            }
+        }
+
+        return totalTransferred;
+    }
+
+    public SideConfig getSideConfig(BlockFace face) {
+        int shift = sideShift(face);
+        return SideConfig.fromBits((sideConfigBitmap >> shift) & SIDE_MASK);
+    }
+
     public void setSideConfig(BlockFace face, SideConfig config) {
-        int shift = shiftForSide(face);
+        int shift = sideShift(face);
         sideConfigBitmap =
-                (sideConfigBitmap & ~(0b11 << shift))
+                (sideConfigBitmap & ~(SIDE_MASK << shift))
                         | (config.getBits() << shift);
     }
 
@@ -265,7 +255,7 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
 
     // TODO : Will need refactoring with cable networks
     public void reloadTransferTargets(Ref<ChunkStore> blockRef, Store<ChunkStore> store, boolean triggerReloadInTargets) {
-        this.extractTargets = new ArrayList<>();
+        this.extractTargets.clear();
 
         var world = store.getExternalData().getWorld();
         var blockLocation = EnergyUtils.getBlockTransform(blockRef, store);

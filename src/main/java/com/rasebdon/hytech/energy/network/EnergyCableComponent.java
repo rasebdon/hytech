@@ -1,4 +1,4 @@
 package com.rasebdon.hytech.energy.network;
 
-public class EnergyNetwork {
+public class EnergyCableComponent {
 }
