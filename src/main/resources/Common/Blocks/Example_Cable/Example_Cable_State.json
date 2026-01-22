@@ -1,0 +1,198 @@
+{
+  "State": {
+    "Definitions": {
+      "Cable": {
+        "CustomModel": "Blocks/Example_Cable/Example_Cable.blockymodel"
+      },
+      "Cable_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_West.blockymodel"
+      },
+      "Cable_East": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_East.blockymodel"
+      },
+      "Cable_East_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_East_West.blockymodel"
+      },
+      "Cable_South": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_South.blockymodel"
+      },
+      "Cable_South_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_South_West.blockymodel"
+      },
+      "Cable_South_East": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_South_East.blockymodel"
+      },
+      "Cable_South_East_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_South_East_West.blockymodel"
+      },
+      "Cable_North": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_North.blockymodel"
+      },
+      "Cable_North_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_North_West.blockymodel"
+      },
+      "Cable_North_East": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_North_East.blockymodel"
+      },
+      "Cable_North_East_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_North_East_West.blockymodel"
+      },
+      "Cable_North_South": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_North_South.blockymodel"
+      },
+      "Cable_North_South_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_North_South_West.blockymodel"
+      },
+      "Cable_North_South_East": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_North_South_East.blockymodel"
+      },
+      "Cable_North_South_East_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_North_South_East_West.blockymodel"
+      },
+      "Cable_Down": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Down.blockymodel"
+      },
+      "Cable_Down_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Down_West.blockymodel"
+      },
+      "Cable_Down_East": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Down_East.blockymodel"
+      },
+      "Cable_Down_East_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Down_East_West.blockymodel"
+      },
+      "Cable_Down_South": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Down_South.blockymodel"
+      },
+      "Cable_Down_South_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Down_South_West.blockymodel"
+      },
+      "Cable_Down_South_East": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Down_South_East.blockymodel"
+      },
+      "Cable_Down_South_East_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Down_South_East_West.blockymodel"
+      },
+      "Cable_Down_North": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Down_North.blockymodel"
+      },
+      "Cable_Down_North_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Down_North_West.blockymodel"
+      },
+      "Cable_Down_North_East": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Down_North_East.blockymodel"
+      },
+      "Cable_Down_North_East_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Down_North_East_West.blockymodel"
+      },
+      "Cable_Down_North_South": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Down_North_South.blockymodel"
+      },
+      "Cable_Down_North_South_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Down_North_South_West.blockymodel"
+      },
+      "Cable_Down_North_South_East": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Down_North_South_East.blockymodel"
+      },
+      "Cable_Down_North_South_East_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Down_North_South_East_West.blockymodel"
+      },
+      "Cable_Up": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up.blockymodel"
+      },
+      "Cable_Up_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_West.blockymodel"
+      },
+      "Cable_Up_East": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_East.blockymodel"
+      },
+      "Cable_Up_East_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_East_West.blockymodel"
+      },
+      "Cable_Up_South": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_South.blockymodel"
+      },
+      "Cable_Up_South_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_South_West.blockymodel"
+      },
+      "Cable_Up_South_East": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_South_East.blockymodel"
+      },
+      "Cable_Up_South_East_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_South_East_West.blockymodel"
+      },
+      "Cable_Up_North": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_North.blockymodel"
+      },
+      "Cable_Up_North_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_North_West.blockymodel"
+      },
+      "Cable_Up_North_East": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_North_East.blockymodel"
+      },
+      "Cable_Up_North_East_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_North_East_West.blockymodel"
+      },
+      "Cable_Up_North_South": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_North_South.blockymodel"
+      },
+      "Cable_Up_North_South_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_North_South_West.blockymodel"
+      },
+      "Cable_Up_North_South_East": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_North_South_East.blockymodel"
+      },
+      "Cable_Up_North_South_East_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_North_South_East_West.blockymodel"
+      },
+      "Cable_Up_Down": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_Down.blockymodel"
+      },
+      "Cable_Up_Down_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_Down_West.blockymodel"
+      },
+      "Cable_Up_Down_East": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_Down_East.blockymodel"
+      },
+      "Cable_Up_Down_East_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_Down_East_West.blockymodel"
+      },
+      "Cable_Up_Down_South": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_Down_South.blockymodel"
+      },
+      "Cable_Up_Down_South_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_Down_South_West.blockymodel"
+      },
+      "Cable_Up_Down_South_East": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_Down_South_East.blockymodel"
+      },
+      "Cable_Up_Down_South_East_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_Down_South_East_West.blockymodel"
+      },
+      "Cable_Up_Down_North": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_Down_North.blockymodel"
+      },
+      "Cable_Up_Down_North_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_Down_North_West.blockymodel"
+      },
+      "Cable_Up_Down_North_East": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_Down_North_East.blockymodel"
+      },
+      "Cable_Up_Down_North_East_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_Down_North_East_West.blockymodel"
+      },
+      "Cable_Up_Down_North_South": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_Down_North_South.blockymodel"
+      },
+      "Cable_Up_Down_North_South_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_Down_North_South_West.blockymodel"
+      },
+      "Cable_Up_Down_North_South_East": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_Down_North_South_East.blockymodel"
+      },
+      "Cable_Up_Down_North_South_East_West": {
+        "CustomModel": "Blocks/Example_Cable/Generated/Example_Cable_Up_Down_North_South_East_West.blockymodel"
+      }
+    }
+  }
+}

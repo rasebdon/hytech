@@ -1,11 +1,12 @@
 package com.rasebdon.hytech.energy;
 
-import com.hypixel.hytale.component.*;
+import com.hypixel.hytale.component.ComponentRegistryProxy;
+import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.rasebdon.hytech.energy.container.EnergyContainerComponent;
-import com.rasebdon.hytech.energy.container.EnergyContainerInitialisingSystem;
+import com.rasebdon.hytech.energy.container.EnergyContainerRefSystem;
 import com.rasebdon.hytech.energy.container.EnergyContainerTransferSystem;
 import com.rasebdon.hytech.energy.generator.EnergyGenerationSystem;
 import com.rasebdon.hytech.energy.generator.EnergyGeneratorComponent;
@@ -36,7 +37,7 @@ public class EnergyModule {
         ComponentType<ChunkStore, EnergyGeneratorComponent> energyGeneratorType = registry.registerComponent(
                 EnergyGeneratorComponent.class, "hytech:energy:generator", EnergyGeneratorComponent.CODEC);
 
-        registry.registerSystem(new EnergyContainerInitialisingSystem(energyContainerComponentType));
+        registry.registerSystem(new EnergyContainerRefSystem(energyContainerComponentType));
         registry.registerSystem(new EnergyContainerTransferSystem(energyContainerComponentType));
         registry.registerSystem(new EnergyGenerationSystem(energyGeneratorType, energyContainerComponentType));
 

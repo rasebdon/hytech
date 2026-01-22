@@ -7,10 +7,10 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class EnergyContainerInitialisingSystem extends RefSystem<ChunkStore> {
+public class EnergyContainerRefSystem extends RefSystem<ChunkStore> {
     private final ComponentType<ChunkStore, EnergyContainerComponent> energyContainerComponentType;
 
-    public EnergyContainerInitialisingSystem(ComponentType<ChunkStore, EnergyContainerComponent> componentType) {
+    public EnergyContainerRefSystem(ComponentType<ChunkStore, EnergyContainerComponent> componentType) {
         this.energyContainerComponentType = componentType;
     }
 
