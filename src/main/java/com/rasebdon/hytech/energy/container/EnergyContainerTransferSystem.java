@@ -3,6 +3,7 @@ package com.rasebdon.hytech.energy.container;
 import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.component.dependency.Dependency;
 import com.hypixel.hytale.component.system.tick.TickingSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
@@ -10,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Set;
 
 public class EnergyContainerTransferSystem extends TickingSystem<ChunkStore> {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
@@ -22,9 +24,15 @@ public class EnergyContainerTransferSystem extends TickingSystem<ChunkStore> {
         containerArchetype = Archetype.of(energyContainerType);
     }
 
+    // TODO : Will have dependency on network transfer system
+    @Override
+    public @NotNull Set<Dependency<ChunkStore>> getDependencies() {
+        return super.getDependencies();
+    }
+
     @Override
     public void tick(float dt, int index, @NotNull Store<ChunkStore> store) {
-        store.forEachChunk(this.containerArchetype, (a, v) -> {
+        store.forEachChunk(this.containerArchetype, (a, _) -> {
             var containers = new EnergyContainerComponent[a.size()];
 
             for (int i = 0; i < a.size(); i++) {

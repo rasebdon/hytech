@@ -1,48 +1,34 @@
 package com.rasebdon.hytech.energy.container;
 
-import java.util.Arrays;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 public enum SideConfig {
-    NONE(0),   // No connection
-    INPUT(1),  // Only receive
-    OUTPUT(2), // Only extract
-    BOTH(3);   // Both receive and extract
+    NONE(0b00),
+    INPUT(0b01),
+    OUTPUT(0b10),
+    BOTH(0b11);
 
-    private final int type;
+    private final int bits;
 
-    SideConfig(int type)
-    {
-        this.type = type;
+    SideConfig(int bits) {
+        this.bits = bits;
     }
 
-    public int getType() { return type; }
+    public static SideConfig fromBits(int bits) {
+        return values()[bits & 0b11];
+    }
 
-    public boolean canReceive() { return this == INPUT || this == BOTH; }
-    public boolean canExtract() { return this == OUTPUT || this == BOTH; }
+    public int getBits() {
+        return bits;
+    }
+
+    public boolean canReceive() {
+        return (bits & 0b01) != 0;
+    }
+
+    public boolean canExtract() {
+        return (bits & 0b10) != 0;
+    }
 
     public SideConfig next() {
-        SideConfig[] values = values();
-        return values[(this.ordinal() + 1) % values.length];
-    }
-
-    private static final Map<Integer, SideConfig> BY_TYPE =
-            Arrays.stream(values()).collect(Collectors.toMap(v -> v.type, v -> v));
-
-    public static SideConfig fromType(int type) {
-        return BY_TYPE.get(type);
-    }
-
-    public static SideConfig[] getDefault() {
-        return new SideConfig[] {
-                SideConfig.BOTH,
-                SideConfig.BOTH,
-                SideConfig.BOTH,
-                SideConfig.BOTH,
-                SideConfig.BOTH,
-                SideConfig.BOTH,
-                SideConfig.BOTH
-        };
+        return values()[(ordinal() + 1) % values().length];
     }
 }

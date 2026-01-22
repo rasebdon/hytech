@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyContainer {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+    private static final int DEFAULT_SIDE_CONFIG = 0b11_11_11_11_11_11_11;
 
     public static final BuilderCodec<EnergyContainerComponent> CODEC =
             BuilderCodec.builder(EnergyContainerComponent.class, EnergyContainerComponent::new)
@@ -42,10 +43,9 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
                             (c) -> c.transferSpeed)
                     .addValidator(Validators.greaterThanOrEqual(0L))
                     .documentation("Maximum energy transferred per tick").add()
-                    .append(new KeyedCodec<>("SideConfigs", Codec.INT_ARRAY),
-                            EnergyContainerComponent::setSideConfigs,
-                            EnergyContainerComponent::getSideConfigsAsIntArray)
-                    .addValidator(Validators.intArraySize(7))
+                    .append(new KeyedCodec<>("SideConfigBitmap", Codec.INTEGER),
+                            (c, v) -> c.sideConfigBitmap = v,
+                            (c) -> c.sideConfigBitmap)
                     .documentation("Side configuration for Input/Output sides").add()
                     .append(new KeyedCodec<>("TransferPriority", Codec.INTEGER),
                             (c, v) -> c.transferPriority = v,
@@ -69,18 +69,15 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
     private boolean canReceiveEnergy;
     private boolean canExtractEnergy;
 
-    private SideConfig[] sideConfigs;
+    private int sideConfigBitmap;
     private int transferPriority;
 
-    private boolean isMultiblockStorage;
     private ArrayList<IEnergyContainer> extractTargets;
 
     public EnergyContainerComponent(long energy, long totalCapacity, long maxTransfer,
-                                    SideConfig[] sideConfigs, int simulationPriority,
+                                    int sideConfigBitmap, int simulationPriority,
                                     boolean canReceiveEnergy, boolean canExtractEnergy) {
-        if (sideConfigs.length != 7) {
-            throw new IllegalArgumentException("sideConfigs must have length of 7");
-        } else if (simulationPriority < 0) {
+        if (simulationPriority < 0) {
             throw new IllegalArgumentException("simulationPriority must be >= 0");
         } else if (totalCapacity < 0L) {
             throw new IllegalArgumentException("totalCapacity must be >= 0");
@@ -90,7 +87,7 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
             throw new IllegalArgumentException("maxTransfer must be >= 0");
         }
 
-        this.sideConfigs = sideConfigs;
+        this.sideConfigBitmap = sideConfigBitmap;
         this.transferPriority = simulationPriority;
         this.totalCapacity = totalCapacity;
         this.energy = Math.min(energy, this.totalCapacity);
@@ -99,12 +96,12 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
         this.canExtractEnergy = canExtractEnergy;
     }
 
-    // IEnergyContainer Methods
-
     public EnergyContainerComponent() {
-        this(0L, 0L, 0L, SideConfig.getDefault(),
-                EnergyTransferSimulationPriority.CABLE, false, false);
+        this(0L, 0L, 0L, DEFAULT_SIDE_CONFIG, EnergyTransferSimulationPriority.BATTERY,
+                false, false);
     }
+
+    // IEnergyContainer Methods
 
     public long getEnergy() {
         return this.energy;
@@ -219,39 +216,54 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
         return this.energy == 0L;
     }
 
-    public void cycleSideConfig(BlockFace face) {
-        var index = face.getValue();
-        var oldValue = getSideConfig(face);
-        this.sideConfigs[index] = oldValue.next();
+    private static int shiftForSide(BlockFace face) {
+        return face.getValue() * 2;
     }
 
-    // Side Config Methods
     public SideConfig getSideConfig(BlockFace face) {
-        return sideConfigs[face.getValue()];
+        int shift = shiftForSide(face);
+        int bits = (sideConfigBitmap >> shift) & 0b11;
+        return SideConfig.fromBits(bits);
+    }
+
+    public SideConfig[] getSideConfigsAsArray() {
+        SideConfig[] result = new SideConfig[7];
+
+        for (int i = 0; i < 7; i++) {
+            int bits = (sideConfigBitmap >> (i * 2)) & 0b11;
+            result[i] = SideConfig.fromBits(bits);
+        }
+
+        return result;
+    }
+
+    public void setSideConfig(BlockFace face, SideConfig config) {
+        int shift = shiftForSide(face);
+        sideConfigBitmap =
+                (sideConfigBitmap & ~(0b11 << shift))
+                        | (config.getBits() << shift);
+    }
+
+    public void cycleSideConfig(BlockFace face) {
+        setSideConfig(face, getSideConfig(face).next());
     }
 
     @Nonnull
     @Override
     public Component<ChunkStore> clone() {
         return new EnergyContainerComponent(this.energy, this.totalCapacity,
-                this.transferSpeed, this.sideConfigs.clone(), this.transferPriority,
+                this.transferSpeed, this.sideConfigBitmap, this.transferPriority,
                 this.canReceiveEnergy, this.canExtractEnergy);
     }
 
     public String toString() {
-        var sides = Arrays.stream(this.sideConfigs).map(Enum::name).collect(Collectors.joining(", "));
+        var sideConfigs = getSideConfigsAsArray();
+        var sides = Arrays.stream(sideConfigs).map(Enum::name).collect(Collectors.joining(", "));
         return String.format("Energy: %d/%d RF (Prio: %d) | Sides: [%s]",
                 energy, totalCapacity, transferPriority, sides);
     }
 
-    private void setSideConfigs(int[] v) {
-        this.sideConfigs = Arrays.stream(v).mapToObj(SideConfig::fromType).toArray(SideConfig[]::new);
-    }
-
-    private int[] getSideConfigsAsIntArray() {
-        return Arrays.stream(this.sideConfigs).mapToInt(SideConfig::getType).toArray();
-    }
-
+    // TODO : Will need refactoring with cable networks
     public void reloadTransferTargets(Ref<ChunkStore> blockRef, Store<ChunkStore> store, boolean triggerReloadInTargets) {
         this.extractTargets = new ArrayList<>();
 
