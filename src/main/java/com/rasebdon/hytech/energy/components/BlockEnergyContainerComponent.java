@@ -7,19 +7,19 @@ import com.rasebdon.hytech.energy.core.BlockFaceConfig;
 
 import javax.annotation.Nonnull;
 
-public class SingleBlockEnergyContainerComponent extends EnergyContainerComponentBase {
-    public static final BuilderCodec<SingleBlockEnergyContainerComponent> CODEC =
+public class BlockEnergyContainerComponent extends EnergyContainerComponent {
+    public static final BuilderCodec<BlockEnergyContainerComponent> CODEC =
             BuilderCodec.builder(
-                            SingleBlockEnergyContainerComponent.class,
-                            SingleBlockEnergyContainerComponent::new,
-                            EnergyContainerComponentBase.CODEC)
+                            BlockEnergyContainerComponent.class,
+                            BlockEnergyContainerComponent::new,
+                            EnergyContainerComponent.CODEC)
                     .build();
 
-    public SingleBlockEnergyContainerComponent() {
+    public BlockEnergyContainerComponent() {
         super();
     }
 
-    public SingleBlockEnergyContainerComponent(
+    public BlockEnergyContainerComponent(
             long energy,
             long totalCapacity,
             long transferSpeed,
@@ -32,7 +32,7 @@ public class SingleBlockEnergyContainerComponent extends EnergyContainerComponen
     @Override
     @Nonnull
     public Component<ChunkStore> clone() {
-        return new SingleBlockEnergyContainerComponent(this.energy, this.totalCapacity,
+        return new BlockEnergyContainerComponent(this.energy, this.totalCapacity,
                 this.transferSpeed, this.currentBlockFaceConfig.clone(), this.transferPriority);
     }
 }

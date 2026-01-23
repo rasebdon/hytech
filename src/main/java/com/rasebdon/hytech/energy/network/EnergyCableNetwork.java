@@ -1,5 +1,6 @@
 package com.rasebdon.hytech.energy.network;
 
+import com.rasebdon.hytech.energy.components.EnergyCableComponent;
 import com.rasebdon.hytech.energy.core.IEnergyContainer;
 
 import java.util.ArrayList;

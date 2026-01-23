@@ -53,7 +53,7 @@
     ],
     "BlockEntity": {
       "Components": {
-        "hytech:energy:single_block": {
+        "hytech:energy:container": {
           "MaxTransfer": 10,
           "TransferPriority": 25,
           "CanReceiveEnergy": true,

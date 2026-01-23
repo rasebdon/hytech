@@ -4,14 +4,14 @@ import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.RefSystem;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
-import com.rasebdon.hytech.energy.components.SingleBlockEnergyContainerComponent;
+import com.rasebdon.hytech.energy.components.BlockEnergyContainerComponent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class EnergyContainerRefSystem extends RefSystem<ChunkStore> {
-    private final ComponentType<ChunkStore, SingleBlockEnergyContainerComponent> singleBlockEnergyContainerComponentType;
+    private final ComponentType<ChunkStore, BlockEnergyContainerComponent> singleBlockEnergyContainerComponentType;
 
-    public EnergyContainerRefSystem(ComponentType<ChunkStore, SingleBlockEnergyContainerComponent> componentType) {
+    public EnergyContainerRefSystem(ComponentType<ChunkStore, BlockEnergyContainerComponent> componentType) {
         this.singleBlockEnergyContainerComponentType = componentType;
     }
 

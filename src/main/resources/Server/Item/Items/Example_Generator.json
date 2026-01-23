@@ -56,7 +56,7 @@
         "hytech:energy:generator": {
           "GenerationRate": 5
         },
-        "hytech:energy:single_block": {
+        "hytech:energy:container": {
           "MaxTransfer": 25,
           "TransferPriority": 0,
           "CanExtractEnergy": true,

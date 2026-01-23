@@ -25,11 +25,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-// TODO : Move base container out
+// TODO : Create LogisticComponent with Push/Pull Config -> this implements this on the Energy level
+// Also do similar with pipe component, both need to store their connections + connectionType (Tuple This/Other)
+// Enum: LogisticType (gas, energy, fluid, item, heat)
 
-public abstract class EnergyContainerComponentBase implements Component<ChunkStore>, IEnergyContainer {
-    public static final BuilderCodec<EnergyContainerComponentBase> CODEC =
-            BuilderCodec.abstractBuilder(EnergyContainerComponentBase.class)
+public abstract class EnergyContainerComponent implements Component<ChunkStore>, IEnergyContainer {
+    public static final BuilderCodec<EnergyContainerComponent> CODEC =
+            BuilderCodec.abstractBuilder(EnergyContainerComponent.class)
                     .append(new KeyedCodec<>("Energy", Codec.LONG),
                             (c, v) -> c.energy = v,
                             (c) -> c.energy)
@@ -65,7 +67,7 @@ public abstract class EnergyContainerComponentBase implements Component<ChunkSto
     protected int transferPriority;
     protected BlockFaceConfigOverride staticBlockFaceConfigOverride;
 
-    public EnergyContainerComponentBase(
+    public EnergyContainerComponent(
             long energy,
             long totalCapacity,
             long transferSpeed,
@@ -87,7 +89,7 @@ public abstract class EnergyContainerComponentBase implements Component<ChunkSto
         this.transferPriority = transferPriority;
     }
 
-    public EnergyContainerComponentBase() {
+    public EnergyContainerComponent() {
         this(0L, 0L, 0L, new BlockFaceConfig(), 0);
     }
 
@@ -212,7 +214,7 @@ public abstract class EnergyContainerComponentBase implements Component<ChunkSto
             if (neighborRef == null) continue;
 
             var neighborLoc = EnergyUtils.getBlockTransform(neighborRef, store);
-            var neighborContainer = store.getComponent(neighborRef, EnergyModule.get().getSingleBlockEnergyContainerComponentType());
+            var neighborContainer = store.getComponent(neighborRef, EnergyModule.get().getBlockEnergyContainerComponentType());
 
             if (neighborContainer != null && neighborLoc != null) {
                 // Get local face of neighbor (hit from opposite world direction)
@@ -249,7 +251,7 @@ public abstract class EnergyContainerComponentBase implements Component<ChunkSto
             if (neighborRef == null) continue;
 
             var neighborLoc = EnergyUtils.getBlockTransform(neighborRef, store);
-            var neighborContainer = store.getComponent(neighborRef, EnergyModule.get().getSingleBlockEnergyContainerComponentType());
+            var neighborContainer = store.getComponent(neighborRef, EnergyModule.get().getBlockEnergyContainerComponentType());
 
             if (neighborContainer != null && neighborLoc != null) {
                 LOGGER.atInfo().log("%s removing %s as extract target", toString(), neighborContainer.toString());

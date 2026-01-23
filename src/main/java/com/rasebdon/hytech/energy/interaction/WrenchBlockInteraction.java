@@ -57,7 +57,7 @@ public class WrenchBlockInteraction extends SimpleBlockInteraction {
             @Nonnull Vector3i targetBlock) {
 
         var energyContainer = EnergyUtils.getComponentAtBlock(world, targetBlock,
-                EnergyModule.get().getSingleBlockEnergyContainerComponentType());
+                EnergyModule.get().getBlockEnergyContainerComponentType());
 
         if (energyContainer != null) {
             var clientState = context.getClientState();
