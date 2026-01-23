@@ -1,4 +1,4 @@
-package com.rasebdon.hytech.energy.container;
+package com.rasebdon.hytech.energy.core;
 
 import java.util.Collection;
 
@@ -7,9 +7,6 @@ public interface IEnergyContainer {
     long getEnergy();
     long getTotalCapacity();
     long getTransferSpeed();
-
-    boolean canReceiveEnergy();
-    boolean canExtractEnergy();
 
     /* ---------------- Derived values ---------------- */
 

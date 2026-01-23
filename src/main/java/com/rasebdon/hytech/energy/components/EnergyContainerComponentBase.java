@@ -1,8 +1,9 @@
-package com.rasebdon.hytech.energy.container;
+package com.rasebdon.hytech.energy.components;
 
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
+import com.hypixel.hytale.codec.builder.BuilderField;
 import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.Ref;
@@ -12,22 +13,23 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.BlockFace;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.rasebdon.hytech.energy.EnergyModule;
+import com.rasebdon.hytech.energy.core.BlockFaceConfig;
+import com.rasebdon.hytech.energy.core.BlockFaceConfigType;
+import com.rasebdon.hytech.energy.core.IEnergyContainer;
 import com.rasebdon.hytech.energy.util.EnergyUtils;
 import org.jetbrains.annotations.NotNull;
 
-import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyContainer {
-    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
-    private static final int DEFAULT_SIDE_CONFIG = 0b11_11_11_11_11_11_11;
+// TODO : Move base container out
 
-    public static final BuilderCodec<EnergyContainerComponent> CODEC =
-            BuilderCodec.builder(EnergyContainerComponent.class, EnergyContainerComponent::new)
+public abstract class EnergyContainerComponentBase implements Component<ChunkStore>, IEnergyContainer {
+    public static final BuilderCodec<EnergyContainerComponentBase> CODEC =
+            BuilderCodec.abstractBuilder(EnergyContainerComponentBase.class)
                     .append(new KeyedCodec<>("Energy", Codec.LONG),
                             (c, v) -> c.energy = v,
                             (c) -> c.energy)
@@ -44,49 +46,31 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
                             (c) -> c.transferSpeed)
                     .addValidator(Validators.greaterThanOrEqual(0L))
                     .documentation("Maximum energy transferred per tick").add()
-                    .append(new KeyedCodec<>("SideConfigBitmap", Codec.INTEGER),
-                            (c, v) -> c.sideConfigBitmap = v,
-                            (c) -> c.sideConfigBitmap)
-                    .documentation("Side configuration for Input/Output sides").add()
                     .append(new KeyedCodec<>("TransferPriority", Codec.INTEGER),
                             (c, v) -> c.transferPriority = v,
                             (c) -> c.transferPriority)
                     .addValidator(Validators.greaterThanOrEqual(0))
                     .documentation("Priority for energy transfer, lower means energy is extracted first").add()
-                    .append(new KeyedCodec<>("CanReceiveEnergy", Codec.BOOLEAN),
-                            (c, v) -> c.canReceiveEnergy = v,
-                            (c) -> c.canReceiveEnergy)
-                    .documentation("Global override for block so that it can never receive energy externally").add()
-                    .append(new KeyedCodec<>("CanExtractEnergy", Codec.BOOLEAN),
-                            (c, v) -> c.canExtractEnergy = v,
-                            (c) -> c.canExtractEnergy)
-                    .documentation("Global override for block so that it can never extract energy externally").add()
+                    .append(new KeyedCodec<>("BlackFaceConfig", BlockFaceConfigOverride.CODEC),
+                            (c, v) -> c.staticBlockFaceConfigOverride = v,
+                            (c) -> c.staticBlockFaceConfigOverride)
+                    .documentation("Side configuration for Input/Output sides").add()
                     .build();
+    protected static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+    protected final List<IEnergyContainer> extractTargets = new ArrayList<>();
+    protected final BlockFaceConfig currentBlockFaceConfig;
+    protected long energy;
+    protected long totalCapacity;
+    protected long transferSpeed;
+    protected int transferPriority;
+    protected BlockFaceConfigOverride staticBlockFaceConfigOverride;
 
-    private static final int SIDES = 7;
-    private static final int BITS_PER_SIDE = 2;
-    private static final int SIDE_MASK = 0b11;
-
-    private final List<IEnergyContainer> extractTargets = new ArrayList<>();
-
-    private long energy;
-    private long totalCapacity;
-    private long transferSpeed;
-
-    private boolean canReceiveEnergy;
-    private boolean canExtractEnergy;
-
-    private int sideConfigBitmap;
-    private int transferPriority;
-
-    public EnergyContainerComponent(
+    public EnergyContainerComponentBase(
             long energy,
             long totalCapacity,
             long transferSpeed,
-            int sideConfigBitmap,
-            int transferPriority,
-            boolean canReceiveEnergy,
-            boolean canExtractEnergy
+            BlockFaceConfig blockFaceConfig,
+            int transferPriority
     ) {
         requireNonNegative(energy, "energy");
         requireNonNegative(totalCapacity, "totalCapacity");
@@ -99,20 +83,19 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
         this.totalCapacity = totalCapacity;
         this.energy = Math.min(energy, totalCapacity);
         this.transferSpeed = transferSpeed;
-        this.sideConfigBitmap = sideConfigBitmap;
+        this.currentBlockFaceConfig = blockFaceConfig;
         this.transferPriority = transferPriority;
-        this.canReceiveEnergy = canReceiveEnergy;
-        this.canExtractEnergy = canExtractEnergy;
     }
 
-    public EnergyContainerComponent() {
-        this(0L, 0L, 0L, DEFAULT_SIDE_CONFIG, EnergyTransferSimulationPriority.BATTERY,
-                false, false);
+    public EnergyContainerComponentBase() {
+        this(0L, 0L, 0L, new BlockFaceConfig(), 0);
     }
 
     private static void requireNonNegative(long value, String name) {
         if (value < 0) throw new IllegalArgumentException(name + " must be >= 0");
     }
+
+    public abstract Component<ChunkStore> clone();
 
     public long getEnergy() {
         return this.energy;
@@ -120,14 +103,6 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
 
     public long getTotalCapacity() {
         return this.totalCapacity;
-    }
-
-    public boolean canReceiveEnergy() {
-        return this.canReceiveEnergy;
-    }
-
-    public boolean canExtractEnergy() {
-        return this.canExtractEnergy;
     }
 
     public long getTransferSpeed() {
@@ -138,22 +113,21 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
         return transferPriority;
     }
 
+    public BlockFaceConfig getCurrentBlockFaceConfig() {
+        return this.currentBlockFaceConfig;
+    }
+
     public boolean canReceiveFromFace(BlockFace face) {
-        return this.canReceiveEnergy && this.transferSpeed > 0 && this.getSideConfig(face).canReceive();
+        return this.transferSpeed > 0 && this.currentBlockFaceConfig.getFaceConfigType(face).canReceive();
     }
 
     public boolean canExtractFromFace(BlockFace face) {
-        return this.canExtractEnergy && this.transferSpeed > 0 && this.getSideConfig(face).canExtract();
-    }
-
-    private static int sideShift(BlockFace face) {
-        return face.getValue() * BITS_PER_SIDE;
+        return this.transferSpeed > 0 && this.currentBlockFaceConfig.canExtractFromFace(face);
     }
 
     @Override
     public long transferEnergyTo(IEnergyContainer other) {
-        if (!canExtractEnergy || !other.canReceiveEnergy() ||
-                energy <= 0 || transferSpeed <= 0) {
+        if (energy <= 0 || transferSpeed <= 0) {
             return 0;
         }
 
@@ -179,23 +153,11 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
         this.energy = Math.max(0, this.energy - amount);
     }
 
-    public SideConfig[] getSideConfigsAsArray() {
-        SideConfig[] result = new SideConfig[7];
-
-        for (int i = 0; i < 7; i++) {
-            int bits = (sideConfigBitmap >> (i * 2)) & 0b11;
-            result[i] = SideConfig.fromBits(bits);
-        }
-
-        return result;
-    }
-
     @Override
     public long transferEnergyTo(Collection<? extends IEnergyContainer> targets) {
-        if (!canExtractEnergy || energy <= 0 || transferSpeed <= 0) return 0;
+        if (energy <= 0 || transferSpeed <= 0) return 0;
 
         var validTargets = targets.stream()
-                .filter(IEnergyContainer::canReceiveEnergy)
                 .filter(t -> t.getRemainingCapacity() > 0)
                 .toList();
 
@@ -222,33 +184,10 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
         return totalTransferred;
     }
 
-    public SideConfig getSideConfig(BlockFace face) {
-        int shift = sideShift(face);
-        return SideConfig.fromBits((sideConfigBitmap >> shift) & SIDE_MASK);
-    }
-
-    public void setSideConfig(BlockFace face, SideConfig config) {
-        int shift = sideShift(face);
-        sideConfigBitmap =
-                (sideConfigBitmap & ~(SIDE_MASK << shift))
-                        | (config.getBits() << shift);
-    }
-
-    public void cycleSideConfig(BlockFace face) {
-        setSideConfig(face, getSideConfig(face).next());
-    }
-
-    @Nonnull
-    @Override
-    public Component<ChunkStore> clone() {
-        return new EnergyContainerComponent(this.energy, this.totalCapacity,
-                this.transferSpeed, this.sideConfigBitmap, this.transferPriority,
-                this.canReceiveEnergy, this.canExtractEnergy);
-    }
-
     public String toString() {
-        var sideConfigs = getSideConfigsAsArray();
-        var sides = Arrays.stream(sideConfigs).map(Enum::name).collect(Collectors.joining(", "));
+        var sides = Arrays.stream(this.currentBlockFaceConfig.toArray())
+                .map(Enum::name)
+                .collect(Collectors.joining(", "));
         return String.format("Energy: %d/%d RF (Prio: %d) | Sides: [%s]",
                 energy, totalCapacity, transferPriority, sides);
     }
@@ -273,14 +212,14 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
             if (neighborRef == null) continue;
 
             var neighborLoc = EnergyUtils.getBlockTransform(neighborRef, store);
-            var neighborContainer = store.getComponent(neighborRef, EnergyModule.get().getEnergyContainerComponentType());
+            var neighborContainer = store.getComponent(neighborRef, EnergyModule.get().getSingleBlockEnergyContainerComponentType());
 
             if (neighborContainer != null && neighborLoc != null) {
                 // Get local face of neighbor (hit from opposite world direction)
                 var oppositeWorldDir = worldSide.clone().negate();
                 var neighborLocalFace = EnergyUtils.getLocalFace(oppositeWorldDir, neighborLoc.rotation());
 
-                if (canReceiveEnergy && triggerReloadInTargets) {
+                if (triggerReloadInTargets) {
                     neighborContainer.reloadTransferTargets(neighborRef, store, false);
                 }
 
@@ -294,6 +233,11 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
         }
     }
 
+    public void tryTransferToTargets() {
+        if (extractTargets.isEmpty()) return;
+        this.transferEnergyTo(extractTargets);
+    }
+
     public void removeAsTransferTargetFromNeighbors(@NotNull Ref<ChunkStore> blockRef, @NotNull Store<ChunkStore> store) {
         var world = store.getExternalData().getWorld();
         var blockLocation = EnergyUtils.getBlockTransform(blockRef, store);
@@ -305,7 +249,7 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
             if (neighborRef == null) continue;
 
             var neighborLoc = EnergyUtils.getBlockTransform(neighborRef, store);
-            var neighborContainer = store.getComponent(neighborRef, EnergyModule.get().getEnergyContainerComponentType());
+            var neighborContainer = store.getComponent(neighborRef, EnergyModule.get().getSingleBlockEnergyContainerComponentType());
 
             if (neighborContainer != null && neighborLoc != null) {
                 LOGGER.atInfo().log("%s removing %s as extract target", toString(), neighborContainer.toString());
@@ -314,8 +258,45 @@ public class EnergyContainerComponent implements Component<ChunkStore>, IEnergyC
         }
     }
 
-    public void tryTransferToTargets() {
-        if (extractTargets.isEmpty()) return;
-        this.transferEnergyTo(extractTargets);
+    /// Override that can be set in json/block data component for statically overriding possible side configs
+    public static class BlockFaceConfigOverride {
+        public static final BuilderCodec<BlockFaceConfigOverride> CODEC;
+
+        static {
+            var builder = BuilderCodec.builder(BlockFaceConfigOverride.class, BlockFaceConfigOverride::new);
+
+            for (BlockFace face : BlockFace.values()) {
+                createKeyedConfigCodec(builder, face)
+                        .documentation("Defines that this face can be configured for all given states " +
+                                "(0 = No I/O, 1 = Only Input/None, 2 = Only Output/None, 3 = I/O or None)")
+                        .addValidator(Validators.range(0b00, 0b11))
+                        .add();
+            }
+
+            CODEC = builder.build();
+        }
+
+        private final BlockFaceConfig config;
+
+        public BlockFaceConfigOverride() {
+            this.config = new BlockFaceConfig();
+        }
+
+        private static BuilderField.FieldBuilder<BlockFaceConfigOverride, Integer, BuilderCodec.Builder<BlockFaceConfigOverride>>
+        createKeyedConfigCodec(
+                BuilderCodec.Builder<BlockFaceConfigOverride> builder,
+                BlockFace face
+        ) {
+            return builder.append(
+                    new KeyedCodec<>(face.name(), Codec.INTEGER),
+                    (c, v) -> c.config.setFaceConfigType(face, BlockFaceConfigType.fromBits(v)),
+                    (c) -> c.config.getFaceConfigType(face).getBits()
+            );
+        }
+
+        public BlockFaceConfig getConfig() {
+            return config;
+        }
     }
+
 }

@@ -1,6 +1,6 @@
 package com.rasebdon.hytech.energy.network;
 
-import com.rasebdon.hytech.energy.container.IEnergyContainer;
+import com.rasebdon.hytech.energy.core.IEnergyContainer;
 
 import java.util.ArrayList;
 import java.util.HashSet;

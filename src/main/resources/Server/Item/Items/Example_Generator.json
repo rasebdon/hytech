@@ -56,15 +56,21 @@
         "hytech:energy:generator": {
           "GenerationRate": 5
         },
-        "hytech:energy:container": {
-          "MaxEnergy": 500,
-          "MaxExtract": 15,
-          "ExtractPriority": 25,
-          "MaxReceive": 0,
+        "hytech:energy:single_block": {
           "MaxTransfer": 25,
           "TransferPriority": 0,
           "CanExtractEnergy": true,
-          "TotalCapacity": 500
+          "CanReceiveEnergy": false,
+          "TotalCapacity": 500,
+          "BlackFaceConfig": {
+            "None": 2,
+            "Up": 2,
+            "Down": 2,
+            "North": 2,
+            "South": 2,
+            "East": 2,
+            "West": 2
+          }
         }
       }
     },

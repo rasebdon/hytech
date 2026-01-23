@@ -53,11 +53,7 @@
     ],
     "BlockEntity": {
       "Components": {
-        "hytech:energy:container": {
-          "MaxEnergy": 25000,
-          "MaxReceive": 500,
-          "MaxExtract": 250,
-          "ExtractPriority": 25,
+        "hytech:energy:single_block": {
           "MaxTransfer": 10,
           "TransferPriority": 25,
           "CanReceiveEnergy": true,

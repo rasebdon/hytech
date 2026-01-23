@@ -5,13 +5,13 @@ import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
-import com.rasebdon.hytech.energy.container.EnergyContainerComponent;
-import com.rasebdon.hytech.energy.container.EnergyContainerRefSystem;
-import com.rasebdon.hytech.energy.container.EnergyContainerTransferSystem;
+import com.rasebdon.hytech.energy.components.EnergyGeneratorComponent;
+import com.rasebdon.hytech.energy.components.SingleBlockEnergyContainerComponent;
 import com.rasebdon.hytech.energy.generator.EnergyGenerationSystem;
-import com.rasebdon.hytech.energy.generator.EnergyGeneratorComponent;
 import com.rasebdon.hytech.energy.interaction.ReadEnergyContainerBlockInteraction;
 import com.rasebdon.hytech.energy.interaction.WrenchBlockInteraction;
+import com.rasebdon.hytech.energy.systems.EnergyContainerRefSystem;
+import com.rasebdon.hytech.energy.systems.EnergyContainerTransferSystem;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -24,22 +24,20 @@ public class EnergyModule {
     @Nullable
     private static EnergyModule INSTANCE;
 
-    private final ComponentType<ChunkStore, EnergyContainerComponent> energyContainerComponentType;
-
-    public ComponentType<ChunkStore, EnergyContainerComponent> getEnergyContainerComponentType() {
-        return this.energyContainerComponentType;
-    }
+    private final ComponentType<ChunkStore, SingleBlockEnergyContainerComponent> singleBlockEnergyContainerComponentType;
 
     private EnergyModule(@Nonnull ComponentRegistryProxy<ChunkStore> registry) {
-        energyContainerComponentType = registry.registerComponent(
-                EnergyContainerComponent.class, "hytech:energy:container", EnergyContainerComponent.CODEC);
+        singleBlockEnergyContainerComponentType = registry.registerComponent(
+                SingleBlockEnergyContainerComponent.class,
+                "hytech:energy:single_block",
+                SingleBlockEnergyContainerComponent.CODEC);
 
         ComponentType<ChunkStore, EnergyGeneratorComponent> energyGeneratorType = registry.registerComponent(
                 EnergyGeneratorComponent.class, "hytech:energy:generator", EnergyGeneratorComponent.CODEC);
 
-        registry.registerSystem(new EnergyContainerRefSystem(energyContainerComponentType));
-        registry.registerSystem(new EnergyContainerTransferSystem(energyContainerComponentType));
-        registry.registerSystem(new EnergyGenerationSystem(energyGeneratorType, energyContainerComponentType));
+        registry.registerSystem(new EnergyContainerRefSystem(singleBlockEnergyContainerComponentType));
+        registry.registerSystem(new EnergyContainerTransferSystem(singleBlockEnergyContainerComponentType));
+        registry.registerSystem(new EnergyGenerationSystem(energyGeneratorType, singleBlockEnergyContainerComponentType));
 
         Interaction.CODEC.register(
                 "ReadEnergyContainer",
@@ -51,6 +49,10 @@ public class EnergyModule {
                 WrenchBlockInteraction.CODEC);
 
         LOGGER.atInfo().log("Energy Module Systems Registered");
+    }
+
+    public ComponentType<ChunkStore, SingleBlockEnergyContainerComponent> getSingleBlockEnergyContainerComponentType() {
+        return this.singleBlockEnergyContainerComponentType;
     }
 
     public static void init(@Nonnull ComponentRegistryProxy<ChunkStore> registry) {
@@ -68,9 +70,5 @@ public class EnergyModule {
         } else {
             return INSTANCE;
         }
-    }
-
-    public static void reset() {
-        INSTANCE = null;
     }
 }

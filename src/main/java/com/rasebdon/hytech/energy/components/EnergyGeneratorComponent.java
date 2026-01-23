@@ -1,17 +1,25 @@
-package com.rasebdon.hytech.energy.generator;
+package com.rasebdon.hytech.energy.components;
 
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
+
 import javax.annotation.Nonnull;
 
 public class EnergyGeneratorComponent implements Component<ChunkStore> {
     private long generationRate;
 
     @Nonnull
-    public static final BuilderCodec<EnergyGeneratorComponent> CODEC;
+    public static final BuilderCodec<EnergyGeneratorComponent> CODEC = BuilderCodec.builder(
+                    EnergyGeneratorComponent.class, EnergyGeneratorComponent::new)
+            .append(new KeyedCodec<>("GenerationRate", Codec.LONG),
+                    (c, v) -> c.generationRate = v,
+                    (c) -> c.generationRate)
+            .documentation("Amount of energy generated per tick")
+            .add()
+            .build();
 
     public EnergyGeneratorComponent(long generationRate) {
         this.generationRate = Math.max(0L, generationRate);
@@ -34,13 +42,4 @@ public class EnergyGeneratorComponent implements Component<ChunkStore> {
         return new EnergyGeneratorComponent(this.generationRate);
     }
 
-    static {
-        CODEC = BuilderCodec.builder(EnergyGeneratorComponent.class, EnergyGeneratorComponent::new)
-                .append(new KeyedCodec<>("GenerationRate", Codec.LONG),
-                        (c, v) -> c.generationRate = v,
-                        (c) -> c.generationRate)
-                .documentation("Amount of energy generated per tick")
-                .add()
-                .build();
-    }
 }

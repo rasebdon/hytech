@@ -56,7 +56,7 @@ public class ReadEnergyContainerBlockInteraction extends SimpleBlockInteraction 
         var energyContainer = EnergyUtils.getComponentAtBlock(
                 world,
                 targetBlock,
-                EnergyModule.get().getEnergyContainerComponentType()
+                EnergyModule.get().getSingleBlockEnergyContainerComponentType()
         );
 
         if (energyContainer != null) {

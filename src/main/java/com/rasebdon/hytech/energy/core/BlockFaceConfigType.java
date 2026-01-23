@@ -1,6 +1,6 @@
-package com.rasebdon.hytech.energy.container;
+package com.rasebdon.hytech.energy.core;
 
-public enum SideConfig {
+public enum BlockFaceConfigType {
     NONE(0b00),
     INPUT(0b01),
     OUTPUT(0b10),
@@ -8,11 +8,11 @@ public enum SideConfig {
 
     private final int bits;
 
-    SideConfig(int bits) {
+    BlockFaceConfigType(int bits) {
         this.bits = bits;
     }
 
-    public static SideConfig fromBits(int bits) {
+    public static BlockFaceConfigType fromBits(int bits) {
         return values()[bits & 0b11];
     }
 
@@ -28,7 +28,7 @@ public enum SideConfig {
         return (bits & 0b10) != 0;
     }
 
-    public SideConfig next() {
+    public BlockFaceConfigType next() {
         return values()[(ordinal() + 1) % values().length];
     }
 }
