@@ -1,24 +1,24 @@
 {
   "TranslationProperties": {
-    "Name": "server.items.Tool_Repair_Kit_Crude.name",
-    "Description": "server.items.Tool_Repair_Kit_Crude.description"
+    "Name": "server.items.Tool_Wrench.name",
+    "Description": "server.items.Tool_Wrench.description"
   },
   "Categories": [
     "Technic.General"
   ],
   "PlayerAnimationsId": "Item",
-  "Model": "Items/Tools/Hatchet/Iron.blockymodel",
-  "Texture": "Items/Tools/Hatchet/Iron_Texture.png",
+  "Model": "Items/Tools/Wrench/Wrench.blockymodel",
+  "Texture": "Items/Tools/Wrench/Wrench_Texture.png",
   "IconProperties": {
-    "Scale": 0.485,
+    "Scale": 0.7,
     "Rotation": [
-      360,
-      45,
-      330
+      0,
+      32,
+      320
     ],
     "Translation": [
-      -11,
-      -27
+      -8,
+      -13
     ]
   },
   "Interactions": {
@@ -37,6 +37,6 @@
       "Tool"
     ]
   },
-  "ItemSoundSetId": "ISS_Weapons_Wood",
+  "ItemSoundSetId": "ISS_Weapons_Blunt_Small",
   "Icon": "Icons/ItemsGenerated/Wrench.png"
 }

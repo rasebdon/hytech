@@ -1,5 +1,6 @@
 package com.rasebdon.hytech.core.networks;
 
+import com.rasebdon.hytech.core.components.ILogisticContainer;
 import com.rasebdon.hytech.core.components.LogisticPipeComponent;
 import com.rasebdon.hytech.core.systems.LogisticTransferTarget;
 
@@ -7,7 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public abstract class LogisticNetwork<TContainer> {
+public abstract class LogisticNetwork<TContainer extends ILogisticContainer> {
     protected List<LogisticPipeComponent<TContainer>> pipes;
     protected Map<TContainer, LogisticTransferTarget<TContainer>> pullTargets;
 
