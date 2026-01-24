@@ -6,12 +6,12 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.validation.Validators;
 import com.rasebdon.hytech.core.components.LogisticContainerComponent;
 import com.rasebdon.hytech.core.face.BlockFaceConfig;
-import com.rasebdon.hytech.energy.EnergyContainer;
+import com.rasebdon.hytech.energy.IEnergyContainer;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-public abstract class EnergyContainerComponent extends LogisticContainerComponent<EnergyContainer> implements EnergyContainer {
+public abstract class EnergyContainerComponent extends LogisticContainerComponent<IEnergyContainer> implements IEnergyContainer {
 
     public static final BuilderCodec<EnergyContainerComponent> CODEC =
             BuilderCodec.abstractBuilder(EnergyContainerComponent.class, LogisticContainerComponent.CODEC)
@@ -98,7 +98,7 @@ public abstract class EnergyContainerComponent extends LogisticContainerComponen
     }
 
     @Override
-    public EnergyContainer getContainer() {
+    public IEnergyContainer getContainer() {
         return this;
     }
 }

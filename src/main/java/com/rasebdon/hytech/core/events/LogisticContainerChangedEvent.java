@@ -1,32 +1,16 @@
 package com.rasebdon.hytech.core.events;
 
-import com.hypixel.hytale.event.IEvent;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
+import com.rasebdon.hytech.core.components.ILogisticContainer;
 import com.rasebdon.hytech.core.components.LogisticContainerComponent;
 
-public abstract class LogisticContainerChangedEvent<TContainer> implements IEvent<Void> {
-    public final ChangeType changeType;
-    public final LogisticContainerComponent<TContainer> container;
+public abstract class LogisticContainerChangedEvent<TContainer extends ILogisticContainer>
+        extends LogisticChangedEvent<LogisticContainerComponent<TContainer>> {
 
-    protected LogisticContainerChangedEvent(ChangeType changeType, LogisticContainerComponent<TContainer> container) {
-        this.changeType = changeType;
-        this.container = container;
-    }
-
-    public boolean isAdded() {
-        return this.changeType == ChangeType.ADDED;
-    }
-
-    public boolean isRemoved() {
-        return this.changeType == ChangeType.REMOVED;
-    }
-
-    public LogisticContainerComponent<TContainer> getContainer() {
-        return container;
-    }
-
-    public enum ChangeType {
-        ADDED,
-        REMOVED,
-        CHANGED,
+    protected LogisticContainerChangedEvent(Ref<ChunkStore> blockRef, Store<ChunkStore> store,
+                                            LogisticChangeType changeType, LogisticContainerComponent<TContainer> component) {
+        super(blockRef, store, changeType, component);
     }
 }

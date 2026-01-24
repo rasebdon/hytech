@@ -21,10 +21,26 @@ public class ReadEnergyContainerBlockInteraction extends SimpleBlockInteraction 
     @Nonnull
     public static final BuilderCodec<ReadEnergyContainerBlockInteraction> CODEC =
             BuilderCodec.builder(
-                    ReadEnergyContainerBlockInteraction.class,
-                    ReadEnergyContainerBlockInteraction::new,
-                    SimpleBlockInteraction.CODEC)
-            .documentation("Attempts to read the target blocks energy container.").build();
+                            ReadEnergyContainerBlockInteraction.class,
+                            ReadEnergyContainerBlockInteraction::new,
+                            SimpleBlockInteraction.CODEC)
+                    .documentation("Attempts to read the target blocks energy container.").build();
+
+    private static void doInteraction(
+            @Nonnull InteractionContext context,
+            @Nonnull World world,
+            @Nonnull Vector3i targetBlock) {
+
+        var energyContainer = EnergyUtils.getComponentAtBlock(
+                world,
+                targetBlock,
+                EnergyModule.get().getBlockEnergyContainerComponentType()
+        );
+
+        if (energyContainer != null) {
+            EnergyUtils.sendPlayerMessage(context.getEntity(), energyContainer.toString());
+        }
+    }
 
     @Override
     protected void interactWithBlock(
@@ -46,22 +62,6 @@ public class ReadEnergyContainerBlockInteraction extends SimpleBlockInteraction 
             @Nonnull World world,
             @Nonnull Vector3i targetBlock) {
         doInteraction(context, world, targetBlock);
-    }
-
-    private static void doInteraction(
-            @Nonnull InteractionContext context,
-            @Nonnull World world,
-            @Nonnull Vector3i targetBlock) {
-
-        var energyContainer = EnergyUtils.getComponentAtBlock(
-                world,
-                targetBlock,
-                EnergyModule.get().getBlockEnergyContainerComponentType()
-        );
-
-        if (energyContainer != null) {
-            EnergyUtils.sendPlayerMessage(context.getEntity(), energyContainer.toString());
-        }
     }
 
     @Nonnull

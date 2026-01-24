@@ -17,7 +17,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public abstract class LogisticContainerComponent<TContainer> implements Component<ChunkStore> {
+
+public abstract class LogisticContainerComponent<TContainer extends ILogisticContainer> implements ILogisticContainer, Component<ChunkStore> {
     @SuppressWarnings("rawtypes")
     public static final BuilderCodec<LogisticContainerComponent> CODEC =
             BuilderCodec.abstractBuilder(LogisticContainerComponent.class)
@@ -56,9 +57,11 @@ public abstract class LogisticContainerComponent<TContainer> implements Componen
         return transferTargets.values().stream().toList();
     }
 
-    public void addTransferTarget(TContainer target, BlockFace from, BlockFace to) {
-        LOGGER.atInfo().log("%s (%s) adding transfer target %s (%s)",
-                toString(), from.name(), target.toString(), to.name());
+    public void tryAddTransferTarget(TContainer target, BlockFace from, BlockFace to) {
+        if (this.transferTargets.containsKey(target)) return;
+
+        LOGGER.atInfo().log("%s (%s) adding transfer target %s (%s)", toString(), from.name(),
+                target.toString(), to.name());
         this.transferTargets.put(target, new LogisticTransferTarget<>(target, from, to));
     }
 

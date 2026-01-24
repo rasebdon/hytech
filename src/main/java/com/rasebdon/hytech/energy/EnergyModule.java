@@ -36,7 +36,7 @@ public class EnergyModule {
                 EnergyGeneratorComponent.class, "hytech:energy:generator", EnergyGeneratorComponent.CODEC);
 
         chunkStoreRegistry.registerSystem(new EnergyTransferSystem(eventRegistry, EnergyContainerChangedEvent.class));
-        chunkStoreRegistry.registerSystem(new EnergyContainerRegistrationSystem(blockEnergyContainerComponentType));
+        chunkStoreRegistry.registerSystem(new EnergyContainerRegistrationSystem(blockEnergyContainerComponentType, eventRegistry));
         chunkStoreRegistry.registerSystem(new EnergyGenerationSystem(energyGeneratorType, blockEnergyContainerComponentType));
 
         Interaction.CODEC.register(
@@ -49,10 +49,6 @@ public class EnergyModule {
                 WrenchBlockInteraction.CODEC);
 
         LOGGER.atInfo().log("Energy Module Systems Registered");
-    }
-
-    public ComponentType<ChunkStore, BlockEnergyContainerComponent> getBlockEnergyContainerComponentType() {
-        return this.blockEnergyContainerComponentType;
     }
 
     public static void init(@Nonnull ComponentRegistryProxy<ChunkStore> chunkStoreRegistry, @Nonnull IEventRegistry eventRegistry) {
@@ -70,5 +66,9 @@ public class EnergyModule {
         } else {
             return INSTANCE;
         }
+    }
+
+    public ComponentType<ChunkStore, BlockEnergyContainerComponent> getBlockEnergyContainerComponentType() {
+        return this.blockEnergyContainerComponentType;
     }
 }

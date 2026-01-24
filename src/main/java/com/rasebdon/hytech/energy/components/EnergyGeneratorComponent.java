@@ -9,8 +9,6 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import javax.annotation.Nonnull;
 
 public class EnergyGeneratorComponent implements Component<ChunkStore> {
-    private long generationRate;
-
     @Nonnull
     public static final BuilderCodec<EnergyGeneratorComponent> CODEC = BuilderCodec.builder(
                     EnergyGeneratorComponent.class, EnergyGeneratorComponent::new)
@@ -20,6 +18,7 @@ public class EnergyGeneratorComponent implements Component<ChunkStore> {
             .documentation("Amount of energy generated per tick")
             .add()
             .build();
+    private long generationRate;
 
     public EnergyGeneratorComponent(long generationRate) {
         this.generationRate = Math.max(0L, generationRate);

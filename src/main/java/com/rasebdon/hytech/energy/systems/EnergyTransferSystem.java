@@ -5,15 +5,15 @@ import com.rasebdon.hytech.core.components.LogisticContainerComponent;
 import com.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
 import com.rasebdon.hytech.core.systems.LogisticTransferSystem;
 import com.rasebdon.hytech.core.systems.LogisticTransferTarget;
-import com.rasebdon.hytech.energy.EnergyContainer;
+import com.rasebdon.hytech.energy.IEnergyContainer;
 
-public class EnergyTransferSystem extends LogisticTransferSystem<EnergyContainer> {
-    public EnergyTransferSystem(IEventRegistry eventRegistry, Class<? extends LogisticContainerChangedEvent<EnergyContainer>> eventClass) {
+public class EnergyTransferSystem extends LogisticTransferSystem<IEnergyContainer> {
+    public EnergyTransferSystem(IEventRegistry eventRegistry, Class<? extends LogisticContainerChangedEvent<IEnergyContainer>> eventClass) {
         super(eventRegistry, eventClass);
     }
 
     @Override
-    public void transfer(LogisticContainerComponent<EnergyContainer> source) {
+    public void transfer(LogisticContainerComponent<IEnergyContainer> source) {
         var sourceContainer = source.getContainer();
         var sourceEnergy = sourceContainer.getEnergy();
         var sourceTransferSpeed = sourceContainer.getTransferSpeed();

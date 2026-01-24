@@ -1,9 +1,12 @@
 package com.rasebdon.hytech.energy;
 
-public interface EnergyContainer {
+import com.rasebdon.hytech.core.components.ILogisticContainer;
 
+public interface IEnergyContainer extends ILogisticContainer {
     long getEnergy();
+
     long getTotalCapacity();
+
     long getTransferSpeed();
 
     /* ---------------- Derived values ---------------- */
@@ -28,5 +31,6 @@ public interface EnergyContainer {
     /* ---------------- Mutations ---------------- */
 
     void addEnergy(long amount);
+
     void reduceEnergy(long amount);
 }

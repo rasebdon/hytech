@@ -13,7 +13,7 @@ import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHa
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.client.SimpleBlockInteraction;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
+import com.rasebdon.hytech.core.events.LogisticChangeType;
 import com.rasebdon.hytech.energy.EnergyModule;
 import com.rasebdon.hytech.energy.events.EnergyContainerChangedEvent;
 import com.rasebdon.hytech.energy.util.BlockFaceUtil;
@@ -27,32 +27,10 @@ public class WrenchBlockInteraction extends SimpleBlockInteraction {
     @Nonnull
     public static final BuilderCodec<WrenchBlockInteraction> CODEC =
             BuilderCodec.builder(
-                    WrenchBlockInteraction.class,
-                    WrenchBlockInteraction::new,
-                    SimpleBlockInteraction.CODEC)
-            .documentation("Attempts to configure the target block energy container.").build();
-
-    @Override
-    protected void interactWithBlock(
-            @Nonnull World world,
-            @Nonnull CommandBuffer<EntityStore> commandBuffer,
-            @Nonnull InteractionType type,
-            @Nonnull InteractionContext context,
-            @Nullable ItemStack itemInHand,
-            @Nonnull Vector3i targetBlock,
-            @Nonnull CooldownHandler cooldownHandler) {
-        doInteraction(context, world, targetBlock);
-    }
-
-    @Override
-    protected void simulateInteractWithBlock(
-            @Nonnull InteractionType type,
-            @Nonnull InteractionContext context,
-            @Nullable ItemStack itemInHand,
-            @Nonnull World world,
-            @Nonnull Vector3i targetBlock) {
-        doInteraction(context, world, targetBlock);
-    }
+                            WrenchBlockInteraction.class,
+                            WrenchBlockInteraction::new,
+                            SimpleBlockInteraction.CODEC)
+                    .documentation("Attempts to configure the target block energy container.").build();
 
     private static void doInteraction(
             @Nonnull InteractionContext context,
@@ -84,12 +62,36 @@ public class WrenchBlockInteraction extends SimpleBlockInteraction {
             blockFaceConfig.cycleFaceConfigType(localFace);
 
             var event = new EnergyContainerChangedEvent(
-                    LogisticContainerChangedEvent.ChangeType.CHANGED,
+                    blockRef,
+                    world.getChunkStore().getStore(),
+                    LogisticChangeType.CHANGED,
                     energyContainer
             );
             EventBusUtil.dispatchIfListening(event);
 
             player.sendMessage(Message.raw("Side " + worldFace.name() + " (Local: " + localFace.name() + ") changed to: " + blockFaceConfig.getFaceConfigType(localFace).name()));
         }
+    }
+
+    @Override
+    protected void interactWithBlock(
+            @Nonnull World world,
+            @Nonnull CommandBuffer<EntityStore> commandBuffer,
+            @Nonnull InteractionType type,
+            @Nonnull InteractionContext context,
+            @Nullable ItemStack itemInHand,
+            @Nonnull Vector3i targetBlock,
+            @Nonnull CooldownHandler cooldownHandler) {
+        doInteraction(context, world, targetBlock);
+    }
+
+    @Override
+    protected void simulateInteractWithBlock(
+            @Nonnull InteractionType type,
+            @Nonnull InteractionContext context,
+            @Nullable ItemStack itemInHand,
+            @Nonnull World world,
+            @Nonnull Vector3i targetBlock) {
+        doInteraction(context, world, targetBlock);
     }
 }
