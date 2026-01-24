@@ -15,7 +15,7 @@ import java.util.Comparator;
 import java.util.List;
 
 public abstract class LogisticTransferSystem<TContainer extends ILogisticContainer> extends TickingSystem<ChunkStore> {
-    private final List<LogisticContainerComponent<TContainer>> energyContainers;
+    private final List<LogisticContainerComponent<TContainer>> containerComponents;
     private final List<LogisticNetwork<TContainer>> networks;
 
     protected LogisticTransferSystem(
@@ -26,14 +26,14 @@ public abstract class LogisticTransferSystem<TContainer extends ILogisticContain
         // TODO : Add network change event
 
         this.networks = new ArrayList<>();
-        this.energyContainers = new ArrayList<>();
+        this.containerComponents = new ArrayList<>();
     }
 
     private void handleLogisticContainerChanged(LogisticContainerChangedEvent<TContainer> event) {
         if (event.isAdded()) {
-            addEnergyContainer(event.getComponent());
+            addContainerComponent(event.getComponent());
         } else if (event.isRemoved()) {
-            removeEnergyContainer(event.getComponent());
+            removeContainerComponent(event.getComponent());
         }
     }
 
@@ -43,7 +43,7 @@ public abstract class LogisticTransferSystem<TContainer extends ILogisticContain
             network.pullFromTargets();
         }
 
-        for (var container : energyContainers) {
+        for (var container : containerComponents) {
             transfer(container);
         }
 
@@ -54,12 +54,12 @@ public abstract class LogisticTransferSystem<TContainer extends ILogisticContain
 
     protected abstract void transfer(LogisticContainerComponent<TContainer> source);
 
-    private void addEnergyContainer(LogisticContainerComponent<TContainer> container) {
-        energyContainers.add(container);
-        energyContainers.sort(Comparator.comparingInt(LogisticContainerComponent<TContainer>::getTransferPriority));
+    private void addContainerComponent(LogisticContainerComponent<TContainer> container) {
+        containerComponents.add(container);
+        containerComponents.sort(Comparator.comparingInt(LogisticContainerComponent<TContainer>::getTransferPriority));
     }
 
-    private void removeEnergyContainer(LogisticContainerComponent<TContainer> container) {
-        energyContainers.remove(container);
+    private void removeContainerComponent(LogisticContainerComponent<TContainer> container) {
+        containerComponents.remove(container);
     }
 }

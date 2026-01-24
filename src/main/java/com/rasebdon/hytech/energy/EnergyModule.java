@@ -36,7 +36,8 @@ public class EnergyModule {
                 EnergyGeneratorComponent.class, "hytech:energy:generator", EnergyGeneratorComponent.CODEC);
 
         chunkStoreRegistry.registerSystem(new EnergyTransferSystem(eventRegistry, EnergyContainerChangedEvent.class));
-        chunkStoreRegistry.registerSystem(new EnergyContainerRegistrationSystem(blockEnergyContainerComponentType, eventRegistry));
+        chunkStoreRegistry.registerSystem(new EnergyContainerRegistrationSystem(
+                blockEnergyContainerComponentType, eventRegistry, EnergyContainerChangedEvent.class));
         chunkStoreRegistry.registerSystem(new EnergyGenerationSystem(energyGeneratorType, blockEnergyContainerComponentType));
 
         Interaction.CODEC.register(

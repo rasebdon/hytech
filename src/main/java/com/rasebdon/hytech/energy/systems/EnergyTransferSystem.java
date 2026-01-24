@@ -8,7 +8,8 @@ import com.rasebdon.hytech.core.systems.LogisticTransferTarget;
 import com.rasebdon.hytech.energy.IEnergyContainer;
 
 public class EnergyTransferSystem extends LogisticTransferSystem<IEnergyContainer> {
-    public EnergyTransferSystem(IEventRegistry eventRegistry, Class<? extends LogisticContainerChangedEvent<IEnergyContainer>> eventClass) {
+    public EnergyTransferSystem(IEventRegistry eventRegistry,
+                                Class<? extends LogisticContainerChangedEvent<IEnergyContainer>> eventClass) {
         super(eventRegistry, eventClass);
     }
 
