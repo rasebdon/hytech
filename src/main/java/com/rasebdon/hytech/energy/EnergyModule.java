@@ -33,8 +33,9 @@ public class EnergyModule {
         ComponentType<ChunkStore, EnergyGeneratorComponent> energyGeneratorType = registry.registerComponent(
                 EnergyGeneratorComponent.class, "hytech:energy:generator", EnergyGeneratorComponent.CODEC);
 
-        registry.registerSystem(new EnergyContainerRegistrationSystem(blockEnergyContainerComponentType));
-        registry.registerSystem(new EnergyTransferSystem(blockEnergyContainerComponentType));
+        var energyTransferSystem = new EnergyTransferSystem();
+        registry.registerSystem(energyTransferSystem);
+        registry.registerSystem(new EnergyContainerRegistrationSystem(blockEnergyContainerComponentType, energyTransferSystem));
         registry.registerSystem(new EnergyGenerationSystem(energyGeneratorType, blockEnergyContainerComponentType));
 
         Interaction.CODEC.register(

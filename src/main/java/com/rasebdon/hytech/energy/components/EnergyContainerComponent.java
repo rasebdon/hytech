@@ -44,19 +44,15 @@ public abstract class EnergyContainerComponent extends LogisticContainerComponen
             BlockFaceConfig blockFaceConfig,
             int transferPriority
     ) {
+        super(blockFaceConfig, transferPriority);
+
         requireNonNegative(energy, "energy");
         requireNonNegative(totalCapacity, "totalCapacity");
         requireNonNegative(transferSpeed, "transferSpeed");
 
-        if (transferPriority < 0) {
-            throw new IllegalArgumentException("transferPriority must be >= 0");
-        }
-
         this.totalCapacity = totalCapacity;
         this.energy = Math.min(energy, totalCapacity);
         this.transferSpeed = transferSpeed;
-        this.currentBlockFaceConfig = blockFaceConfig;
-        this.transferPriority = transferPriority;
     }
 
     public EnergyContainerComponent() {

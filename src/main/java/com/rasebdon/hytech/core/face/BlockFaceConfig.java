@@ -25,13 +25,14 @@ public class BlockFaceConfig implements Cloneable {
 
     @Override
     public BlockFaceConfig clone() {
+        final BlockFaceConfig clone;
         try {
-            var clone = (BlockFaceConfig) super.clone();
-            clone.blockFaceConfigBitmap = this.blockFaceConfigBitmap;
-            return clone;
+            clone = (BlockFaceConfig) super.clone();
         } catch (CloneNotSupportedException e) {
             throw new AssertionError();
         }
+        clone.blockFaceConfigBitmap = this.blockFaceConfigBitmap;
+        return clone;
     }
 
     public BlockFaceConfigType[] toArray() {
@@ -58,18 +59,18 @@ public class BlockFaceConfig implements Cloneable {
     }
 
     public boolean canExtractFromFace(BlockFace face) {
-        return this.getFaceConfigType(face).canReceive();
+        return this.getFaceConfigType(face).canExtract();
     }
 
     public boolean canReceiveFromFace(BlockFace face) {
         return this.getFaceConfigType(face).canReceive();
     }
 
-    public boolean isFaceConfigType(BlockFace face, BlockFaceConfigType config) {
-        return this.getFaceConfigType(face) == config;
-    }
-
     public void cycleFaceConfigType(BlockFace face) {
         setFaceConfigType(face, getFaceConfigType(face).next());
+    }
+
+    public int getBitmap() {
+        return this.blockFaceConfigBitmap;
     }
 }

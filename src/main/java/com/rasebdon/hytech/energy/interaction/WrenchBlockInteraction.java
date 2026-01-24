@@ -80,6 +80,8 @@ public class WrenchBlockInteraction extends SimpleBlockInteraction {
             var blockFaceConfig = energyContainer.getCurrentBlockFaceConfig();
             blockFaceConfig.cycleFaceConfigType(localFace);
 
+            // TODO : Event Bus and reload transfer targets
+
             player.sendMessage(Message.raw("Side " + worldFace.name() + " (Local: " + localFace.name() + ") changed to: " + blockFaceConfig.getFaceConfigType(localFace).name()));
         }
     }

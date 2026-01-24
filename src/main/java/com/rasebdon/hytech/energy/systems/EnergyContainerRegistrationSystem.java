@@ -6,6 +6,8 @@ import com.hypixel.hytale.component.system.RefSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
+import com.rasebdon.hytech.core.systems.LogisticTransferSystem;
+import com.rasebdon.hytech.energy.EnergyContainer;
 import com.rasebdon.hytech.energy.EnergyModule;
 import com.rasebdon.hytech.energy.components.BlockEnergyContainerComponent;
 import com.rasebdon.hytech.energy.components.EnergyContainerComponent;
@@ -16,8 +18,12 @@ import org.jetbrains.annotations.Nullable;
 public class EnergyContainerRegistrationSystem extends RefSystem<ChunkStore> {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     private final ComponentType<ChunkStore, BlockEnergyContainerComponent> singleBlockEnergyContainerComponentType;
+    private final LogisticTransferSystem<EnergyContainer> energyTransferSystem;
 
-    public EnergyContainerRegistrationSystem(ComponentType<ChunkStore, BlockEnergyContainerComponent> componentType) {
+    public EnergyContainerRegistrationSystem(
+            ComponentType<ChunkStore, BlockEnergyContainerComponent> componentType,
+            LogisticTransferSystem<EnergyContainer> energyTransferSystem) {
+        this.energyTransferSystem = energyTransferSystem;
         this.singleBlockEnergyContainerComponentType = componentType;
     }
 
@@ -30,7 +36,8 @@ public class EnergyContainerRegistrationSystem extends RefSystem<ChunkStore> {
         var energyContainer = store.getComponent(ref, this.singleBlockEnergyContainerComponentType);
         assert energyContainer != null;
 
-        reloadTransferTargets(energyContainer, ref, store, true);
+        energyTransferSystem.addEnergyContainer(energyContainer);
+        reloadTransferTargets(energyContainer, ref, store);
     }
 
     @Override
@@ -42,6 +49,7 @@ public class EnergyContainerRegistrationSystem extends RefSystem<ChunkStore> {
         var energyContainer = store.getComponent(ref, this.singleBlockEnergyContainerComponentType);
         assert energyContainer != null;
 
+        energyTransferSystem.removeEnergyContainer(energyContainer);
         removeAsTransferTargetFromNeighbors(energyContainer, ref, store);
     }
 
@@ -50,12 +58,10 @@ public class EnergyContainerRegistrationSystem extends RefSystem<ChunkStore> {
         return this.singleBlockEnergyContainerComponentType;
     }
 
-
     public void reloadTransferTargets(
             EnergyContainerComponent energyContainer,
             Ref<ChunkStore> blockRef,
-            Store<ChunkStore> store,
-            boolean triggerReloadInTargets) {
+            Store<ChunkStore> store) {
         energyContainer.clearTransferTargets();
 
         var world = store.getExternalData().getWorld();
@@ -63,11 +69,12 @@ public class EnergyContainerRegistrationSystem extends RefSystem<ChunkStore> {
         if (blockLocation == null) return;
 
         for (var worldSide : Vector3i.BLOCK_SIDES) {
-            // Get local face of current block
             var localFace = EnergyUtils.getLocalFace(worldSide, blockLocation.rotation());
 
-            // Ensure this face is allowed to extract (Logic inside your component)
-            if (!energyContainer.canExtractFromFace(localFace) && !energyContainer.canReceiveFromFace(localFace))
+            var containerCanExtract = energyContainer.canExtractFromFace(localFace);
+            var containerCanReceive = energyContainer.canExtractFromFace(localFace);
+
+            if (!containerCanExtract && !containerCanReceive)
                 continue;
 
             var neighborWorldPos = worldSide.clone().add(blockLocation.worldPos());
@@ -78,22 +85,25 @@ public class EnergyContainerRegistrationSystem extends RefSystem<ChunkStore> {
             var neighborContainer = store.getComponent(neighborRef, EnergyModule.get().getBlockEnergyContainerComponentType());
 
             if (neighborContainer != null && neighborLoc != null) {
-                // Get local face of neighbor (hit from opposite world direction)
                 var oppositeWorldDir = worldSide.clone().negate();
                 var neighborLocalFace = EnergyUtils.getLocalFace(oppositeWorldDir, neighborLoc.rotation());
 
-                if (triggerReloadInTargets) {
-                    reloadTransferTargets(neighborContainer, neighborRef, store, false);
-                }
+                var neighborCanReceive = neighborContainer.canReceiveFromFace(neighborLocalFace);
 
-                // If neighbor can receive -> Add to extract targets
-                if (energyContainer.canExtractFromFace(localFace) && neighborContainer.canReceiveFromFace(neighborLocalFace)) {
-                    LOGGER.atInfo().log("%s adding %s as extract target", toString(), neighborContainer.toString());
-
+                if (containerCanExtract && neighborCanReceive) {
                     energyContainer.addTransferTarget(
                             neighborContainer,
                             localFace,
                             neighborLocalFace
+                    );
+                }
+
+                var neighborCanExtract = neighborContainer.canExtractFromFace(neighborLocalFace);
+                if (containerCanReceive && neighborCanExtract) {
+                    neighborContainer.addTransferTarget(
+                            energyContainer,
+                            neighborLocalFace,
+                            localFace
                     );
                 }
             }
