@@ -3,27 +3,23 @@ package com.rasebdon.hytech.energy.systems;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.RefSystem;
-import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
-import com.rasebdon.hytech.core.systems.LogisticTransferSystem;
-import com.rasebdon.hytech.energy.EnergyContainer;
+import com.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
 import com.rasebdon.hytech.energy.EnergyModule;
 import com.rasebdon.hytech.energy.components.BlockEnergyContainerComponent;
 import com.rasebdon.hytech.energy.components.EnergyContainerComponent;
+import com.rasebdon.hytech.energy.events.EnergyContainerChangedEvent;
 import com.rasebdon.hytech.energy.util.EnergyUtils;
+import com.rasebdon.hytech.energy.util.EventBusUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class EnergyContainerRegistrationSystem extends RefSystem<ChunkStore> {
-    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     private final ComponentType<ChunkStore, BlockEnergyContainerComponent> singleBlockEnergyContainerComponentType;
-    private final LogisticTransferSystem<EnergyContainer> energyTransferSystem;
 
     public EnergyContainerRegistrationSystem(
-            ComponentType<ChunkStore, BlockEnergyContainerComponent> componentType,
-            LogisticTransferSystem<EnergyContainer> energyTransferSystem) {
-        this.energyTransferSystem = energyTransferSystem;
+            ComponentType<ChunkStore, BlockEnergyContainerComponent> componentType) {
         this.singleBlockEnergyContainerComponentType = componentType;
     }
 
@@ -36,8 +32,8 @@ public class EnergyContainerRegistrationSystem extends RefSystem<ChunkStore> {
         var energyContainer = store.getComponent(ref, this.singleBlockEnergyContainerComponentType);
         assert energyContainer != null;
 
-        energyTransferSystem.addEnergyContainer(energyContainer);
         reloadTransferTargets(energyContainer, ref, store);
+        EventBusUtil.dispatchIfListening(new EnergyContainerChangedEvent(LogisticContainerChangedEvent.ChangeType.ADDED, energyContainer));
     }
 
     @Override
@@ -49,8 +45,8 @@ public class EnergyContainerRegistrationSystem extends RefSystem<ChunkStore> {
         var energyContainer = store.getComponent(ref, this.singleBlockEnergyContainerComponentType);
         assert energyContainer != null;
 
-        energyTransferSystem.removeEnergyContainer(energyContainer);
         removeAsTransferTargetFromNeighbors(energyContainer, ref, store);
+        EventBusUtil.dispatchIfListening(new EnergyContainerChangedEvent(LogisticContainerChangedEvent.ChangeType.REMOVED, energyContainer));
     }
 
     @Override
@@ -127,7 +123,6 @@ public class EnergyContainerRegistrationSystem extends RefSystem<ChunkStore> {
             var neighborContainer = store.getComponent(neighborRef, EnergyModule.get().getBlockEnergyContainerComponentType());
 
             if (neighborContainer != null && neighborLoc != null) {
-                LOGGER.atInfo().log("%s removing %s as extract target", toString(), neighborContainer.toString());
                 neighborContainer.removeTransferTarget(containerComponent);
             }
         }

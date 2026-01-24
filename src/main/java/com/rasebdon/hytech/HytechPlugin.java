@@ -7,17 +7,16 @@ import com.rasebdon.hytech.energy.EnergyModule;
 
 // Thanks to notnotnotswipez for supporting on the official Hytale Discord
 
-public class HytechPlugin extends JavaPlugin {
+@SuppressWarnings("unused")
+public final class HytechPlugin extends JavaPlugin {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
     public HytechPlugin(JavaPluginInit init) {
         super(init);
-
-        LOGGER.atInfo().log("Hello from %s version %s", this.getName(), this.getManifest().getVersion().toString());
     }
 
     @Override
     protected void setup() {
-        EnergyModule.init(this.getChunkStoreRegistry());
+        EnergyModule.init(this.getChunkStoreRegistry(), this.getEventRegistry());
     }
 }

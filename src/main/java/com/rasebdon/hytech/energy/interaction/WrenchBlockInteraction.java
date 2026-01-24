@@ -13,9 +13,12 @@ import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHa
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.client.SimpleBlockInteraction;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
 import com.rasebdon.hytech.energy.EnergyModule;
+import com.rasebdon.hytech.energy.events.EnergyContainerChangedEvent;
 import com.rasebdon.hytech.energy.util.BlockFaceUtil;
 import com.rasebdon.hytech.energy.util.EnergyUtils;
+import com.rasebdon.hytech.energy.util.EventBusUtil;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -80,7 +83,11 @@ public class WrenchBlockInteraction extends SimpleBlockInteraction {
             var blockFaceConfig = energyContainer.getCurrentBlockFaceConfig();
             blockFaceConfig.cycleFaceConfigType(localFace);
 
-            // TODO : Event Bus and reload transfer targets
+            var event = new EnergyContainerChangedEvent(
+                    LogisticContainerChangedEvent.ChangeType.CHANGED,
+                    energyContainer
+            );
+            EventBusUtil.dispatchIfListening(event);
 
             player.sendMessage(Message.raw("Side " + worldFace.name() + " (Local: " + localFace.name() + ") changed to: " + blockFaceConfig.getFaceConfigType(localFace).name()));
         }
