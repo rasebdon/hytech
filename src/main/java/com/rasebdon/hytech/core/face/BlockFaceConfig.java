@@ -1,4 +1,4 @@
-package com.rasebdon.hytech.energy.core;
+package com.rasebdon.hytech.core.face;
 
 import com.hypixel.hytale.protocol.BlockFace;
 

@@ -3,7 +3,7 @@ package com.rasebdon.hytech.energy.components;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
-import com.rasebdon.hytech.energy.core.BlockFaceConfig;
+import com.rasebdon.hytech.core.face.BlockFaceConfig;
 
 import javax.annotation.Nonnull;
 

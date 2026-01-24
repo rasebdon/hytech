@@ -1,18 +1,18 @@
-package com.rasebdon.hytech.energy.network;
+package com.rasebdon.hytech.core.face;
 
-public enum EnergyCableSideConfig {
-    NORMAL(0b00),
-    PUSH(0b01),
-    PULL(0b10),
-    NONE(0b11);
+public enum BlockFaceConfigType {
+    NONE(0b00),
+    INPUT(0b01),
+    OUTPUT(0b10),
+    BOTH(0b11);
 
     private final int bits;
 
-    EnergyCableSideConfig(int bits) {
+    BlockFaceConfigType(int bits) {
         this.bits = bits;
     }
 
-    public static EnergyCableSideConfig fromBits(int bits) {
+    public static BlockFaceConfigType fromBits(int bits) {
         return values()[bits & 0b11];
     }
 
@@ -28,7 +28,7 @@ public enum EnergyCableSideConfig {
         return (bits & 0b10) != 0;
     }
 
-    public EnergyCableSideConfig next() {
+    public BlockFaceConfigType next() {
         return values()[(ordinal() + 1) % values().length];
     }
 }

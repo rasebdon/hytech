@@ -1,8 +1,6 @@
-package com.rasebdon.hytech.energy.core;
+package com.rasebdon.hytech.energy;
 
-import java.util.Collection;
-
-public interface IEnergyContainer {
+public interface EnergyContainer {
 
     long getEnergy();
     long getTotalCapacity();
@@ -31,16 +29,4 @@ public interface IEnergyContainer {
 
     void addEnergy(long amount);
     void reduceEnergy(long amount);
-
-    /* ---------------- Transfer ---------------- */
-
-    /**
-     * @return amount of energy actually transferred
-     */
-    long transferEnergyTo(IEnergyContainer other);
-
-    /**
-     * @return total energy transferred
-     */
-    long transferEnergyTo(Collection<? extends IEnergyContainer> targets);
 }

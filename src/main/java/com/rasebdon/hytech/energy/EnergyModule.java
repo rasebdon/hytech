@@ -9,14 +9,12 @@ import com.rasebdon.hytech.energy.components.BlockEnergyContainerComponent;
 import com.rasebdon.hytech.energy.components.EnergyGeneratorComponent;
 import com.rasebdon.hytech.energy.interaction.ReadEnergyContainerBlockInteraction;
 import com.rasebdon.hytech.energy.interaction.WrenchBlockInteraction;
-import com.rasebdon.hytech.energy.systems.EnergyContainerRefSystem;
-import com.rasebdon.hytech.energy.systems.EnergyContainerTransferSystem;
+import com.rasebdon.hytech.energy.systems.EnergyContainerRegistrationSystem;
 import com.rasebdon.hytech.energy.systems.EnergyGenerationSystem;
+import com.rasebdon.hytech.energy.systems.EnergyTransferSystem;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-
-// Thanks to notnotnotswipez for supporting on the official Hytale Discord
 
 public class EnergyModule {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
@@ -29,14 +27,14 @@ public class EnergyModule {
     private EnergyModule(@Nonnull ComponentRegistryProxy<ChunkStore> registry) {
         blockEnergyContainerComponentType = registry.registerComponent(
                 BlockEnergyContainerComponent.class,
-                "hytech:energy:block",
+                "hytech:energy:container",
                 BlockEnergyContainerComponent.CODEC);
 
         ComponentType<ChunkStore, EnergyGeneratorComponent> energyGeneratorType = registry.registerComponent(
                 EnergyGeneratorComponent.class, "hytech:energy:generator", EnergyGeneratorComponent.CODEC);
 
-        registry.registerSystem(new EnergyContainerRefSystem(blockEnergyContainerComponentType));
-        registry.registerSystem(new EnergyContainerTransferSystem(blockEnergyContainerComponentType));
+        registry.registerSystem(new EnergyContainerRegistrationSystem(blockEnergyContainerComponentType));
+        registry.registerSystem(new EnergyTransferSystem(blockEnergyContainerComponentType));
         registry.registerSystem(new EnergyGenerationSystem(energyGeneratorType, blockEnergyContainerComponentType));
 
         Interaction.CODEC.register(
