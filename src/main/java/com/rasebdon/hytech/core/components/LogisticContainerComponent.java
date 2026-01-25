@@ -50,6 +50,7 @@ public abstract class LogisticContainerComponent<TContainer extends ILogisticCon
     }
 
     protected LogisticContainerComponent() {
+        this.currentBlockFaceConfig = new BlockFaceConfig();
         this.transferTargets = new HashMap<>();
     }
 

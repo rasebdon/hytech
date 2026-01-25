@@ -8,6 +8,7 @@ import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Int
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.rasebdon.hytech.energy.components.BlockEnergyContainerComponent;
 import com.rasebdon.hytech.energy.components.EnergyGeneratorComponent;
+import com.rasebdon.hytech.energy.components.EnergyPipeComponent;
 import com.rasebdon.hytech.energy.events.EnergyContainerChangedEvent;
 import com.rasebdon.hytech.energy.interaction.ReadEnergyContainerBlockInteraction;
 import com.rasebdon.hytech.energy.interaction.WrenchBlockInteraction;
@@ -25,19 +26,24 @@ public class EnergyModule {
     private static EnergyModule INSTANCE;
 
     private final ComponentType<ChunkStore, BlockEnergyContainerComponent> blockEnergyContainerComponentType;
+    private final ComponentType<ChunkStore, EnergyPipeComponent> energyPipeComponentType;
 
     private EnergyModule(@Nonnull ComponentRegistryProxy<ChunkStore> chunkStoreRegistry, @Nonnull IEventRegistry eventRegistry) {
         blockEnergyContainerComponentType = chunkStoreRegistry.registerComponent(
                 BlockEnergyContainerComponent.class,
                 "hytech:energy:container",
                 BlockEnergyContainerComponent.CODEC);
+        energyPipeComponentType = chunkStoreRegistry.registerComponent(
+                EnergyPipeComponent.class,
+                "hytech:energy:pipe",
+                EnergyPipeComponent.CODEC);
 
         ComponentType<ChunkStore, EnergyGeneratorComponent> energyGeneratorType = chunkStoreRegistry.registerComponent(
                 EnergyGeneratorComponent.class, "hytech:energy:generator", EnergyGeneratorComponent.CODEC);
 
         chunkStoreRegistry.registerSystem(new EnergyTransferSystem(eventRegistry, EnergyContainerChangedEvent.class));
         chunkStoreRegistry.registerSystem(new EnergyContainerRegistrationSystem(
-                blockEnergyContainerComponentType, eventRegistry, EnergyContainerChangedEvent.class));
+                blockEnergyContainerComponentType, energyPipeComponentType, eventRegistry, EnergyContainerChangedEvent.class));
         chunkStoreRegistry.registerSystem(new EnergyGenerationSystem(energyGeneratorType, blockEnergyContainerComponentType));
 
         Interaction.CODEC.register(
@@ -71,5 +77,9 @@ public class EnergyModule {
 
     public ComponentType<ChunkStore, BlockEnergyContainerComponent> getBlockEnergyContainerComponentType() {
         return this.blockEnergyContainerComponentType;
+    }
+
+    public ComponentType<ChunkStore, EnergyPipeComponent> getEnergyPipeComponentType() {
+        return energyPipeComponentType;
     }
 }

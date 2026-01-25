@@ -8,6 +8,7 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.rasebdon.hytech.core.components.ILogisticContainer;
 import com.rasebdon.hytech.core.components.LogisticContainerComponent;
+import com.rasebdon.hytech.core.components.LogisticPipeComponent;
 import com.rasebdon.hytech.core.events.LogisticChangeType;
 import com.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
 import com.rasebdon.hytech.energy.util.EnergyUtils;
@@ -17,12 +18,20 @@ import org.jetbrains.annotations.Nullable;
 
 public abstract class LogisticContainerRegistrationSystem<TContainer extends ILogisticContainer> extends RefSystem<ChunkStore> {
     private final ComponentType<ChunkStore, ? extends LogisticContainerComponent<TContainer>> containerComponentType;
+    private final ComponentType<ChunkStore, ? extends LogisticPipeComponent<TContainer>> pipeComponentType;
+
+    private final Query<ChunkStore> query;
 
     protected LogisticContainerRegistrationSystem(
-            ComponentType<ChunkStore, ? extends LogisticContainerComponent<TContainer>> componentType,
+            ComponentType<ChunkStore, ? extends LogisticContainerComponent<TContainer>> containerComponentType,
+            ComponentType<ChunkStore, ? extends LogisticPipeComponent<TContainer>> pipeComponentType,
             IEventRegistry eventRegistry,
             Class<? extends LogisticContainerChangedEvent<TContainer>> eventClass) {
-        this.containerComponentType = componentType;
+        this.containerComponentType = containerComponentType;
+        this.pipeComponentType = pipeComponentType;
+
+        query = Query.or(containerComponentType, pipeComponentType);
+
         eventRegistry.register(eventClass, this::handleEnergyContainerChangedEvent);
     }
 
@@ -40,11 +49,16 @@ public abstract class LogisticContainerRegistrationSystem<TContainer extends ILo
             @NotNull Store<ChunkStore> store,
             @NotNull CommandBuffer<ChunkStore> commandBuffer) {
         var containerComponent = store.getComponent(ref, this.containerComponentType);
-        assert containerComponent != null;
+        if (containerComponent != null) {
+            reloadTransferTargets(containerComponent, ref, store);
+            EventBusUtil.dispatchIfListening(createEvent(ref, store, LogisticChangeType.ADDED, containerComponent));
+        }
 
-        reloadTransferTargets(containerComponent, ref, store);
+        var pipeComponent = store.getComponent(ref, this.pipeComponentType);
+        if (pipeComponent != null) {
+            pipeComponent.reloadPipeConnectionModels(store.getExternalData().getWorld(), ref);
+        }
 
-        EventBusUtil.dispatchIfListening(createEvent(ref, store, LogisticChangeType.ADDED, containerComponent));
     }
 
     protected abstract LogisticContainerChangedEvent<TContainer> createEvent(
@@ -68,7 +82,7 @@ public abstract class LogisticContainerRegistrationSystem<TContainer extends ILo
 
     @Override
     public @Nullable Query<ChunkStore> getQuery() {
-        return this.containerComponentType;
+        return query;
     }
 
     public void reloadTransferTargets(

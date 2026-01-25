@@ -6,6 +6,7 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.event.IEventRegistry;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.rasebdon.hytech.core.components.LogisticContainerComponent;
+import com.rasebdon.hytech.core.components.LogisticPipeComponent;
 import com.rasebdon.hytech.core.events.LogisticChangeType;
 import com.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
 import com.rasebdon.hytech.core.systems.LogisticContainerRegistrationSystem;
@@ -15,10 +16,11 @@ import com.rasebdon.hytech.energy.events.EnergyContainerChangedEvent;
 public class EnergyContainerRegistrationSystem extends LogisticContainerRegistrationSystem<IEnergyContainer> {
 
     public EnergyContainerRegistrationSystem(
-            ComponentType<ChunkStore, ? extends LogisticContainerComponent<IEnergyContainer>> componentType,
+            ComponentType<ChunkStore, ? extends LogisticContainerComponent<IEnergyContainer>> containerComponentType,
+            ComponentType<ChunkStore, ? extends LogisticPipeComponent<IEnergyContainer>> pipeComponentType,
             IEventRegistry eventRegistry,
             Class<? extends LogisticContainerChangedEvent<IEnergyContainer>> eventClass) {
-        super(componentType, eventRegistry, eventClass);
+        super(containerComponentType, pipeComponentType, eventRegistry, eventClass);
     }
 
     @Override
