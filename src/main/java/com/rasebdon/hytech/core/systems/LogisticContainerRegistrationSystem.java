@@ -56,9 +56,8 @@ public abstract class LogisticContainerRegistrationSystem<TContainer extends ILo
 
         var pipeComponent = store.getComponent(ref, this.pipeComponentType);
         if (pipeComponent != null) {
-            pipeComponent.reloadPipeConnectionModels(store.getExternalData().getWorld(), ref);
+            pipeComponent.reloadPipeConnections(store.getExternalData().getWorld(), ref);
         }
-
     }
 
     protected abstract LogisticContainerChangedEvent<TContainer> createEvent(
@@ -73,10 +72,15 @@ public abstract class LogisticContainerRegistrationSystem<TContainer extends ILo
             @NotNull Store<ChunkStore> store,
             @NotNull CommandBuffer<ChunkStore> commandBuffer) {
         var containerComponent = store.getComponent(ref, this.containerComponentType);
-        assert containerComponent != null;
+        if (containerComponent != null) {
+            removeAsTransferTargetFromNeighbors(containerComponent, ref, store);
+            EventBusUtil.dispatchIfListening(createEvent(ref, store, LogisticChangeType.REMOVED, containerComponent));
+        }
 
-        removeAsTransferTargetFromNeighbors(containerComponent, ref, store);
-        EventBusUtil.dispatchIfListening(createEvent(ref, store, LogisticChangeType.REMOVED, containerComponent));
+        var pipeComponent = store.getComponent(ref, this.pipeComponentType);
+        if (pipeComponent != null) {
+            pipeComponent.clearPipeConnections(store.getExternalData().getWorld());
+        }
     }
 
 

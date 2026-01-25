@@ -36,15 +36,15 @@
     "Material": "Solid",
     "DrawType": "Model",
     "Opacity": "Transparent",
-    "CustomModel": "Blocks/Pipes/Energy/Pipe_Energy.blockymodel",
+    "CustomModel": "Blocks/Pipes/Default/Pipe_Center.blockymodel",
     "CustomModelTexture": [
       {
-        "Texture": "BlockTextures/Pipe_Energy.png",
+        "Texture": "BlockTextures/Pipes/Default/Pipe.png",
         "Weight": 1
       }
     ],
     "Group": "Stone",
-    "HitboxType": "Pipe_Energy",
+    "HitboxType": "Pipe",
     "Gathering": {
       "Breaking": {
         "GatherType": "Rocks"
@@ -71,7 +71,7 @@
     ]
   },
   "ItemSoundSetId": "ISS_Blocks_Stone",
-  "Icon": "Icons/ItemsGenerated/Pipe_Energy.png",
+  "Icon": "Icons/ItemsGenerated/Pipe.png",
   "IconProperties": {
     "Scale": 0.58823,
     "Rotation": [

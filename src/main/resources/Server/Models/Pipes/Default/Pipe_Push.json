@@ -1,0 +1,16 @@
+{
+  "Model": "Items/Pipes/Default/Pipe_Push.blockymodel",
+  "HitBox": {
+    "Min": {
+      "X": -0.0575,
+      "Y": 0.3175,
+      "Z": -0.058
+    },
+    "Max": {
+      "X": 0.058,
+      "Y": 0.495,
+      "Z": 0.058
+    }
+  },
+  "Texture": "Items/Pipes/Default/Pipe.png"
+}
