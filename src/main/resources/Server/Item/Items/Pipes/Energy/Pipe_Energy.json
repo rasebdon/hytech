@@ -40,7 +40,7 @@
     "CustomModelTexture": [
       {
         "Texture": "BlockTextures/Pipes/Default/Pipe.png",
-        "Weight": 1
+        "Weight": 0
       }
     ],
     "Group": "Stone",
