@@ -1,5 +1,6 @@
 {
   "Model": "Items/Pipes/Default/Pipe_Pull.blockymodel",
+  "Texture": "Items/Pipes/Default/Pipe.png",
   "HitBox": {
     "Min": {
       "X": -0.0575,
@@ -11,6 +12,5 @@
       "Y": 0.495,
       "Z": 0.058
     }
-  },
-  "Texture": "Items/Pipes/Default/Pipe.png"
+  }
 }

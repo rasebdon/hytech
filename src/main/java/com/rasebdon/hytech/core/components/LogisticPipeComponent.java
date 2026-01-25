@@ -6,10 +6,11 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
+import com.hypixel.hytale.protocol.BlockFace;
 import com.hypixel.hytale.server.core.asset.type.model.config.Model;
 import com.hypixel.hytale.server.core.asset.type.model.config.ModelAsset;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
-import com.hypixel.hytale.server.core.modules.entity.component.BoundingBox;
+import com.hypixel.hytale.server.core.modules.entity.component.Interactable;
 import com.hypixel.hytale.server.core.modules.entity.component.ModelComponent;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.entity.tracker.NetworkId;
@@ -17,11 +18,15 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.rasebdon.hytech.core.networks.LogisticNetwork;
+import com.rasebdon.hytech.core.systems.LogisticTransferTarget;
 import com.rasebdon.hytech.energy.util.EnergyUtils;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public abstract class LogisticPipeComponent<TContainer extends ILogisticContainer> extends LogisticContainerComponent<TContainer> {
 
@@ -66,58 +71,39 @@ public abstract class LogisticPipeComponent<TContainer extends ILogisticContaine
         this.network = network;
     }
 
-    public void reloadPipeConnections(@Nonnull World world, Ref<ChunkStore> pipeRef) {
-        world.execute(() -> {
-            var entityStore = world.getEntityStore().getStore();
-            clearPipeConnectionModels(entityStore);
+    private static final EnumMap<BlockFace, PipeFaceRenderData> PIPE_FACE_DATA =
+            new EnumMap<>(BlockFace.class);
 
-            // Get models depending on side
-            var assets = ModelAsset.getAssetMap();
+    static {
+        PIPE_FACE_DATA.put(BlockFace.Up,
+                new PipeFaceRenderData(
+                        new Vector3d(0.5, 0.0, 0.5),
+                        new Vector3f(0f, 0f, 0f)));
 
-            var pipeEnergyEast = assets.getAsset(normalConnectionModelAsset);
-            assert pipeEnergyEast != null;
+        PIPE_FACE_DATA.put(BlockFace.Down,
+                new PipeFaceRenderData(
+                        new Vector3d(0.5, 1.0, 0.5),
+                        new Vector3f(0f, 0f, (float) Math.toRadians(180))));
 
-            var transform = EnergyUtils.getBlockTransform(pipeRef, pipeRef.getStore());
-            assert transform != null;
+        PIPE_FACE_DATA.put(BlockFace.East,
+                new PipeFaceRenderData(
+                        new Vector3d(0.0, 0.5, 0.5),
+                        new Vector3f(0f, 0f, (float) Math.toRadians(-90))));
 
-            var position = transform.worldPos().toVector3d().add(
-                    new Vector3d(0.5, 0.0, 0.5));
+        PIPE_FACE_DATA.put(BlockFace.West,
+                new PipeFaceRenderData(
+                        new Vector3d(1.0, 0.5, 0.5),
+                        new Vector3f(0f, 0f, (float) Math.toRadians(90))));
 
-            var rotation = new Vector3f(
-                    transform.rotation().pitch().getDegrees(),
-                    transform.rotation().yaw().getDegrees(),
-                    transform.rotation().roll().getDegrees()
-            );
+        PIPE_FACE_DATA.put(BlockFace.North,
+                new PipeFaceRenderData(
+                        new Vector3d(0.5, 0.5, 1.0),
+                        new Vector3f((float) Math.toRadians(-90), 0f, 0f)));
 
-            var model = Model.createStaticScaledModel(pipeEnergyEast, 2);
-            addPipeConnectionModels(entityStore, model, position, rotation);
-        });
-    }
-
-    private void addPipeConnectionModels(@Nonnull Store<EntityStore> store,
-                                         Model model,
-                                         Vector3d position,
-                                         Vector3f rotation) {
-        assert model.getBoundingBox() != null;
-
-        Holder<EntityStore> holder = store.getRegistry().newHolder();
-
-        holder.addComponent(TransformComponent.getComponentType(), new TransformComponent(position, rotation));
-        holder.addComponent(ModelComponent.getComponentType(), new ModelComponent(model));
-        holder.addComponent(BoundingBox.getComponentType(), new BoundingBox(model.getBoundingBox()));
-
-        holder.addComponent(NetworkId.getComponentType(), new NetworkId(store.getExternalData().takeNextNetworkId()));
-        //holder.addComponent(Interactions.getComponentType(), new Interactions());
-
-        holder.ensureComponent(UUIDComponent.getComponentType());
-        // holder.ensureComponent(Interactable.getComponentType());
-//        holder.addComponent(EntityStore.REGISTRY.getNonSerializedComponentType(), NonSerialized.get());
-
-        // TODO : Add LogisticPipeConnectionComponent with reference to this component so that we can reload connections
-        // when the connection is clicked with a wrench
-
-        var entity = store.addEntity(holder, AddReason.SPAWN);
-        pipeConnectionModels.add(entity);
+        PIPE_FACE_DATA.put(BlockFace.South,
+                new PipeFaceRenderData(
+                        new Vector3d(0.5, 0.5, 0.0),
+                        new Vector3f((float) Math.toRadians(90), 0f, 0f)));
     }
 
     public void clearPipeConnections(@Nonnull World world) {
@@ -136,4 +122,71 @@ public abstract class LogisticPipeComponent<TContainer extends ILogisticContaine
 
         pipeConnectionModels.clear();
     }
+
+    public void reloadPipeConnections(@Nonnull World world, Ref<ChunkStore> pipeRef) {
+        world.execute(() -> {
+            var entityStore = world.getEntityStore().getStore();
+            clearPipeConnectionModels(entityStore);
+
+            var assets = ModelAsset.getAssetMap();
+            var pipeConnectionModel = assets.getAsset(normalConnectionModelAsset);
+            if (pipeConnectionModel == null) return;
+
+            var transform = EnergyUtils.getBlockTransform(pipeRef, pipeRef.getStore());
+            if (transform == null) return;
+
+            var worldPosition = transform.worldPos().toVector3d();
+            var model = Model.createStaticScaledModel(pipeConnectionModel, 2);
+
+            for (BlockFace face : getConnectedFaces()) {
+                PipeFaceRenderData data = PIPE_FACE_DATA.get(face);
+                if (data == null) continue;
+
+                addPipeConnectionModel(
+                        entityStore,
+                        model,
+                        worldPosition.clone().add(data.offset()),
+                        data.rotation()
+                );
+            }
+        });
+    }
+
+    private void addPipeConnectionModel(@Nonnull Store<EntityStore> store,
+                                        Model model,
+                                        Vector3d position,
+                                        Vector3f rotation) {
+        assert model.getBoundingBox() != null;
+
+        Holder<EntityStore> holder = store.getRegistry().newHolder();
+
+        holder.addComponent(TransformComponent.getComponentType(), new TransformComponent(position, rotation));
+        holder.addComponent(ModelComponent.getComponentType(), new ModelComponent(model));
+
+        // holder.addComponent(BoundingBox.getComponentType(), new BoundingBox(model.getBoundingBox()));
+
+        holder.addComponent(NetworkId.getComponentType(), new NetworkId(store.getExternalData().takeNextNetworkId()));
+        //holder.addComponent(Interactions.getComponentType(), new Interactions());
+
+        holder.ensureComponent(UUIDComponent.getComponentType());
+        holder.ensureComponent(Interactable.getComponentType());
+//        holder.addComponent(EntityStore.REGISTRY.getNonSerializedComponentType(), NonSerialized.get());
+
+        // TODO : Add LogisticPipeConnectionComponent with reference to this component so that we can reload connections
+        // when the connection is clicked with a wrench
+
+        var entity = store.addEntity(holder, AddReason.SPAWN);
+        pipeConnectionModels.add(entity);
+    }
+
+    protected EnumSet<BlockFace> getConnectedFaces() {
+        return transferTargets.values().stream()
+                .map(LogisticTransferTarget::from) // or `.to()` depending on your visual rule
+                .filter(face -> face != BlockFace.None)
+                .collect(Collectors.toCollection(() -> EnumSet.noneOf(BlockFace.class)));
+    }
+
+    public record PipeFaceRenderData(Vector3d offset, Vector3f rotation) {
+    }
+
 }

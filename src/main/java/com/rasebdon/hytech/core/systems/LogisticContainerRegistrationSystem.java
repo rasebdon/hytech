@@ -56,6 +56,7 @@ public abstract class LogisticContainerRegistrationSystem<TContainer extends ILo
 
         var pipeComponent = store.getComponent(ref, this.pipeComponentType);
         if (pipeComponent != null) {
+            reloadTransferTargets(pipeComponent, ref, store);
             pipeComponent.reloadPipeConnections(store.getExternalData().getWorld(), ref);
         }
     }
@@ -79,6 +80,7 @@ public abstract class LogisticContainerRegistrationSystem<TContainer extends ILo
 
         var pipeComponent = store.getComponent(ref, this.pipeComponentType);
         if (pipeComponent != null) {
+            removeAsTransferTargetFromNeighbors(pipeComponent, ref, store);
             pipeComponent.clearPipeConnections(store.getExternalData().getWorld());
         }
     }
@@ -113,7 +115,8 @@ public abstract class LogisticContainerRegistrationSystem<TContainer extends ILo
             if (neighborRef == null) continue;
 
             var neighborLoc = EnergyUtils.getBlockTransform(neighborRef, store);
-            var neighborContainerComponent = store.getComponent(neighborRef, this.containerComponentType);
+
+            var neighborContainerComponent = getNeighborContainer(store, neighborRef);
 
             if (neighborContainerComponent != null && neighborLoc != null) {
                 var oppositeWorldDir = worldSide.clone().negate();
@@ -136,9 +139,23 @@ public abstract class LogisticContainerRegistrationSystem<TContainer extends ILo
                             neighborLocalFace,
                             localFace
                     );
+
+                    if (neighborContainerComponent instanceof LogisticPipeComponent<TContainer> neighborPipe) {
+                        neighborPipe.reloadPipeConnections(world, neighborRef);
+                    }
                 }
             }
         }
+    }
+
+    private @Nullable LogisticContainerComponent<TContainer> getNeighborContainer(
+            Store<ChunkStore> store,
+            Ref<ChunkStore> neighborRef
+    ) {
+        var component = store.getComponent(neighborRef, containerComponentType);
+        return component != null
+                ? component
+                : store.getComponent(neighborRef, pipeComponentType);
     }
 
     public void removeAsTransferTargetFromNeighbors(
@@ -155,10 +172,14 @@ public abstract class LogisticContainerRegistrationSystem<TContainer extends ILo
             if (neighborRef == null) continue;
 
             var neighborLoc = EnergyUtils.getBlockTransform(neighborRef, store);
-            var neighborContainer = store.getComponent(neighborRef, this.containerComponentType);
+            var neighborContainerComponent = getNeighborContainer(store, neighborRef);
 
-            if (neighborContainer != null && neighborLoc != null) {
-                neighborContainer.removeTransferTarget(containerComponent.getContainer());
+            if (neighborContainerComponent != null && neighborLoc != null) {
+                neighborContainerComponent.removeTransferTarget(containerComponent.getContainer());
+
+                if (neighborContainerComponent instanceof LogisticPipeComponent<TContainer> neighborPipe) {
+                    neighborPipe.reloadPipeConnections(world, neighborRef);
+                }
             }
         }
     }
