@@ -4,17 +4,21 @@ import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.validation.Validators;
-import com.rasebdon.hytech.core.components.LogisticContainerComponent;
+import com.hypixel.hytale.component.Component;
+import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
+import com.rasebdon.hytech.core.components.LogisticBlockComponent;
 import com.rasebdon.hytech.core.face.BlockFaceConfig;
+import com.rasebdon.hytech.core.util.Validation;
 import com.rasebdon.hytech.energy.IEnergyContainer;
 
+import javax.annotation.Nonnull;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-public abstract class EnergyContainerComponent extends LogisticContainerComponent<IEnergyContainer> implements IEnergyContainer {
+public class EnergyBlockComponent extends LogisticBlockComponent<IEnergyContainer> implements IEnergyContainer {
 
-    public static final BuilderCodec<EnergyContainerComponent> CODEC =
-            BuilderCodec.abstractBuilder(EnergyContainerComponent.class, LogisticContainerComponent.CODEC)
+    public static final BuilderCodec<EnergyBlockComponent> CODEC =
+            BuilderCodec.builder(EnergyBlockComponent.class, EnergyBlockComponent::new, LogisticBlockComponent.CODEC)
                     .append(new KeyedCodec<>("Energy", Codec.LONG),
                             (c, v) -> c.energy = v,
                             (c) -> c.energy)
@@ -37,7 +41,7 @@ public abstract class EnergyContainerComponent extends LogisticContainerComponen
     protected long totalCapacity;
     protected long transferSpeed;
 
-    public EnergyContainerComponent(
+    public EnergyBlockComponent(
             long energy,
             long totalCapacity,
             long transferSpeed,
@@ -46,21 +50,23 @@ public abstract class EnergyContainerComponent extends LogisticContainerComponen
     ) {
         super(blockFaceConfig, transferPriority);
 
-        requireNonNegative(energy, "energy");
-        requireNonNegative(totalCapacity, "totalCapacity");
-        requireNonNegative(transferSpeed, "transferSpeed");
+        Validation.requireNonNegative(energy, "energy");
+        Validation.requireNonNegative(totalCapacity, "totalCapacity");
+        Validation.requireNonNegative(transferSpeed, "transferSpeed");
 
         this.totalCapacity = totalCapacity;
         this.energy = Math.min(energy, totalCapacity);
         this.transferSpeed = transferSpeed;
     }
 
-    public EnergyContainerComponent() {
+    public EnergyBlockComponent() {
         this(0L, 0L, 0L, new BlockFaceConfig(), 0);
     }
 
-    private static void requireNonNegative(long value, String name) {
-        if (value < 0) throw new IllegalArgumentException(name + " must be >= 0");
+    @Nonnull
+    public Component<ChunkStore> clone() {
+        return new EnergyBlockComponent(this.energy, this.totalCapacity,
+                this.transferSpeed, this.currentBlockFaceConfig.clone(), this.transferPriority);
     }
 
     public long getEnergy() {

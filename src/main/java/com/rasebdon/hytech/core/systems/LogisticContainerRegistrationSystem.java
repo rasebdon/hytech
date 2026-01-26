@@ -5,40 +5,46 @@ import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.RefSystem;
 import com.hypixel.hytale.event.IEventRegistry;
 import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
+import com.rasebdon.hytech.core.components.LogisticBlockComponent;
 import com.rasebdon.hytech.core.components.LogisticContainerComponent;
 import com.rasebdon.hytech.core.components.LogisticPipeComponent;
 import com.rasebdon.hytech.core.events.LogisticChangeType;
 import com.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
+import com.rasebdon.hytech.core.networks.LogisticNetworkSystem;
 import com.rasebdon.hytech.energy.util.EnergyUtils;
 import com.rasebdon.hytech.energy.util.EventBusUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public abstract class LogisticContainerRegistrationSystem<TContainer> extends RefSystem<ChunkStore> {
-    private final ComponentType<ChunkStore, ? extends LogisticContainerComponent<TContainer>> containerComponentType;
-    private final ComponentType<ChunkStore, ? extends LogisticPipeComponent<TContainer>> pipeComponentType;
+public abstract class LogisticContainerRegistrationSystem<TContainer>
+        extends RefSystem<ChunkStore> {
 
+    private final ComponentType<ChunkStore, ? extends LogisticBlockComponent<TContainer>> containerType;
+    private final ComponentType<ChunkStore, ? extends LogisticPipeComponent<?, ?, TContainer>> pipeType;
     private final Query<ChunkStore> query;
 
+    private final LogisticNetworkSystem<?, ?, TContainer> networkRegistrationSystem;
+
     protected LogisticContainerRegistrationSystem(
-            ComponentType<ChunkStore, ? extends LogisticContainerComponent<TContainer>> containerComponentType,
-            ComponentType<ChunkStore, ? extends LogisticPipeComponent<TContainer>> pipeComponentType,
+            ComponentType<ChunkStore, ? extends LogisticBlockComponent<TContainer>> containerType,
+            ComponentType<ChunkStore, ? extends LogisticPipeComponent<?, ?, TContainer>> pipeType,
             IEventRegistry eventRegistry,
-            Class<? extends LogisticContainerChangedEvent<TContainer>> eventClass) {
-        this.containerComponentType = containerComponentType;
-        this.pipeComponentType = pipeComponentType;
+            Class<? extends LogisticContainerChangedEvent<TContainer>> containerChangedEventClass,
+            LogisticNetworkSystem<?, ?, TContainer> networkRegistrationSystem
+    ) {
+        this.containerType = containerType;
+        this.pipeType = pipeType;
+        this.query = Query.or(containerType, pipeType);
+        this.networkRegistrationSystem = networkRegistrationSystem;
 
-        query = Query.or(containerComponentType, pipeComponentType);
-
-        eventRegistry.register(eventClass, this::handleEnergyContainerChangedEvent);
+        eventRegistry.register(containerChangedEventClass, this::onContainerChanged);
     }
 
-    private void handleEnergyContainerChangedEvent(LogisticContainerChangedEvent<TContainer> event) {
-        if (event.isChanged()) {
-            removeAsTransferTargetFromNeighbors(event.getComponent(), event.blockRef, event.store);
-            reloadTransferTargets(event.getComponent(), event.blockRef, event.store);
-        }
+    @Override
+    public @Nullable Query<ChunkStore> getQuery() {
+        return query;
     }
 
     @Override
@@ -46,19 +52,17 @@ public abstract class LogisticContainerRegistrationSystem<TContainer> extends Re
             @NotNull Ref<ChunkStore> ref,
             @NotNull AddReason reason,
             @NotNull Store<ChunkStore> store,
-            @NotNull CommandBuffer<ChunkStore> commandBuffer) {
-        var containerComponent = store.getComponent(ref, this.containerComponentType);
-        if (containerComponent != null) {
-            reloadTransferTargets(containerComponent, ref, store);
-            EventBusUtil.dispatchIfListening(createContainerChangedEvent(ref, store, LogisticChangeType.ADDED, containerComponent));
-        }
+            @NotNull CommandBuffer<ChunkStore> commandBuffer
+    ) {
+        var component = getContainer(store, ref);
+        if (component == null) return;
 
-        var pipeComponent = store.getComponent(ref, this.pipeComponentType);
-        if (pipeComponent != null) {
-            reloadTransferTargets(pipeComponent, ref, store);
-            pipeComponent.reloadPipeConnectionModels(store.getExternalData().getWorld(), ref);
-            EventBusUtil.dispatchIfListening(createContainerChangedEvent(ref, store, LogisticChangeType.ADDED, pipeComponent));
-        }
+        rebuildTransferTargets(component, ref, store);
+        onVisualsAdded(component, ref, store);
+
+        EventBusUtil.dispatchIfListening(
+                createLogisticContainerChangedEvent(ref, store, LogisticChangeType.ADDED, component)
+        );
     }
 
     @Override
@@ -66,121 +70,143 @@ public abstract class LogisticContainerRegistrationSystem<TContainer> extends Re
             @NotNull Ref<ChunkStore> ref,
             @NotNull RemoveReason reason,
             @NotNull Store<ChunkStore> store,
-            @NotNull CommandBuffer<ChunkStore> commandBuffer) {
-        var containerComponent = store.getComponent(ref, this.containerComponentType);
-        if (containerComponent != null) {
-            removeAsTransferTargetFromNeighbors(containerComponent, ref, store);
-            EventBusUtil.dispatchIfListening(createContainerChangedEvent(ref, store, LogisticChangeType.REMOVED, containerComponent));
-        }
-
-        var pipeComponent = store.getComponent(ref, this.pipeComponentType);
-        if (pipeComponent != null) {
-            removeAsTransferTargetFromNeighbors(pipeComponent, ref, store);
-            pipeComponent.clearPipeConnections(store.getExternalData().getWorld());
-            EventBusUtil.dispatchIfListening(createContainerChangedEvent(ref, store, LogisticChangeType.ADDED, pipeComponent));
-        }
-    }
-
-    protected abstract LogisticContainerChangedEvent<TContainer> createContainerChangedEvent(
-            Ref<ChunkStore> blockRef, Store<ChunkStore> store,
-            LogisticChangeType changeType, LogisticContainerComponent<TContainer> component
-    );
-
-    @Override
-    public @Nullable Query<ChunkStore> getQuery() {
-        return query;
-    }
-
-    public void reloadTransferTargets(
-            LogisticContainerComponent<TContainer> containerComponent,
-            Ref<ChunkStore> blockRef,
-            Store<ChunkStore> store) {
-        containerComponent.clearTransferTargets();
-
-        var world = store.getExternalData().getWorld();
-        var blockLocation = EnergyUtils.getBlockTransform(blockRef, store);
-        if (blockLocation == null) return;
-
-        for (var worldSide : Vector3i.BLOCK_SIDES) {
-            var localFace = EnergyUtils.getLocalFace(worldSide, blockLocation.rotation());
-
-            var containerCanExtract = containerComponent.canExtractFromFace(localFace);
-            var containerCanReceive = containerComponent.canExtractFromFace(localFace);
-
-            if (!containerCanExtract && !containerCanReceive)
-                continue;
-
-            var neighborWorldPos = worldSide.clone().add(blockLocation.worldPos());
-            var neighborRef = EnergyUtils.getBlockEntityRef(world, neighborWorldPos);
-            if (neighborRef == null) continue;
-
-            var neighborLoc = EnergyUtils.getBlockTransform(neighborRef, store);
-
-            var neighborContainerComponent = getNeighborContainer(store, neighborRef);
-
-            if (neighborContainerComponent != null && neighborLoc != null) {
-                var oppositeWorldDir = worldSide.clone().negate();
-                var neighborLocalFace = EnergyUtils.getLocalFace(oppositeWorldDir, neighborLoc.rotation());
-
-                var neighborCanReceive = neighborContainerComponent.canReceiveFromFace(neighborLocalFace);
-
-                if (containerCanExtract && neighborCanReceive) {
-                    containerComponent.tryAddTransferTarget(
-                            neighborContainerComponent.getContainer(),
-                            localFace,
-                            neighborLocalFace
-                    );
-                }
-
-                var neighborCanExtract = neighborContainerComponent.canExtractFromFace(neighborLocalFace);
-                if (containerCanReceive && neighborCanExtract) {
-                    neighborContainerComponent.tryAddTransferTarget(
-                            containerComponent.getContainer(),
-                            neighborLocalFace,
-                            localFace
-                    );
-
-                    if (neighborContainerComponent instanceof LogisticPipeComponent<TContainer> neighborPipe) {
-                        neighborPipe.reloadPipeConnectionModels(world, neighborRef);
-                    }
-                }
-            }
-        }
-    }
-
-    private @Nullable LogisticContainerComponent<TContainer> getNeighborContainer(
-            Store<ChunkStore> store,
-            Ref<ChunkStore> neighborRef
+            @NotNull CommandBuffer<ChunkStore> commandBuffer
     ) {
-        var component = store.getComponent(neighborRef, containerComponentType);
-        return component != null
-                ? component
-                : store.getComponent(neighborRef, pipeComponentType);
+        var component = getContainer(store, ref);
+        if (component == null) return;
+
+        removeFromNeighbors(component, ref, store);
+        onVisualsRemoved(component, store);
+
+        EventBusUtil.dispatchIfListening(
+                createLogisticContainerChangedEvent(ref, store, LogisticChangeType.REMOVED, component)
+        );
     }
 
-    public void removeAsTransferTargetFromNeighbors(
-            LogisticContainerComponent<TContainer> containerComponent,
-            @NotNull Ref<ChunkStore> blockRef,
-            @NotNull Store<ChunkStore> store) {
-        var world = store.getExternalData().getWorld();
-        var blockLocation = EnergyUtils.getBlockTransform(blockRef, store);
-        if (blockLocation == null) return;
+    private void onContainerChanged(LogisticContainerChangedEvent<TContainer> event) {
+        if (event.isChanged()) {
+            removeFromNeighbors(event.getComponent(), event.blockRef, event.store);
+            rebuildTransferTargets(event.getComponent(), event.blockRef, event.store);
+        }
 
-        for (var worldSide : Vector3i.BLOCK_SIDES) {
-            var neighborWorldPos = worldSide.clone().add(blockLocation.worldPos());
-            var neighborRef = EnergyUtils.getBlockEntityRef(world, neighborWorldPos);
+        networkRegistrationSystem.onContainerChanged(event);
+    }
+
+    protected void rebuildTransferTargets(
+            LogisticContainerComponent<TContainer> container,
+            Ref<ChunkStore> ref,
+            Store<ChunkStore> store
+    ) {
+        container.clearTransferTargets();
+
+        var transform = EnergyUtils.getBlockTransform(ref, store);
+        if (transform == null) return;
+
+        var world = store.getExternalData().getWorld();
+
+        for (var worldDir : Vector3i.BLOCK_SIDES) {
+            var localFace = EnergyUtils.getLocalFace(worldDir, transform.rotation());
+
+            boolean canExtract = container.canExtractFromFace(localFace);
+            boolean canReceive = container.canReceiveFromFace(localFace);
+            if (!canExtract && !canReceive) continue;
+
+            var neighborRef = EnergyUtils.getBlockEntityRef(
+                    world, worldDir.clone().add(transform.worldPos())
+            );
             if (neighborRef == null) continue;
 
-            var neighborLoc = EnergyUtils.getBlockTransform(neighborRef, store);
-            var neighborContainerComponent = getNeighborContainer(store, neighborRef);
+            var neighbor = getContainer(store, neighborRef);
+            var neighborTransform = EnergyUtils.getBlockTransform(neighborRef, store);
+            if (neighbor == null || neighborTransform == null) continue;
 
-            if (neighborContainerComponent != null && neighborLoc != null) {
-                neighborContainerComponent.removeTransferTarget(containerComponent.getContainer());
+            var neighborFace = EnergyUtils.getLocalFace(
+                    worldDir.clone().negate(),
+                    neighborTransform.rotation()
+            );
 
-                if (neighborContainerComponent instanceof LogisticPipeComponent<TContainer> neighborPipe) {
-                    neighborPipe.reloadPipeConnectionModels(world, neighborRef);
-                }
+            if (canExtract && neighbor.canReceiveFromFace(neighborFace)) {
+                container.tryAddTransferTarget(
+                        neighbor, localFace, neighborFace
+                );
             }
+
+            if (canReceive && neighbor.canExtractFromFace(neighborFace)) {
+                neighbor.tryAddTransferTarget(
+                        container, neighborFace, localFace
+                );
+            }
+
+            updatePipeVisual(neighbor, world, neighborRef);
         }
     }
+
+    protected void removeFromNeighbors(
+            LogisticContainerComponent<TContainer> container,
+            Ref<ChunkStore> ref,
+            Store<ChunkStore> store
+    ) {
+        var transform = EnergyUtils.getBlockTransform(ref, store);
+        if (transform == null) return;
+
+        var world = store.getExternalData().getWorld();
+
+        for (var worldDir : Vector3i.BLOCK_SIDES) {
+            var neighborRef = EnergyUtils.getBlockEntityRef(
+                    world, worldDir.clone().add(transform.worldPos())
+            );
+            if (neighborRef == null) continue;
+
+            var neighbor = getContainer(store, neighborRef);
+            if (neighbor == null) continue;
+
+            neighbor.removeTransferTarget(container);
+            updatePipeVisual(neighbor, world, neighborRef);
+        }
+    }
+
+    private @Nullable LogisticContainerComponent<TContainer> getContainer(
+            Store<ChunkStore> store, Ref<ChunkStore> ref
+    ) {
+        var container = store.getComponent(ref, containerType);
+        return container != null ? container : store.getComponent(ref, pipeType);
+    }
+
+    private void updatePipeVisual(
+            LogisticContainerComponent<TContainer> component,
+            World world,
+            Ref<ChunkStore> ref
+    ) {
+        if (component instanceof LogisticPipeComponent<?, ?, TContainer> pipe) {
+            pipe.reloadPipeConnectionModels(world, ref);
+        }
+    }
+
+    private void onVisualsAdded(
+            LogisticContainerComponent<TContainer> component,
+            Ref<ChunkStore> ref,
+            Store<ChunkStore> store
+    ) {
+        if (component instanceof LogisticPipeComponent<?, ?, TContainer> pipe) {
+            pipe.reloadPipeConnectionModels(
+                    store.getExternalData().getWorld(), ref
+            );
+        }
+    }
+
+    private void onVisualsRemoved(
+            LogisticContainerComponent<TContainer> component,
+            Store<ChunkStore> store
+    ) {
+        if (component instanceof LogisticPipeComponent<?, ?, TContainer> pipe) {
+            pipe.clearPipeConnections(store.getExternalData().getWorld());
+        }
+    }
+
+    protected abstract LogisticContainerChangedEvent<TContainer> createLogisticContainerChangedEvent(
+            Ref<ChunkStore> blockRef,
+            Store<ChunkStore> store,
+            LogisticChangeType changeType,
+            LogisticContainerComponent<TContainer> component
+    );
 }

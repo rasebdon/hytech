@@ -4,7 +4,7 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.system.tick.TickingSystem;
 import com.hypixel.hytale.event.IEventRegistry;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
-import com.rasebdon.hytech.core.components.LogisticContainerComponent;
+import com.rasebdon.hytech.core.components.LogisticBlockComponent;
 import com.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
 import com.rasebdon.hytech.core.events.LogisticNetworkChangedEvent;
 import com.rasebdon.hytech.core.networks.LogisticNetwork;
@@ -15,13 +15,13 @@ import java.util.Comparator;
 import java.util.List;
 
 public abstract class LogisticTransferSystem<TContainer> extends TickingSystem<ChunkStore> {
-    private final List<LogisticContainerComponent<TContainer>> containerComponents;
-    private final List<LogisticNetwork<TContainer>> networks;
+    private final List<LogisticBlockComponent<TContainer>> containerComponents;
+    private final List<LogisticNetwork<?, ?, TContainer>> networks;
 
     protected LogisticTransferSystem(
             IEventRegistry eventRegistry,
             Class<? extends LogisticContainerChangedEvent<TContainer>> containerChangedEventClass,
-            Class<? extends LogisticNetworkChangedEvent<TContainer>> networkChangedEventClass) {
+            Class<? extends LogisticNetworkChangedEvent<?, ?, TContainer>> networkChangedEventClass) {
         eventRegistry.register(containerChangedEventClass, this::handleLogisticContainerChanged);
         eventRegistry.register(networkChangedEventClass, this::handleLogisticNetworkChanged);
 
@@ -30,14 +30,17 @@ public abstract class LogisticTransferSystem<TContainer> extends TickingSystem<C
     }
 
     private void handleLogisticContainerChanged(LogisticContainerChangedEvent<TContainer> event) {
-        if (event.isAdded()) {
-            addContainerComponent(event.getComponent());
-        } else if (event.isRemoved()) {
-            removeContainerComponent(event.getComponent());
+        if (event.getComponent() instanceof LogisticBlockComponent<TContainer> blockComponent) {
+            if (event.isAdded()) {
+                addLogisticBlock(blockComponent);
+            } else if (event.isRemoved()) {
+                removeLogisticBlock(blockComponent);
+            }
         }
+
     }
 
-    private void handleLogisticNetworkChanged(LogisticNetworkChangedEvent<TContainer> event) {
+    private void handleLogisticNetworkChanged(LogisticNetworkChangedEvent<?, ?, TContainer> event) {
         if (event.isAdded()) {
             networks.add(event.getComponent());
         } else if (event.isRemoved()) {
@@ -60,14 +63,14 @@ public abstract class LogisticTransferSystem<TContainer> extends TickingSystem<C
         }
     }
 
-    protected abstract void transfer(LogisticContainerComponent<TContainer> source);
+    protected abstract void transfer(LogisticBlockComponent<TContainer> source);
 
-    private void addContainerComponent(LogisticContainerComponent<TContainer> container) {
-        containerComponents.add(container);
-        containerComponents.sort(Comparator.comparingInt(LogisticContainerComponent<TContainer>::getTransferPriority));
+    private void addLogisticBlock(LogisticBlockComponent<TContainer> block) {
+        containerComponents.add(block);
+        containerComponents.sort(Comparator.comparingInt(LogisticBlockComponent<TContainer>::getTransferPriority));
     }
 
-    private void removeContainerComponent(LogisticContainerComponent<TContainer> container) {
-        containerComponents.remove(container);
+    private void removeLogisticBlock(LogisticBlockComponent<TContainer> block) {
+        containerComponents.remove(block);
     }
 }

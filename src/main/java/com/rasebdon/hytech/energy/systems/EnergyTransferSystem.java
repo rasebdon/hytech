@@ -1,9 +1,8 @@
 package com.rasebdon.hytech.energy.systems;
 
 import com.hypixel.hytale.event.IEventRegistry;
-import com.rasebdon.hytech.core.components.LogisticContainerComponent;
+import com.rasebdon.hytech.core.components.LogisticBlockComponent;
 import com.rasebdon.hytech.core.systems.LogisticTransferSystem;
-import com.rasebdon.hytech.core.systems.LogisticTransferTarget;
 import com.rasebdon.hytech.energy.IEnergyContainer;
 import com.rasebdon.hytech.energy.events.EnergyContainerChangedEvent;
 import com.rasebdon.hytech.energy.events.EnergyNetworkChangedEvent;
@@ -14,7 +13,7 @@ public class EnergyTransferSystem extends LogisticTransferSystem<IEnergyContaine
     }
 
     @Override
-    public void transfer(LogisticContainerComponent<IEnergyContainer> source) {
+    public void transfer(LogisticBlockComponent<IEnergyContainer> source) {
         var sourceContainer = source.getContainer();
         var sourceEnergy = sourceContainer.getEnergy();
         var sourceTransferSpeed = sourceContainer.getTransferSpeed();
@@ -22,13 +21,15 @@ public class EnergyTransferSystem extends LogisticTransferSystem<IEnergyContaine
         if (sourceEnergy <= 0 || sourceTransferSpeed <= 0) return;
 
         var validTargets = source.getTransferTargets().stream()
-                .map(LogisticTransferTarget::target)
+                .map(t -> t.target().getContainer())
                 .filter(t -> t.getRemainingCapacity() > 0)
                 .toList();
 
         if (validTargets.isEmpty()) return;
 
         long totalTransferred = 0;
+
+        // TODO : Only transfer to pipes that are in Normal (Both) mode
 
         for (var target : validTargets) {
             if (sourceEnergy <= 0) break;

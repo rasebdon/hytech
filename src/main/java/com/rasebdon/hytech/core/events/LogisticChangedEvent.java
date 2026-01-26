@@ -3,8 +3,8 @@ package com.rasebdon.hytech.core.events;
 import com.hypixel.hytale.event.IEvent;
 
 public abstract class LogisticChangedEvent<TComponent> implements IEvent<Void> {
-    public final TComponent component;
-    public final LogisticChangeType changeType;
+    private final TComponent component;
+    private final LogisticChangeType changeType;
 
     protected LogisticChangedEvent(TComponent component, LogisticChangeType changeType) {
         this.component = component;

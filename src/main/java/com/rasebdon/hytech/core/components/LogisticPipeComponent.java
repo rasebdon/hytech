@@ -17,18 +17,22 @@ import com.hypixel.hytale.server.core.modules.entity.tracker.NetworkId;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.rasebdon.hytech.core.face.BlockFaceConfig;
 import com.rasebdon.hytech.core.networks.LogisticNetwork;
 import com.rasebdon.hytech.core.systems.LogisticTransferTarget;
 import com.rasebdon.hytech.energy.util.EnergyUtils;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public abstract class LogisticPipeComponent<TContainer> extends LogisticContainerComponent<TContainer> {
+public abstract class LogisticPipeComponent<
+        TNetwork extends LogisticNetwork<TNetwork, TPipe, TContainer>,
+        TPipe extends LogisticPipeComponent<TNetwork, TPipe, TContainer>,
+        TContainer
+        > extends LogisticContainerComponent<TContainer> {
 
     @SuppressWarnings("rawtypes")
     public static final BuilderCodec<LogisticPipeComponent> CODEC =
@@ -43,47 +47,22 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticContaine
                             (c, v) -> c.pullConnectionModelAsset = v,
                             c -> c.pullConnectionModelAsset).add()
                     .build();
-
-    @Nullable
-    protected LogisticNetwork<TContainer> network;
-
-
     private final List<Ref<EntityStore>> pipeConnectionModels = new ArrayList<>();
+    protected TNetwork network;
     private String normalConnectionModelAsset = "Pipe_Normal";
     private String pushConnectionModelAsset = "Pipe_Push";
     private String pullConnectionModelAsset = "Pipe_Pull";
 
-    @Override
-    public void tryAddTransferTarget(TContainer target, BlockFace from, BlockFace to) {
-        super.tryAddTransferTarget(target, from, to);
+    public LogisticPipeComponent(BlockFaceConfig blockFaceConfig) {
+        super(blockFaceConfig);
     }
 
-    @Override
-    public void removeTransferTarget(TContainer target) {
-        super.removeTransferTarget(target);
-    }
-
-    @Override
-    public void clearTransferTargets() {
-        super.clearTransferTargets();
-    }
-
-    @Nullable
-    public LogisticNetwork<TContainer> getNetwork() {
+    public TNetwork getNetwork() {
         return network;
     }
 
-    public void setNetwork(LogisticNetwork<TContainer> newNetwork) {
-        this.removeFromNetwork();
-        this.network = newNetwork;
-        this.network.addPipe(this);
-    }
-
-    public void removeFromNetwork() {
-        if (this.network != null) {
-            this.network.removePipe(this);
-            this.network = null;
-        }
+    public void assignNetwork(TNetwork network) {
+        this.network = network;
     }
 
     public void clearPipeConnections(@Nonnull World world) {

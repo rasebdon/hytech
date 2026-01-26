@@ -1,17 +1,84 @@
 package com.rasebdon.hytech.energy.networks;
 
-import com.rasebdon.hytech.core.components.LogisticPipeComponent;
-import com.rasebdon.hytech.core.events.LogisticChangeType;
-import com.rasebdon.hytech.core.events.LogisticNetworkChangedEvent;
 import com.rasebdon.hytech.core.networks.LogisticNetwork;
-import com.rasebdon.hytech.core.systems.LogisticTransferTarget;
 import com.rasebdon.hytech.energy.IEnergyContainer;
+import com.rasebdon.hytech.energy.components.EnergyPipeComponent;
 
 import java.util.Set;
 
-public class EnergyNetwork extends LogisticNetwork<IEnergyContainer> implements IEnergyContainer {
+public class EnergyNetwork extends LogisticNetwork<EnergyNetwork, EnergyPipeComponent, IEnergyContainer>
+        implements IEnergyContainer {
 
-    private void transferEnergy(IEnergyContainer from, IEnergyContainer to, long requested) {
+    private long energy;
+    private long totalCapacity;
+    private long transferSpeed;
+
+    public EnergyNetwork(Set<EnergyPipeComponent> initialPipes) {
+        super(initialPipes);
+        recalculateStats();
+    }
+
+    @Override
+    protected void resetPipes(Set<EnergyPipeComponent> newPipes) {
+        super.resetPipes(newPipes);
+        recalculateStats();
+    }
+
+    @Override
+    protected void detachPipe(EnergyPipeComponent pipe) {
+        super.detachPipe(pipe);
+        recalculateStats();
+    }
+
+    private void recalculateStats() {
+        energy = 0;
+        long capacity = 0;
+        long minSpeed = Long.MAX_VALUE;
+
+        for (var pipe : pipes) {
+            energy += pipe.getSavedEnergy();
+            capacity += pipe.getPipeCapacity();
+            minSpeed = Math.min(minSpeed, pipe.getPipeTransferSpeed());
+        }
+
+        this.totalCapacity = Math.max(0, capacity);
+        this.transferSpeed = minSpeed == Long.MAX_VALUE ? 0 : minSpeed;
+
+        // Clamp stored energy
+        if (energy > totalCapacity) {
+            energy = totalCapacity;
+        }
+    }
+
+    @Override
+    public void pullFromTargets() {
+        if (isFull()) return;
+
+        for (var target : pullTargets) {
+            if (isFull()) break;
+            transferEnergy(target.target().getContainer(), this, transferSpeed);
+        }
+    }
+
+    @Override
+    public void pushToTargets() {
+        if (isEmpty()) return;
+
+        if (pushTargets.isEmpty()) return;
+
+        long perTarget = Math.max(1, transferSpeed / pushTargets.size());
+
+        for (var target : pushTargets) {
+            if (isEmpty()) break;
+            transferEnergy(this, target.target().getContainer(), perTarget);
+        }
+    }
+
+    private void transferEnergy(
+            IEnergyContainer from,
+            IEnergyContainer to,
+            long requested
+    ) {
         if (from == null || to == null) return;
 
         long available = from.getEnergy();
@@ -23,85 +90,47 @@ public class EnergyNetwork extends LogisticNetwork<IEnergyContainer> implements 
         long speed = Math.min(from.getTransferSpeed(), to.getTransferSpeed());
         if (speed <= 0) return;
 
-        long amount = Math.min(Math.min(requested, speed), Math.min(available, remaining));
+        long amount = Math.min(
+                Math.min(requested, speed),
+                Math.min(available, remaining)
+        );
+
         if (amount <= 0) return;
 
         to.addEnergy(amount);
         from.reduceEnergy(amount);
     }
 
-
     @Override
-    protected LogisticNetwork<IEnergyContainer> createNetwork(Set<LogisticPipeComponent<IEnergyContainer>> pipes) {
-        return null;
-    }
-
-    @Override
-    protected LogisticNetworkChangedEvent<IEnergyContainer> createEvent(LogisticNetwork<IEnergyContainer> network, LogisticChangeType changeType) {
-        return null;
-    }
-
-    @Override
-    public IEnergyContainer getNetworkContainer() {
-        return null;
-    }
-
-    @Override
-    public void pullFromTargets() {
-        // Pull: neighbor -> pipe (invert direction of the stored edge)
-        for (LogisticTransferTarget<IEnergyContainer> edge : getPullTargets()) {
-            if (edge == null) continue;
-
-            var pipe = edge.source();
-            var neighbor = edge.target();
-            if (pipe == null || neighbor == null) continue;
-
-            // Pull only as much as the pipe can take.
-            transferEnergy(neighbor, pipe, pipe.getRemainingCapacity());
-        }
-    }
-
-    @Override
-    public void pushToTargets() {
-        // Push: pipe -> neighbor (direction as stored)
-        for (LogisticTransferTarget<IEnergyContainer> edge : getPushTargets()) {
-            if (edge == null) continue;
-
-            IEnergyContainer pipe = edge.source();
-            IEnergyContainer neighbor = edge.target();
-            if (pipe == null || neighbor == null) continue;
-
-            transferEnergy(pipe, neighbor, pipe.getEnergy());
-        }
+    public IEnergyContainer getContainer() {
+        return this;
     }
 
     @Override
     public long getEnergy() {
-        return 0;
+        return energy;
     }
 
     @Override
     public long getTotalCapacity() {
-        return 0;
+        return totalCapacity;
     }
 
     @Override
     public long getTransferSpeed() {
-        return 0;
+        return transferSpeed;
     }
 
     @Override
     public void addEnergy(long amount) {
-
+        if (amount <= 0) return;
+        energy = Math.min(totalCapacity, energy + amount);
     }
 
     @Override
     public void reduceEnergy(long amount) {
-
-    }
-
-    @Override
-    public IEnergyContainer getContainer() {
-        return null;
+        if (amount <= 0) return;
+        energy = Math.max(0, energy - amount);
     }
 }
+
