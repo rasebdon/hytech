@@ -10,6 +10,7 @@ import com.hypixel.hytale.protocol.BlockFace;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.rasebdon.hytech.core.face.BlockFaceConfig;
 import com.rasebdon.hytech.core.face.BlockFaceConfigOverride;
+import com.rasebdon.hytech.core.face.BlockFaceConfigType;
 import com.rasebdon.hytech.core.systems.LogisticTransferTarget;
 
 import javax.annotation.Nullable;
@@ -18,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 
-public abstract class LogisticContainerComponent<TContainer extends ILogisticContainer> implements ILogisticContainer, Component<ChunkStore> {
+public abstract class LogisticContainerComponent<TContainer> implements ILogisticContainerHolder<TContainer>, Component<ChunkStore> {
     @SuppressWarnings("rawtypes")
     public static final BuilderCodec<LogisticContainerComponent> CODEC =
             BuilderCodec.abstractBuilder(LogisticContainerComponent.class)
@@ -63,7 +64,7 @@ public abstract class LogisticContainerComponent<TContainer extends ILogisticCon
 
         LOGGER.atInfo().log("%s (%s) adding transfer target %s (%s)", toString(), from.name(),
                 target.toString(), to.name());
-        this.transferTargets.put(target, new LogisticTransferTarget<>(target, from, to));
+        this.transferTargets.put(target, new LogisticTransferTarget<>(getContainer(), target, from, to));
     }
 
     public void removeTransferTarget(TContainer target) {
@@ -73,6 +74,10 @@ public abstract class LogisticContainerComponent<TContainer extends ILogisticCon
 
     public void clearTransferTargets() {
         this.transferTargets.clear();
+    }
+
+    public BlockFaceConfigType getConfigForFace(BlockFace face) {
+        return this.currentBlockFaceConfig.getFaceConfigType(face);
     }
 
     public boolean canReceiveFromFace(BlockFace face) {
@@ -86,8 +91,6 @@ public abstract class LogisticContainerComponent<TContainer extends ILogisticCon
     public int getTransferPriority() {
         return transferPriority;
     }
-
-    public abstract TContainer getContainer();
 
     @Nullable
     public abstract Component<ChunkStore> clone();

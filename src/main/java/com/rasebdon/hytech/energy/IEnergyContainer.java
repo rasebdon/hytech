@@ -1,8 +1,6 @@
 package com.rasebdon.hytech.energy;
 
-import com.rasebdon.hytech.core.components.ILogisticContainer;
-
-public interface IEnergyContainer extends ILogisticContainer {
+public interface IEnergyContainer {
     long getEnergy();
 
     long getTotalCapacity();

@@ -17,7 +17,7 @@ public class EnergyPipeComponent extends LogisticPipeComponent<IEnergyContainer>
 
     @Override
     public IEnergyContainer getContainer() {
-        return this;
+        return getNetworkContainer();
     }
 
     @Override
@@ -27,26 +27,31 @@ public class EnergyPipeComponent extends LogisticPipeComponent<IEnergyContainer>
 
     @Override
     public long getEnergy() {
-        return 0;
+        return getNetworkContainer().getEnergy();
     }
 
     @Override
     public long getTotalCapacity() {
-        return 0;
+        return getNetworkContainer().getTotalCapacity();
     }
 
     @Override
     public long getTransferSpeed() {
-        return 0;
+        return getNetworkContainer().getTransferSpeed();
     }
 
     @Override
     public void addEnergy(long amount) {
-
+        getNetworkContainer().addEnergy(amount);
     }
 
     @Override
     public void reduceEnergy(long amount) {
+        getNetworkContainer().reduceEnergy(amount);
+    }
 
+    private IEnergyContainer getNetworkContainer() {
+        assert this.network != null;
+        return this.network.getNetworkContainer();
     }
 }

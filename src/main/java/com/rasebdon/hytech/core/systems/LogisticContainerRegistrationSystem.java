@@ -6,7 +6,6 @@ import com.hypixel.hytale.component.system.RefSystem;
 import com.hypixel.hytale.event.IEventRegistry;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
-import com.rasebdon.hytech.core.components.ILogisticContainer;
 import com.rasebdon.hytech.core.components.LogisticContainerComponent;
 import com.rasebdon.hytech.core.components.LogisticPipeComponent;
 import com.rasebdon.hytech.core.events.LogisticChangeType;
@@ -16,7 +15,7 @@ import com.rasebdon.hytech.energy.util.EventBusUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public abstract class LogisticContainerRegistrationSystem<TContainer extends ILogisticContainer> extends RefSystem<ChunkStore> {
+public abstract class LogisticContainerRegistrationSystem<TContainer> extends RefSystem<ChunkStore> {
     private final ComponentType<ChunkStore, ? extends LogisticContainerComponent<TContainer>> containerComponentType;
     private final ComponentType<ChunkStore, ? extends LogisticPipeComponent<TContainer>> pipeComponentType;
 
@@ -51,20 +50,16 @@ public abstract class LogisticContainerRegistrationSystem<TContainer extends ILo
         var containerComponent = store.getComponent(ref, this.containerComponentType);
         if (containerComponent != null) {
             reloadTransferTargets(containerComponent, ref, store);
-            EventBusUtil.dispatchIfListening(createEvent(ref, store, LogisticChangeType.ADDED, containerComponent));
+            EventBusUtil.dispatchIfListening(createContainerChangedEvent(ref, store, LogisticChangeType.ADDED, containerComponent));
         }
 
         var pipeComponent = store.getComponent(ref, this.pipeComponentType);
         if (pipeComponent != null) {
             reloadTransferTargets(pipeComponent, ref, store);
-            pipeComponent.reloadPipeConnections(store.getExternalData().getWorld(), ref);
+            pipeComponent.reloadPipeConnectionModels(store.getExternalData().getWorld(), ref);
+            EventBusUtil.dispatchIfListening(createContainerChangedEvent(ref, store, LogisticChangeType.ADDED, pipeComponent));
         }
     }
-
-    protected abstract LogisticContainerChangedEvent<TContainer> createEvent(
-            Ref<ChunkStore> blockRef, Store<ChunkStore> store,
-            LogisticChangeType changeType, LogisticContainerComponent<TContainer> component
-    );
 
     @Override
     public void onEntityRemove(
@@ -75,16 +70,21 @@ public abstract class LogisticContainerRegistrationSystem<TContainer extends ILo
         var containerComponent = store.getComponent(ref, this.containerComponentType);
         if (containerComponent != null) {
             removeAsTransferTargetFromNeighbors(containerComponent, ref, store);
-            EventBusUtil.dispatchIfListening(createEvent(ref, store, LogisticChangeType.REMOVED, containerComponent));
+            EventBusUtil.dispatchIfListening(createContainerChangedEvent(ref, store, LogisticChangeType.REMOVED, containerComponent));
         }
 
         var pipeComponent = store.getComponent(ref, this.pipeComponentType);
         if (pipeComponent != null) {
             removeAsTransferTargetFromNeighbors(pipeComponent, ref, store);
             pipeComponent.clearPipeConnections(store.getExternalData().getWorld());
+            EventBusUtil.dispatchIfListening(createContainerChangedEvent(ref, store, LogisticChangeType.ADDED, pipeComponent));
         }
     }
 
+    protected abstract LogisticContainerChangedEvent<TContainer> createContainerChangedEvent(
+            Ref<ChunkStore> blockRef, Store<ChunkStore> store,
+            LogisticChangeType changeType, LogisticContainerComponent<TContainer> component
+    );
 
     @Override
     public @Nullable Query<ChunkStore> getQuery() {
@@ -141,7 +141,7 @@ public abstract class LogisticContainerRegistrationSystem<TContainer extends ILo
                     );
 
                     if (neighborContainerComponent instanceof LogisticPipeComponent<TContainer> neighborPipe) {
-                        neighborPipe.reloadPipeConnections(world, neighborRef);
+                        neighborPipe.reloadPipeConnectionModels(world, neighborRef);
                     }
                 }
             }
@@ -178,7 +178,7 @@ public abstract class LogisticContainerRegistrationSystem<TContainer extends ILo
                 neighborContainerComponent.removeTransferTarget(containerComponent.getContainer());
 
                 if (neighborContainerComponent instanceof LogisticPipeComponent<TContainer> neighborPipe) {
-                    neighborPipe.reloadPipeConnections(world, neighborRef);
+                    neighborPipe.reloadPipeConnectionModels(world, neighborRef);
                 }
             }
         }

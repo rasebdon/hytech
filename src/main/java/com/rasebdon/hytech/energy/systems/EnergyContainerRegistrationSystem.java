@@ -18,16 +18,14 @@ public class EnergyContainerRegistrationSystem extends LogisticContainerRegistra
     public EnergyContainerRegistrationSystem(
             ComponentType<ChunkStore, ? extends LogisticContainerComponent<IEnergyContainer>> containerComponentType,
             ComponentType<ChunkStore, ? extends LogisticPipeComponent<IEnergyContainer>> pipeComponentType,
-            IEventRegistry eventRegistry,
-            Class<? extends LogisticContainerChangedEvent<IEnergyContainer>> eventClass) {
-        super(containerComponentType, pipeComponentType, eventRegistry, eventClass);
+            IEventRegistry eventRegistry) {
+        super(containerComponentType, pipeComponentType, eventRegistry, EnergyContainerChangedEvent.class);
     }
 
     @Override
-    protected LogisticContainerChangedEvent<IEnergyContainer> createEvent(
+    protected LogisticContainerChangedEvent<IEnergyContainer> createContainerChangedEvent(
             Ref<ChunkStore> blockRef, Store<ChunkStore> store, LogisticChangeType changeType,
             LogisticContainerComponent<IEnergyContainer> component) {
         return new EnergyContainerChangedEvent(blockRef, store, changeType, component);
-
     }
 }

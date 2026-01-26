@@ -2,15 +2,15 @@ package com.rasebdon.hytech.energy.systems;
 
 import com.hypixel.hytale.event.IEventRegistry;
 import com.rasebdon.hytech.core.components.LogisticContainerComponent;
-import com.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
 import com.rasebdon.hytech.core.systems.LogisticTransferSystem;
 import com.rasebdon.hytech.core.systems.LogisticTransferTarget;
 import com.rasebdon.hytech.energy.IEnergyContainer;
+import com.rasebdon.hytech.energy.events.EnergyContainerChangedEvent;
+import com.rasebdon.hytech.energy.events.EnergyNetworkChangedEvent;
 
 public class EnergyTransferSystem extends LogisticTransferSystem<IEnergyContainer> {
-    public EnergyTransferSystem(IEventRegistry eventRegistry,
-                                Class<? extends LogisticContainerChangedEvent<IEnergyContainer>> eventClass) {
-        super(eventRegistry, eventClass);
+    public EnergyTransferSystem(IEventRegistry eventRegistry) {
+        super(eventRegistry, EnergyContainerChangedEvent.class, EnergyNetworkChangedEvent.class);
     }
 
     @Override

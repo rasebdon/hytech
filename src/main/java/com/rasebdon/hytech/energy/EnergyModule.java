@@ -9,7 +9,6 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.rasebdon.hytech.energy.components.BlockEnergyContainerComponent;
 import com.rasebdon.hytech.energy.components.EnergyGeneratorComponent;
 import com.rasebdon.hytech.energy.components.EnergyPipeComponent;
-import com.rasebdon.hytech.energy.events.EnergyContainerChangedEvent;
 import com.rasebdon.hytech.energy.interaction.ReadEnergyContainerBlockInteraction;
 import com.rasebdon.hytech.energy.interaction.WrenchBlockInteraction;
 import com.rasebdon.hytech.energy.systems.EnergyContainerRegistrationSystem;
@@ -41,9 +40,9 @@ public class EnergyModule {
         ComponentType<ChunkStore, EnergyGeneratorComponent> energyGeneratorType = chunkStoreRegistry.registerComponent(
                 EnergyGeneratorComponent.class, "hytech:energy:generator", EnergyGeneratorComponent.CODEC);
 
-        chunkStoreRegistry.registerSystem(new EnergyTransferSystem(eventRegistry, EnergyContainerChangedEvent.class));
+        chunkStoreRegistry.registerSystem(new EnergyTransferSystem(eventRegistry));
         chunkStoreRegistry.registerSystem(new EnergyContainerRegistrationSystem(
-                blockEnergyContainerComponentType, energyPipeComponentType, eventRegistry, EnergyContainerChangedEvent.class));
+                blockEnergyContainerComponentType, energyPipeComponentType, eventRegistry));
         chunkStoreRegistry.registerSystem(new EnergyGenerationSystem(energyGeneratorType, blockEnergyContainerComponentType));
 
         Interaction.CODEC.register(
