@@ -3,8 +3,9 @@ package com.rasebdon.hytech.energy.systems;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.system.tick.TickingSystem;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
+import com.rasebdon.hytech.core.networks.LogisticNetwork;
+import com.rasebdon.hytech.energy.IEnergyContainer;
 import com.rasebdon.hytech.energy.components.EnergyPipeComponent;
-import com.rasebdon.hytech.energy.networks.EnergyNetwork;
 import com.rasebdon.hytech.energy.networks.EnergyNetworkSystem;
 import org.jetbrains.annotations.NotNull;
 
@@ -29,13 +30,14 @@ public class EnergyNetworkSaveSystem extends TickingSystem<ChunkStore> {
     }
 
     private void saveAllNetworks() {
-        for (EnergyNetwork network : energyNetworkSystem.getNetworks()) {
+        for (var network : energyNetworkSystem.getNetworks()) {
             saveNetwork(network);
         }
     }
 
-    private void saveNetwork(EnergyNetwork network) {
-        long energy = network.getEnergy();
+    private void saveNetwork(LogisticNetwork<IEnergyContainer> network) {
+        var networkContainer = network.getContainer();
+        long energy = networkContainer.getEnergy();
         // TODO : Account for different pipe energy capacities
         long perPipe = network.getPipes().isEmpty() ? 0 : energy / network.getPipes().size();
 

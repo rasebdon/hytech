@@ -10,12 +10,10 @@ import com.rasebdon.hytech.core.components.LogisticPipeComponent;
 import com.rasebdon.hytech.core.face.BlockFaceConfig;
 import com.rasebdon.hytech.core.util.Validation;
 import com.rasebdon.hytech.energy.IEnergyContainer;
-import com.rasebdon.hytech.energy.networks.EnergyNetwork;
 
 import javax.annotation.Nonnull;
 
-public class EnergyPipeComponent extends LogisticPipeComponent<EnergyNetwork, EnergyPipeComponent, IEnergyContainer>
-        implements IEnergyContainer {
+public class EnergyPipeComponent extends LogisticPipeComponent<IEnergyContainer> implements IEnergyContainer {
 
     public static final BuilderCodec<EnergyPipeComponent> CODEC =
             BuilderCodec.builder(EnergyPipeComponent.class, EnergyPipeComponent::new, LogisticPipeComponent.CODEC)

@@ -16,12 +16,12 @@ import java.util.List;
 
 public abstract class LogisticTransferSystem<TContainer> extends TickingSystem<ChunkStore> {
     private final List<LogisticBlockComponent<TContainer>> containerComponents;
-    private final List<LogisticNetwork<?, ?, TContainer>> networks;
+    private final List<LogisticNetwork<TContainer>> networks;
 
     protected LogisticTransferSystem(
             IEventRegistry eventRegistry,
             Class<? extends LogisticContainerChangedEvent<TContainer>> containerChangedEventClass,
-            Class<? extends LogisticNetworkChangedEvent<?, ?, TContainer>> networkChangedEventClass) {
+            Class<? extends LogisticNetworkChangedEvent<TContainer>> networkChangedEventClass) {
         eventRegistry.register(containerChangedEventClass, this::handleLogisticContainerChanged);
         eventRegistry.register(networkChangedEventClass, this::handleLogisticNetworkChanged);
 
@@ -40,7 +40,7 @@ public abstract class LogisticTransferSystem<TContainer> extends TickingSystem<C
 
     }
 
-    private void handleLogisticNetworkChanged(LogisticNetworkChangedEvent<?, ?, TContainer> event) {
+    private void handleLogisticNetworkChanged(LogisticNetworkChangedEvent<TContainer> event) {
         if (event.isAdded()) {
             networks.add(event.getComponent());
         } else if (event.isRemoved()) {

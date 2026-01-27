@@ -9,31 +9,27 @@ public final class NetworkGraphUtil {
     private NetworkGraphUtil() {
     }
 
-    public static <
-            TNetwork extends LogisticNetwork<TNetwork, TPipe, TContainer>,
-            TPipe extends LogisticPipeComponent<TNetwork, TPipe, TContainer>,
-            TContainer
-            > List<Set<TPipe>> findConnectedComponents(Collection<TPipe> pipes) {
+    public static <TContainer> List<Set<LogisticPipeComponent<TContainer>>> findConnectedComponents(
+            Collection<LogisticPipeComponent<TContainer>> pipes) {
+        var graph = buildGraph(pipes);
 
-        Map<TPipe, Set<TPipe>> graph = buildGraph(pipes);
+        var visited = new HashSet<LogisticPipeComponent<TContainer>>();
+        var result = new ArrayList<Set<LogisticPipeComponent<TContainer>>>();
 
-        Set<TPipe> visited = new HashSet<>();
-        List<Set<TPipe>> result = new ArrayList<>();
-
-        for (TPipe pipe : pipes) {
+        for (var pipe : pipes) {
             if (visited.contains(pipe)) continue;
 
-            Set<TPipe> component = new HashSet<>();
-            Deque<TPipe> stack = new ArrayDeque<>();
+            var component = new HashSet<LogisticPipeComponent<TContainer>>();
+            var stack = new ArrayDeque<LogisticPipeComponent<TContainer>>();
             stack.push(pipe);
 
             while (!stack.isEmpty()) {
-                TPipe current = stack.pop();
+                var current = stack.pop();
                 if (!visited.add(current)) continue;
 
                 component.add(current);
 
-                for (TPipe neighbor : graph.getOrDefault(current, Set.of())) {
+                for (var neighbor : graph.getOrDefault(current, Set.of())) {
                     if (!visited.contains(neighbor)) {
                         stack.push(neighbor);
                     }
@@ -46,24 +42,16 @@ public final class NetworkGraphUtil {
         return result;
     }
 
-    private static <
-            TNetwork extends LogisticNetwork<TNetwork, TPipe, TContainer>,
-            TPipe extends LogisticPipeComponent<TNetwork, TPipe, TContainer>,
-            TContainer
-            > Map<TPipe, Set<TPipe>> buildGraph(Collection<TPipe> pipes) {
+    private static <TContainer> Map<LogisticPipeComponent<TContainer>, Set<LogisticPipeComponent<TContainer>>> buildGraph(
+            Collection<LogisticPipeComponent<TContainer>> pipes) {
 
-        Map<TPipe, Set<TPipe>> graph = new HashMap<>();
+        Map<LogisticPipeComponent<TContainer>, Set<LogisticPipeComponent<TContainer>>> graph = new HashMap<>();
 
-        for (TPipe pipe : pipes) {
+        for (var pipe : pipes) {
             graph.putIfAbsent(pipe, new HashSet<>());
 
             for (var target : pipe.getTransferTargets()) {
-                // If getTransferTargets returns LogisticPipeComponent or a subclass,
-                // the compiler now knows it MUST be a TPipe because of our class constraints.
-                if (target.target() instanceof LogisticPipeComponent<?, ?, TContainer> other) {
-                    @SuppressWarnings("unchecked")
-                    TPipe neighbor = (TPipe) other;
-
+                if (target.target() instanceof LogisticPipeComponent<TContainer> neighbor) {
                     graph.get(pipe).add(neighbor);
                     graph.computeIfAbsent(neighbor, _ -> new HashSet<>()).add(pipe);
                 }

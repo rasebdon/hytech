@@ -22,17 +22,17 @@ public abstract class LogisticContainerRegistrationSystem<TContainer>
         extends RefSystem<ChunkStore> {
 
     private final ComponentType<ChunkStore, ? extends LogisticBlockComponent<TContainer>> containerType;
-    private final ComponentType<ChunkStore, ? extends LogisticPipeComponent<?, ?, TContainer>> pipeType;
+    private final ComponentType<ChunkStore, ? extends LogisticPipeComponent<TContainer>> pipeType;
     private final Query<ChunkStore> query;
 
-    private final LogisticNetworkSystem<?, ?, TContainer> networkRegistrationSystem;
+    private final LogisticNetworkSystem<TContainer> networkRegistrationSystem;
 
     protected LogisticContainerRegistrationSystem(
             ComponentType<ChunkStore, ? extends LogisticBlockComponent<TContainer>> containerType,
-            ComponentType<ChunkStore, ? extends LogisticPipeComponent<?, ?, TContainer>> pipeType,
+            ComponentType<ChunkStore, ? extends LogisticPipeComponent<TContainer>> pipeType,
             IEventRegistry eventRegistry,
             Class<? extends LogisticContainerChangedEvent<TContainer>> containerChangedEventClass,
-            LogisticNetworkSystem<?, ?, TContainer> networkRegistrationSystem
+            LogisticNetworkSystem<TContainer> networkRegistrationSystem
     ) {
         this.containerType = containerType;
         this.pipeType = pipeType;
@@ -177,7 +177,7 @@ public abstract class LogisticContainerRegistrationSystem<TContainer>
             World world,
             Ref<ChunkStore> ref
     ) {
-        if (component instanceof LogisticPipeComponent<?, ?, TContainer> pipe) {
+        if (component instanceof LogisticPipeComponent<TContainer> pipe) {
             pipe.reloadPipeConnectionModels(world, ref);
         }
     }
@@ -187,7 +187,7 @@ public abstract class LogisticContainerRegistrationSystem<TContainer>
             Ref<ChunkStore> ref,
             Store<ChunkStore> store
     ) {
-        if (component instanceof LogisticPipeComponent<?, ?, TContainer> pipe) {
+        if (component instanceof LogisticPipeComponent<TContainer> pipe) {
             pipe.reloadPipeConnectionModels(
                     store.getExternalData().getWorld(), ref
             );
@@ -198,7 +198,7 @@ public abstract class LogisticContainerRegistrationSystem<TContainer>
             LogisticContainerComponent<TContainer> component,
             Store<ChunkStore> store
     ) {
-        if (component instanceof LogisticPipeComponent<?, ?, TContainer> pipe) {
+        if (component instanceof LogisticPipeComponent<TContainer> pipe) {
             pipe.clearPipeConnections(store.getExternalData().getWorld());
         }
     }

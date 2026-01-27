@@ -19,7 +19,7 @@ public class EnergyContainerRegistrationSystem extends LogisticContainerRegistra
 
     public EnergyContainerRegistrationSystem(
             ComponentType<ChunkStore, ? extends LogisticBlockComponent<IEnergyContainer>> blockComponentType,
-            ComponentType<ChunkStore, ? extends LogisticPipeComponent<?, ?, IEnergyContainer>> pipeComponentType,
+            ComponentType<ChunkStore, ? extends LogisticPipeComponent<IEnergyContainer>> pipeComponentType,
             IEventRegistry eventRegistry,
             EnergyNetworkSystem energyNetworkSystem) {
         super(blockComponentType, pipeComponentType, eventRegistry,

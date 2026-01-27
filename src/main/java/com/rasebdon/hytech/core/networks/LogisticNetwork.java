@@ -6,35 +6,30 @@ import com.rasebdon.hytech.core.systems.LogisticTransferTarget;
 
 import java.util.*;
 
-public abstract class LogisticNetwork<
-        TNetwork extends LogisticNetwork<TNetwork, TPipe, TContainer>,
-        TPipe extends LogisticPipeComponent<TNetwork, TPipe, TContainer>,
-        TContainer
-        > implements IContainerHolder<TContainer> {
+public abstract class LogisticNetwork<TContainer> implements IContainerHolder<TContainer> {
 
-    protected final Set<TPipe> pipes = new HashSet<>();
+    protected final Set<LogisticPipeComponent<TContainer>> pipes = new HashSet<>();
     protected final List<LogisticTransferTarget<TContainer>> pullTargets = new ArrayList<>();
     protected final List<LogisticTransferTarget<TContainer>> pushTargets = new ArrayList<>();
 
-    protected LogisticNetwork(Set<TPipe> initialPipes) {
+    protected LogisticNetwork(Set<LogisticPipeComponent<TContainer>> initialPipes) {
         resetPipes(initialPipes);
     }
 
-    public Collection<TPipe> getPipes() {
+    public Collection<LogisticPipeComponent<TContainer>> getPipes() {
         return Set.copyOf(pipes);
     }
 
-    @SuppressWarnings("unchecked")
-    protected void resetPipes(Set<TPipe> newPipes) {
+    protected void resetPipes(Set<LogisticPipeComponent<TContainer>> newPipes) {
         pipes.clear();
         for (var pipe : newPipes) {
             pipes.add(pipe);
-            pipe.assignNetwork((TNetwork) this);
+            pipe.assignNetwork(this);
         }
         rebuildTargets();
     }
 
-    protected void detachPipe(TPipe pipe) {
+    protected void detachPipe(LogisticPipeComponent<TContainer> pipe) {
         pipes.remove(pipe);
     }
 
@@ -44,7 +39,7 @@ public abstract class LogisticNetwork<
 
         for (var pipe : pipes) {
             for (var target : pipe.getTransferTargets()) {
-                if (target == null || target.target() instanceof LogisticPipeComponent<?, ?, TContainer>) {
+                if (target == null || target.target() instanceof LogisticPipeComponent<TContainer>) {
                     continue;
                 }
 

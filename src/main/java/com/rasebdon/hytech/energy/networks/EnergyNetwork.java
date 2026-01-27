@@ -1,31 +1,31 @@
 package com.rasebdon.hytech.energy.networks;
 
+import com.rasebdon.hytech.core.components.LogisticPipeComponent;
 import com.rasebdon.hytech.core.networks.LogisticNetwork;
 import com.rasebdon.hytech.energy.IEnergyContainer;
 import com.rasebdon.hytech.energy.components.EnergyPipeComponent;
 
 import java.util.Set;
 
-public class EnergyNetwork extends LogisticNetwork<EnergyNetwork, EnergyPipeComponent, IEnergyContainer>
-        implements IEnergyContainer {
+public class EnergyNetwork extends LogisticNetwork<IEnergyContainer> implements IEnergyContainer {
 
     private long energy;
     private long totalCapacity;
     private long transferSpeed;
 
-    public EnergyNetwork(Set<EnergyPipeComponent> initialPipes) {
+    public EnergyNetwork(Set<LogisticPipeComponent<IEnergyContainer>> initialPipes) {
         super(initialPipes);
         recalculateStats();
     }
 
     @Override
-    protected void resetPipes(Set<EnergyPipeComponent> newPipes) {
+    protected void resetPipes(Set<LogisticPipeComponent<IEnergyContainer>> newPipes) {
         super.resetPipes(newPipes);
         recalculateStats();
     }
 
     @Override
-    protected void detachPipe(EnergyPipeComponent pipe) {
+    protected void detachPipe(LogisticPipeComponent<IEnergyContainer> pipe) {
         super.detachPipe(pipe);
         recalculateStats();
     }
@@ -36,9 +36,10 @@ public class EnergyNetwork extends LogisticNetwork<EnergyNetwork, EnergyPipeComp
         long minSpeed = Long.MAX_VALUE;
 
         for (var pipe : pipes) {
-            energy += pipe.getSavedEnergy();
-            capacity += pipe.getPipeCapacity();
-            minSpeed = Math.min(minSpeed, pipe.getPipeTransferSpeed());
+            var energyPipe = (EnergyPipeComponent) pipe;
+            energy += energyPipe.getSavedEnergy();
+            capacity += energyPipe.getPipeCapacity();
+            minSpeed = Math.min(minSpeed, energyPipe.getPipeTransferSpeed());
         }
 
         this.totalCapacity = Math.max(0, capacity);

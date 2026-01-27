@@ -28,11 +28,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public abstract class LogisticPipeComponent<
-        TNetwork extends LogisticNetwork<TNetwork, TPipe, TContainer>,
-        TPipe extends LogisticPipeComponent<TNetwork, TPipe, TContainer>,
-        TContainer
-        > extends LogisticContainerComponent<TContainer> {
+public abstract class LogisticPipeComponent<TContainer> extends LogisticContainerComponent<TContainer> {
 
     @SuppressWarnings("rawtypes")
     public static final BuilderCodec<LogisticPipeComponent> CODEC =
@@ -48,7 +44,7 @@ public abstract class LogisticPipeComponent<
                             c -> c.pullConnectionModelAsset).add()
                     .build();
     private final List<Ref<EntityStore>> pipeConnectionModels = new ArrayList<>();
-    protected TNetwork network;
+    protected LogisticNetwork<TContainer> network;
     private String normalConnectionModelAsset = "Pipe_Normal";
     private String pushConnectionModelAsset = "Pipe_Push";
     private String pullConnectionModelAsset = "Pipe_Pull";
@@ -57,11 +53,11 @@ public abstract class LogisticPipeComponent<
         super(blockFaceConfig);
     }
 
-    public TNetwork getNetwork() {
+    public LogisticNetwork<TContainer> getNetwork() {
         return network;
     }
 
-    public void assignNetwork(TNetwork network) {
+    public void assignNetwork(LogisticNetwork<TContainer> network) {
         this.network = network;
     }
 
