@@ -6,14 +6,15 @@ import com.hypixel.hytale.event.IEventRegistry;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
-import com.rasebdon.hytech.energy.components.BlockEnergyContainerComponent;
+import com.rasebdon.hytech.energy.components.EnergyBlockComponent;
 import com.rasebdon.hytech.energy.components.EnergyGeneratorComponent;
 import com.rasebdon.hytech.energy.components.EnergyPipeComponent;
-import com.rasebdon.hytech.energy.events.EnergyContainerChangedEvent;
 import com.rasebdon.hytech.energy.interaction.ReadEnergyContainerBlockInteraction;
 import com.rasebdon.hytech.energy.interaction.WrenchBlockInteraction;
+import com.rasebdon.hytech.energy.networks.EnergyNetworkSystem;
 import com.rasebdon.hytech.energy.systems.EnergyContainerRegistrationSystem;
 import com.rasebdon.hytech.energy.systems.EnergyGenerationSystem;
+import com.rasebdon.hytech.energy.systems.EnergyNetworkSaveSystem;
 import com.rasebdon.hytech.energy.systems.EnergyTransferSystem;
 
 import javax.annotation.Nonnull;
@@ -25,14 +26,16 @@ public class EnergyModule {
     @Nullable
     private static EnergyModule INSTANCE;
 
-    private final ComponentType<ChunkStore, BlockEnergyContainerComponent> blockEnergyContainerComponentType;
+    private final ComponentType<ChunkStore, EnergyBlockComponent> blockEnergyContainerComponentType;
     private final ComponentType<ChunkStore, EnergyPipeComponent> energyPipeComponentType;
+
+    private final EnergyNetworkSystem energyNetworkSystem;
 
     private EnergyModule(@Nonnull ComponentRegistryProxy<ChunkStore> chunkStoreRegistry, @Nonnull IEventRegistry eventRegistry) {
         blockEnergyContainerComponentType = chunkStoreRegistry.registerComponent(
-                BlockEnergyContainerComponent.class,
+                EnergyBlockComponent.class,
                 "hytech:energy:container",
-                BlockEnergyContainerComponent.CODEC);
+                EnergyBlockComponent.CODEC);
         energyPipeComponentType = chunkStoreRegistry.registerComponent(
                 EnergyPipeComponent.class,
                 "hytech:energy:pipe",
@@ -41,10 +44,13 @@ public class EnergyModule {
         ComponentType<ChunkStore, EnergyGeneratorComponent> energyGeneratorType = chunkStoreRegistry.registerComponent(
                 EnergyGeneratorComponent.class, "hytech:energy:generator", EnergyGeneratorComponent.CODEC);
 
-        chunkStoreRegistry.registerSystem(new EnergyTransferSystem(eventRegistry, EnergyContainerChangedEvent.class));
+        energyNetworkSystem = new EnergyNetworkSystem();
+
+        chunkStoreRegistry.registerSystem(new EnergyTransferSystem(eventRegistry));
         chunkStoreRegistry.registerSystem(new EnergyContainerRegistrationSystem(
-                blockEnergyContainerComponentType, energyPipeComponentType, eventRegistry, EnergyContainerChangedEvent.class));
+                blockEnergyContainerComponentType, energyPipeComponentType, eventRegistry, energyNetworkSystem));
         chunkStoreRegistry.registerSystem(new EnergyGenerationSystem(energyGeneratorType, blockEnergyContainerComponentType));
+        chunkStoreRegistry.registerSystem(new EnergyNetworkSaveSystem(energyNetworkSystem));
 
         Interaction.CODEC.register(
                 "ReadEnergyContainer",
@@ -56,6 +62,10 @@ public class EnergyModule {
                 WrenchBlockInteraction.CODEC);
 
         LOGGER.atInfo().log("Energy Module Systems Registered");
+    }
+
+    public EnergyNetworkSystem getEnergyNetworkSystem() {
+        return energyNetworkSystem;
     }
 
     public static void init(@Nonnull ComponentRegistryProxy<ChunkStore> chunkStoreRegistry, @Nonnull IEventRegistry eventRegistry) {
@@ -75,7 +85,7 @@ public class EnergyModule {
         }
     }
 
-    public ComponentType<ChunkStore, BlockEnergyContainerComponent> getBlockEnergyContainerComponentType() {
+    public ComponentType<ChunkStore, EnergyBlockComponent> getBlockEnergyContainerComponentType() {
         return this.blockEnergyContainerComponentType;
     }
 

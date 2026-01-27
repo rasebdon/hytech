@@ -17,19 +17,18 @@ import com.hypixel.hytale.server.core.modules.entity.tracker.NetworkId;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.rasebdon.hytech.core.face.BlockFaceConfig;
 import com.rasebdon.hytech.core.networks.LogisticNetwork;
 import com.rasebdon.hytech.core.systems.LogisticTransferTarget;
 import com.rasebdon.hytech.energy.util.EnergyUtils;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public abstract class LogisticPipeComponent<TContainer extends ILogisticContainer>
-        extends LogisticContainerComponent<TContainer> {
+public abstract class LogisticPipeComponent<TContainer> extends LogisticContainerComponent<TContainer> {
 
     @SuppressWarnings("rawtypes")
     public static final BuilderCodec<LogisticPipeComponent> CODEC =
@@ -44,101 +43,27 @@ public abstract class LogisticPipeComponent<TContainer extends ILogisticContaine
                             (c, v) -> c.pullConnectionModelAsset = v,
                             c -> c.pullConnectionModelAsset).add()
                     .build();
-    private static final Vector3d UP_AABB_MIN =
-            new Vector3d(-0.0575, 0.3175, -0.058);
-    private static final Vector3d UP_AABB_MAX =
-            new Vector3d(0.058, 0.495, 0.058);
-    private static final EnumMap<BlockFace, PipeFaceRenderData> PIPE_FACE_DATA;
-
-    static {
-        PIPE_FACE_DATA = new EnumMap<>(BlockFace.class);
-
-        PIPE_FACE_DATA.put(BlockFace.Up,
-                new PipeFaceRenderData(new Vector3d(0.5, 0.0, 0.5), new Vector3f()));
-        PIPE_FACE_DATA.put(BlockFace.Down,
-                new PipeFaceRenderData(new Vector3d(0.5, 1.0, 0.5),
-                        new Vector3f(0f, 0f, (float) Math.toRadians(180))));
-        PIPE_FACE_DATA.put(BlockFace.East,
-                new PipeFaceRenderData(new Vector3d(0.0, 0.5, 0.5),
-                        new Vector3f(0f, 0f, (float) Math.toRadians(-90))));
-        PIPE_FACE_DATA.put(BlockFace.West,
-                new PipeFaceRenderData(new Vector3d(1.0, 0.5, 0.5),
-                        new Vector3f(0f, 0f, (float) Math.toRadians(90))));
-        PIPE_FACE_DATA.put(BlockFace.North,
-                new PipeFaceRenderData(new Vector3d(0.5, 0.5, 1.0),
-                        new Vector3f((float) Math.toRadians(-90), 0f, 0f)));
-        PIPE_FACE_DATA.put(BlockFace.South,
-                new PipeFaceRenderData(new Vector3d(0.5, 0.5, 0.0),
-                        new Vector3f((float) Math.toRadians(90), 0f, 0f)));
-    }
-
     private final List<Ref<EntityStore>> pipeConnectionModels = new ArrayList<>();
     protected LogisticNetwork<TContainer> network;
     private String normalConnectionModelAsset = "Pipe_Normal";
     private String pushConnectionModelAsset = "Pipe_Push";
     private String pullConnectionModelAsset = "Pipe_Pull";
 
-    private static void buildFaceAabb(
-            BlockFace face,
-            Vector3d outMin,
-            Vector3d outMax
-    ) {
-        // Canonical UP box
-        double minX = UP_AABB_MIN.x;
-        double minY = UP_AABB_MIN.y;
-        double minZ = UP_AABB_MIN.z;
-        double maxX = UP_AABB_MAX.x;
-        double maxY = UP_AABB_MAX.y;
-        double maxZ = UP_AABB_MAX.z;
-
-        switch (face) {
-            case Up -> {
-                outMin.assign(minX, minY, minZ);
-                outMax.assign(maxX, maxY, maxZ);
-            }
-
-            case Down -> {
-                outMin.assign(minX, -maxY, minZ);
-                outMax.assign(maxX, -minY, maxZ);
-            }
-
-            case South -> {
-                outMin.assign(minX, minZ, minY);
-                outMax.assign(maxX, maxZ, maxY);
-            }
-
-            case North -> {
-                outMin.assign(minX, minZ, -maxY);
-                outMax.assign(maxX, maxZ, -minY);
-            }
-
-            case East -> {
-                outMin.assign(minY, minZ, minX);
-                outMax.assign(maxY, maxZ, maxX);
-            }
-
-            case West -> {
-                outMin.assign(-maxY, minZ, minX);
-                outMax.assign(-minY, maxZ, maxX);
-            }
-
-            default -> throw new IllegalStateException(face.name());
-        }
+    public LogisticPipeComponent(BlockFaceConfig blockFaceConfig) {
+        super(blockFaceConfig);
     }
 
     public LogisticNetwork<TContainer> getNetwork() {
         return network;
     }
 
-    public void setNetwork(LogisticNetwork<TContainer> network) {
+    public void assignNetwork(LogisticNetwork<TContainer> network) {
         this.network = network;
     }
 
     public void clearPipeConnections(@Nonnull World world) {
         world.execute(() -> clearPipeConnectionModels(world.getEntityStore().getStore()));
     }
-
-    /* ----------------------------- Lifecycle ----------------------------- */
 
     private void clearPipeConnectionModels(@Nonnull Store<EntityStore> store) {
         for (var ref : pipeConnectionModels) {
@@ -149,7 +74,7 @@ public abstract class LogisticPipeComponent<TContainer extends ILogisticContaine
         pipeConnectionModels.clear();
     }
 
-    public void reloadPipeConnections(@Nonnull World world, Ref<ChunkStore> pipeRef) {
+    public void reloadPipeConnectionModels(@Nonnull World world, Ref<ChunkStore> pipeRef) {
         world.execute(() -> {
             var entityStore = world.getEntityStore().getStore();
             clearPipeConnectionModels(entityStore);
@@ -162,7 +87,7 @@ public abstract class LogisticPipeComponent<TContainer extends ILogisticContaine
 
             var basePos = transform.worldPos().toVector3d();
             for (BlockFace face : getConnectedFaces()) {
-                var render = PIPE_FACE_DATA.get(face);
+                var render = PipeConnectionHelper.getRenderData(face);
                 if (render == null) continue;
 
                 addPipeConnectionModel(
@@ -188,14 +113,7 @@ public abstract class LogisticPipeComponent<TContainer extends ILogisticContaine
         holder.addComponent(TransformComponent.getComponentType(),
                 new TransformComponent(worldPosition, rotation));
 
-        assert model.getBoundingBox() != null;
-        Vector3d min = new Vector3d();
-        Vector3d max = new Vector3d();
-
-        buildFaceAabb(face, min, max);
-        min.scale(2);
-        max.scale(2);
-        model.getBoundingBox().setMinMax(min, max);
+        PipeConnectionHelper.recalculateBoundingBoxForFace(model, face);
 
         holder.addComponent(ModelComponent.getComponentType(),
                 new ModelComponent(model));
@@ -212,10 +130,5 @@ public abstract class LogisticPipeComponent<TContainer extends ILogisticContaine
                 .map(LogisticTransferTarget::from)
                 .filter(f -> f != BlockFace.None)
                 .collect(Collectors.toCollection(() -> EnumSet.noneOf(BlockFace.class)));
-    }
-
-    /* ----------------------------- Helpers ----------------------------- */
-
-    public record PipeFaceRenderData(Vector3d offset, Vector3f rotation) {
     }
 }

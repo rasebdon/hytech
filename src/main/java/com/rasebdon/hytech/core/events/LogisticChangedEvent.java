@@ -1,21 +1,14 @@
 package com.rasebdon.hytech.core.events;
 
-import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.event.IEvent;
-import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
 public abstract class LogisticChangedEvent<TComponent> implements IEvent<Void> {
-    public final Ref<ChunkStore> blockRef;
-    public final Store<ChunkStore> store;
-    public final LogisticChangeType changeType;
-    public final TComponent component;
+    private final TComponent component;
+    private final LogisticChangeType changeType;
 
-    protected LogisticChangedEvent(Ref<ChunkStore> blockRef, Store<ChunkStore> store, LogisticChangeType changeType, TComponent component) {
-        this.blockRef = blockRef;
-        this.store = store;
-        this.changeType = changeType;
+    protected LogisticChangedEvent(TComponent component, LogisticChangeType changeType) {
         this.component = component;
+        this.changeType = changeType;
     }
 
     public boolean isAdded() {
@@ -26,11 +19,11 @@ public abstract class LogisticChangedEvent<TComponent> implements IEvent<Void> {
         return this.changeType == LogisticChangeType.REMOVED;
     }
 
-    public TComponent getComponent() {
-        return component;
-    }
-
     public boolean isChanged() {
         return this.changeType == LogisticChangeType.CHANGED;
+    }
+
+    public TComponent getComponent() {
+        return component;
     }
 }

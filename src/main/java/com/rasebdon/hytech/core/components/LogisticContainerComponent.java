@@ -3,7 +3,6 @@ package com.rasebdon.hytech.core.components;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
-import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.BlockFace;
@@ -18,15 +17,10 @@ import java.util.List;
 import java.util.Map;
 
 
-public abstract class LogisticContainerComponent<TContainer extends ILogisticContainer> implements ILogisticContainer, Component<ChunkStore> {
+public abstract class LogisticContainerComponent<TContainer> implements ILogisticContainerHolder<TContainer>, Component<ChunkStore> {
     @SuppressWarnings("rawtypes")
     public static final BuilderCodec<LogisticContainerComponent> CODEC =
             BuilderCodec.abstractBuilder(LogisticContainerComponent.class)
-                    .append(new KeyedCodec<>("TransferPriority", Codec.INTEGER),
-                            (c, v) -> c.transferPriority = v,
-                            (c) -> c.transferPriority)
-                    .addValidator(Validators.greaterThanOrEqual(0))
-                    .documentation("Priority for energy transfer, lower means resource is extracted first").add()
                     .append(new KeyedCodec<>("BlockFaceConfigOverride", BlockFaceConfigOverride.CODEC),
                             (c, v) -> c.staticBlockFaceConfigOverride = v,
                             (c) -> c.staticBlockFaceConfigOverride)
@@ -37,16 +31,14 @@ public abstract class LogisticContainerComponent<TContainer extends ILogisticCon
                     .documentation("Side configuration for Input/Output sides").add()
                     .build();
     protected static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
-    protected final Map<TContainer, LogisticTransferTarget<TContainer>> transferTargets;
-    protected int transferPriority;
+    protected final Map<ILogisticContainerHolder<TContainer>, LogisticTransferTarget<TContainer>> transferTargets;
     protected BlockFaceConfig currentBlockFaceConfig;
     protected BlockFaceConfigOverride staticBlockFaceConfigOverride;
 
-    protected LogisticContainerComponent(BlockFaceConfig blockFaceConfig, int transferPriority) {
+    protected LogisticContainerComponent(BlockFaceConfig blockFaceConfig) {
         this();
 
         this.currentBlockFaceConfig = blockFaceConfig.clone();
-        this.transferPriority = transferPriority;
     }
 
     protected LogisticContainerComponent() {
@@ -58,15 +50,15 @@ public abstract class LogisticContainerComponent<TContainer extends ILogisticCon
         return transferTargets.values().stream().toList();
     }
 
-    public void tryAddTransferTarget(TContainer target, BlockFace from, BlockFace to) {
+    public void tryAddTransferTarget(ILogisticContainerHolder<TContainer> target, BlockFace from, BlockFace to) {
         if (this.transferTargets.containsKey(target)) return;
 
         LOGGER.atInfo().log("%s (%s) adding transfer target %s (%s)", toString(), from.name(),
                 target.toString(), to.name());
-        this.transferTargets.put(target, new LogisticTransferTarget<>(target, from, to));
+        this.transferTargets.put(target, new LogisticTransferTarget<>(this, target, from, to));
     }
 
-    public void removeTransferTarget(TContainer target) {
+    public void removeTransferTarget(ILogisticContainerHolder<TContainer> target) {
         LOGGER.atInfo().log("%s removed transfer target %s", toString(), target.toString());
         this.transferTargets.remove(target);
     }
@@ -82,12 +74,6 @@ public abstract class LogisticContainerComponent<TContainer extends ILogisticCon
     public boolean canExtractFromFace(BlockFace face) {
         return this.currentBlockFaceConfig.canExtractFromFace(face);
     }
-
-    public int getTransferPriority() {
-        return transferPriority;
-    }
-
-    public abstract TContainer getContainer();
 
     @Nullable
     public abstract Component<ChunkStore> clone();

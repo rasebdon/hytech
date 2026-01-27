@@ -1,35 +1,57 @@
 package com.rasebdon.hytech.core.networks;
 
-import com.rasebdon.hytech.core.components.ILogisticContainer;
+import com.rasebdon.hytech.core.components.IContainerHolder;
 import com.rasebdon.hytech.core.components.LogisticPipeComponent;
 import com.rasebdon.hytech.core.systems.LogisticTransferTarget;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-public abstract class LogisticNetwork<TContainer extends ILogisticContainer> {
-    protected List<LogisticPipeComponent<TContainer>> pipes;
-    protected Map<TContainer, LogisticTransferTarget<TContainer>> pullTargets;
+public abstract class LogisticNetwork<TContainer> implements IContainerHolder<TContainer> {
 
-    /// Push targets are pipe transfer targets that are either configured Normal (BOTH) or PUSH mode
-    protected Map<TContainer, LogisticTransferTarget<TContainer>> pushTargets;
+    protected final Set<LogisticPipeComponent<TContainer>> pipes = new HashSet<>();
+    protected final List<LogisticTransferTarget<TContainer>> pullTargets = new ArrayList<>();
+    protected final List<LogisticTransferTarget<TContainer>> pushTargets = new ArrayList<>();
 
-    protected LogisticNetwork() {
-        pullTargets = new HashMap<>();
-        pushTargets = new HashMap<>();
+    protected LogisticNetwork(Set<LogisticPipeComponent<TContainer>> initialPipes) {
+        resetPipes(initialPipes);
     }
 
-    public void addPipe(LogisticPipeComponent<TContainer> pipe) {
-        updateNetwork();
+    public Collection<LogisticPipeComponent<TContainer>> getPipes() {
+        return Set.copyOf(pipes);
     }
 
-    public void removePipe(LogisticPipeComponent<TContainer> pipe) {
-        updateNetwork();
+    protected void resetPipes(Set<LogisticPipeComponent<TContainer>> newPipes) {
+        pipes.clear();
+        for (var pipe : newPipes) {
+            pipes.add(pipe);
+            pipe.assignNetwork(this);
+        }
+        rebuildTargets();
     }
 
-    public void updateNetwork() {
+    protected void detachPipe(LogisticPipeComponent<TContainer> pipe) {
+        pipes.remove(pipe);
+    }
 
+    public void rebuildTargets() {
+        pullTargets.clear();
+        pushTargets.clear();
+
+        for (var pipe : pipes) {
+            for (var target : pipe.getTransferTargets()) {
+                if (target == null || target.target() instanceof LogisticPipeComponent<TContainer>) {
+                    continue;
+                }
+
+                var face = target.from();
+                if (pipe.canReceiveFromFace(face)) {
+                    pullTargets.add(target);
+                }
+                if (pipe.canExtractFromFace(face)) {
+                    pushTargets.add(target);
+                }
+            }
+        }
     }
 
     public abstract void pullFromTargets();
