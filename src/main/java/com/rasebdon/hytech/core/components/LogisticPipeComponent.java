@@ -18,11 +18,13 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.rasebdon.hytech.core.face.BlockFaceConfig;
+import com.rasebdon.hytech.core.face.BlockFaceConfigType;
 import com.rasebdon.hytech.core.networks.LogisticNetwork;
 import com.rasebdon.hytech.core.systems.LogisticTransferTarget;
 import com.rasebdon.hytech.energy.util.EnergyUtils;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -44,6 +46,7 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticContaine
                             c -> c.pullConnectionModelAsset).add()
                     .build();
     private final List<Ref<EntityStore>> pipeConnectionModels = new ArrayList<>();
+    @Nullable
     protected LogisticNetwork<TContainer> network;
     private String normalConnectionModelAsset = "Pipe_Normal";
     private String pushConnectionModelAsset = "Pipe_Push";
@@ -53,12 +56,39 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticContaine
         super(blockFaceConfig);
     }
 
+    @Nullable
     public LogisticNetwork<TContainer> getNetwork() {
         return network;
     }
 
     public void assignNetwork(LogisticNetwork<TContainer> network) {
         this.network = network;
+    }
+
+    @Override
+    public void tryAddTransferTarget(ILogisticContainerHolder<TContainer> target, BlockFace from, BlockFace to) {
+        super.tryAddTransferTarget(target, from, to);
+        tryRebuildNetworkOnTargetAdd(target);
+    }
+
+    @Override
+    public void removeTransferTarget(ILogisticContainerHolder<TContainer> target) {
+        super.removeTransferTarget(target);
+        tryRebuildNetworkOnTargetAdd(target);
+    }
+
+    public boolean canPullFrom(BlockFace face) {
+        return this.currentBlockFaceConfig.getFaceConfigType(face) == BlockFaceConfigType.INPUT;
+    }
+
+    public boolean canPushTo(BlockFace face) {
+        return this.currentBlockFaceConfig.canExtractToFace(face);
+    }
+
+    private void tryRebuildNetworkOnTargetAdd(ILogisticContainerHolder<TContainer> target) {
+        if (this.network != null && target instanceof LogisticBlockComponent<TContainer>) {
+            this.network.rebuildTargets();
+        }
     }
 
     public void clearPipeConnections(@Nonnull World world) {

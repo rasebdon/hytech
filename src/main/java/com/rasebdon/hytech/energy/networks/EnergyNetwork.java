@@ -19,14 +19,20 @@ public class EnergyNetwork extends LogisticNetwork<IEnergyContainer> implements 
     }
 
     @Override
-    protected void resetPipes(Set<LogisticPipeComponent<IEnergyContainer>> newPipes) {
-        super.resetPipes(newPipes);
+    protected void setPipes(Set<LogisticPipeComponent<IEnergyContainer>> newPipes) {
+        super.setPipes(newPipes);
         recalculateStats();
     }
 
     @Override
-    protected void detachPipe(LogisticPipeComponent<IEnergyContainer> pipe) {
-        super.detachPipe(pipe);
+    protected void addPipe(LogisticPipeComponent<IEnergyContainer> pipe) {
+        super.addPipe(pipe);
+        recalculateStats();
+    }
+
+    @Override
+    protected void removePipe(LogisticPipeComponent<IEnergyContainer> pipe) {
+        super.removePipe(pipe);
         recalculateStats();
     }
 
@@ -57,7 +63,11 @@ public class EnergyNetwork extends LogisticNetwork<IEnergyContainer> implements 
 
         for (var target : pullTargets) {
             if (isFull()) break;
-            transferEnergy(target.target().getContainer(), this, transferSpeed);
+
+            var containerHolder = target.target();
+            if (containerHolder.isAvailable()) {
+                transferEnergy(containerHolder.getContainer(), this, transferSpeed);
+            }
         }
     }
 
@@ -71,7 +81,10 @@ public class EnergyNetwork extends LogisticNetwork<IEnergyContainer> implements 
 
         for (var target : pushTargets) {
             if (isEmpty()) break;
-            transferEnergy(this, target.target().getContainer(), perTarget);
+            var containerHolder = target.target();
+            if (containerHolder.isAvailable()) {
+                transferEnergy(this, containerHolder.getContainer(), perTarget);
+            }
         }
     }
 
@@ -105,6 +118,11 @@ public class EnergyNetwork extends LogisticNetwork<IEnergyContainer> implements 
     @Override
     public IEnergyContainer getContainer() {
         return this;
+    }
+
+    @Override
+    public boolean isAvailable() {
+        return true;
     }
 
     @Override

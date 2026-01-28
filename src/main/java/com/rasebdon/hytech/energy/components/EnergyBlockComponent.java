@@ -107,4 +107,9 @@ public class EnergyBlockComponent extends LogisticBlockComponent<IEnergyContaine
     public IEnergyContainer getContainer() {
         return this;
     }
+
+    @Override
+    public boolean isAvailable() {
+        return true;
+    }
 }

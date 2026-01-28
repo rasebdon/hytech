@@ -12,6 +12,8 @@ import com.rasebdon.hytech.core.util.Validation;
 import com.rasebdon.hytech.energy.IEnergyContainer;
 
 import javax.annotation.Nonnull;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 public class EnergyPipeComponent extends LogisticPipeComponent<IEnergyContainer> implements IEnergyContainer {
 
@@ -57,6 +59,11 @@ public class EnergyPipeComponent extends LogisticPipeComponent<IEnergyContainer>
 
     public EnergyPipeComponent() {
         this(0L, 0L, 0L, new BlockFaceConfig());
+    }
+
+    @Override
+    public boolean isAvailable() {
+        return this.network != null;
     }
 
     @Override
@@ -117,5 +124,21 @@ public class EnergyPipeComponent extends LogisticPipeComponent<IEnergyContainer>
 
     public long getPipeTransferSpeed() {
         return this.pipeTransferSpeed;
+    }
+
+
+    public String toString() {
+        var sides = Arrays.stream(this.currentBlockFaceConfig.toArray())
+                .map(Enum::name)
+                .collect(Collectors.joining(", "));
+
+        if (isAvailable()) {
+            var container = getNetworkContainer();
+            return String.format("(EnergyPipe): [NET] %d/%d RF | Sides: [%s]",
+                    container.getEnergy(), container.getTotalCapacity(), sides);
+        } else {
+            return String.format("(EnergyPipe): %d/%d RF | Sides: [%s]",
+                    savedEnergy, pipeCapacity, sides);
+        }
     }
 }

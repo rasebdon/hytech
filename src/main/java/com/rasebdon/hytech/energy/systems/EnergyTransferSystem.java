@@ -14,6 +14,8 @@ public class EnergyTransferSystem extends LogisticTransferSystem<IEnergyContaine
 
     @Override
     public void transfer(LogisticBlockComponent<IEnergyContainer> source) {
+        if (!source.isAvailable()) return;
+
         var sourceContainer = source.getContainer();
         var sourceEnergy = sourceContainer.getEnergy();
         var sourceTransferSpeed = sourceContainer.getTransferSpeed();
@@ -21,6 +23,7 @@ public class EnergyTransferSystem extends LogisticTransferSystem<IEnergyContaine
         if (sourceEnergy <= 0 || sourceTransferSpeed <= 0) return;
 
         var validTargets = source.getTransferTargets().stream()
+                .filter(t -> t.target().isAvailable())
                 .map(t -> t.target().getContainer())
                 .filter(t -> t.getRemainingCapacity() > 0)
                 .toList();
