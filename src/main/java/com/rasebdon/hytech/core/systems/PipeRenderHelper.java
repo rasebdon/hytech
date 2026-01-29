@@ -1,14 +1,22 @@
-package com.rasebdon.hytech.core.components;
+package com.rasebdon.hytech.core.systems;
 
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.protocol.BlockFace;
 import com.hypixel.hytale.server.core.asset.type.model.config.Model;
+import com.rasebdon.hytech.core.face.BlockFaceConfigType;
 
 import java.util.EnumMap;
+import java.util.Map;
 
-public class PipeConnectionHelper {
+public class PipeRenderHelper {
     private static final EnumMap<BlockFace, PipeFaceRenderData> PIPE_FACE_DATA;
+
+    public static Map<BlockFaceConfigType, String> DEFAULT_CONNECTION_MODEL_ASSETS = Map.of(
+            BlockFaceConfigType.BOTH, "Pipe_Normal",
+            BlockFaceConfigType.OUTPUT, "Pipe_Push",
+            BlockFaceConfigType.INPUT, "Pipe_Pull"
+    );
 
     static {
         PIPE_FACE_DATA = new EnumMap<>(BlockFace.class);
@@ -49,9 +57,9 @@ public class PipeConnectionHelper {
         double minZ = up_aabb_min.z;
 
         var up_aabb_max = modelBoundingBox.max;
-        double maxX = up_aabb_min.x;
-        double maxY = up_aabb_min.y;
-        double maxZ = up_aabb_min.z;
+        double maxX = up_aabb_max.x;
+        double maxY = up_aabb_max.y;
+        double maxZ = up_aabb_max.z;
 
         Vector3d min = new Vector3d();
         Vector3d max = new Vector3d();
@@ -89,9 +97,6 @@ public class PipeConnectionHelper {
 
             default -> throw new IllegalStateException(face.name());
         }
-
-        min.scale(2);
-        max.scale(2);
 
         modelBoundingBox.setMinMax(min, max);
     }

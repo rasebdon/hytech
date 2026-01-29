@@ -13,9 +13,8 @@ import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHa
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.client.SimpleBlockInteraction;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.rasebdon.hytech.core.events.LogisticChangeType;
 import com.rasebdon.hytech.energy.EnergyModule;
-import com.rasebdon.hytech.energy.events.EnergyContainerChangedEvent;
+import com.rasebdon.hytech.energy.events.EnergyContainerSideConfigChangedEvent;
 import com.rasebdon.hytech.energy.util.BlockFaceUtil;
 import com.rasebdon.hytech.energy.util.EnergyUtils;
 import com.rasebdon.hytech.energy.util.EventBusUtil;
@@ -61,11 +60,11 @@ public class WrenchBlockInteraction extends SimpleBlockInteraction {
             var blockFaceConfig = energyContainer.getCurrentBlockFaceConfig();
             blockFaceConfig.cycleFaceConfigType(localFace);
 
-            var event = new EnergyContainerChangedEvent(
+            // TODO : Provide face and then in logistic container registration system reload only relevant face
+            var event = new EnergyContainerSideConfigChangedEvent(
+                    energyContainer,
                     blockRef,
-                    world.getChunkStore().getStore(),
-                    LogisticChangeType.CHANGED,
-                    energyContainer
+                    world.getChunkStore().getStore()
             );
             EventBusUtil.dispatchIfListening(event);
 

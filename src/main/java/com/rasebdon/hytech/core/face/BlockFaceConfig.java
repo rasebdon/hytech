@@ -58,7 +58,7 @@ public class BlockFaceConfig implements Cloneable {
                         | (config.getBits() << shift);
     }
 
-    public boolean canExtractToFace(BlockFace face) {
+    public boolean canExtractFromFace(BlockFace face) {
         return this.getFaceConfigType(face).canExtract();
     }
 

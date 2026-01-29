@@ -12,10 +12,7 @@ import com.rasebdon.hytech.energy.components.EnergyPipeComponent;
 import com.rasebdon.hytech.energy.interaction.ReadEnergyContainerBlockInteraction;
 import com.rasebdon.hytech.energy.interaction.WrenchBlockInteraction;
 import com.rasebdon.hytech.energy.networks.EnergyNetworkSystem;
-import com.rasebdon.hytech.energy.systems.EnergyContainerRegistrationSystem;
-import com.rasebdon.hytech.energy.systems.EnergyGenerationSystem;
-import com.rasebdon.hytech.energy.systems.EnergyNetworkSaveSystem;
-import com.rasebdon.hytech.energy.systems.EnergyTransferSystem;
+import com.rasebdon.hytech.energy.systems.*;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -29,8 +26,6 @@ public class EnergyModule {
     private final ComponentType<ChunkStore, EnergyBlockComponent> blockEnergyContainerComponentType;
     private final ComponentType<ChunkStore, EnergyPipeComponent> energyPipeComponentType;
 
-    private final EnergyNetworkSystem energyNetworkSystem;
-
     private EnergyModule(@Nonnull ComponentRegistryProxy<ChunkStore> chunkStoreRegistry, @Nonnull IEventRegistry eventRegistry) {
         blockEnergyContainerComponentType = chunkStoreRegistry.registerComponent(
                 EnergyBlockComponent.class,
@@ -41,16 +36,17 @@ public class EnergyModule {
                 "hytech:energy:pipe",
                 EnergyPipeComponent.CODEC);
 
-        ComponentType<ChunkStore, EnergyGeneratorComponent> energyGeneratorType = chunkStoreRegistry.registerComponent(
-                EnergyGeneratorComponent.class, "hytech:energy:generator", EnergyGeneratorComponent.CODEC);
-
-        energyNetworkSystem = new EnergyNetworkSystem();
+        new EnergyPipeRenderSystem(eventRegistry);
+        var energyNetworkSystem = new EnergyNetworkSystem();
 
         chunkStoreRegistry.registerSystem(new EnergyTransferSystem(eventRegistry));
         chunkStoreRegistry.registerSystem(new EnergyContainerRegistrationSystem(
                 blockEnergyContainerComponentType, energyPipeComponentType, eventRegistry, energyNetworkSystem));
-        chunkStoreRegistry.registerSystem(new EnergyGenerationSystem(energyGeneratorType, blockEnergyContainerComponentType));
         chunkStoreRegistry.registerSystem(new EnergyNetworkSaveSystem(energyNetworkSystem));
+
+        ComponentType<ChunkStore, EnergyGeneratorComponent> energyGeneratorType = chunkStoreRegistry.registerComponent(
+                EnergyGeneratorComponent.class, "hytech:energy:generator", EnergyGeneratorComponent.CODEC);
+        chunkStoreRegistry.registerSystem(new EnergyGenerationSystem(energyGeneratorType, blockEnergyContainerComponentType));
 
         Interaction.CODEC.register(
                 "ReadEnergyContainer",
@@ -62,10 +58,6 @@ public class EnergyModule {
                 WrenchBlockInteraction.CODEC);
 
         LOGGER.atInfo().log("Energy Module Systems Registered");
-    }
-
-    public EnergyNetworkSystem getEnergyNetworkSystem() {
-        return energyNetworkSystem;
     }
 
     public static void init(@Nonnull ComponentRegistryProxy<ChunkStore> chunkStoreRegistry, @Nonnull IEventRegistry eventRegistry) {

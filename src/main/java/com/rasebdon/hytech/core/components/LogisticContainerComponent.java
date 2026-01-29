@@ -72,7 +72,7 @@ public abstract class LogisticContainerComponent<TContainer> implements ILogisti
     }
 
     public boolean canExtractFromFace(BlockFace face) {
-        return this.currentBlockFaceConfig.canExtractToFace(face);
+        return this.currentBlockFaceConfig.canExtractFromFace(face);
     }
 
     @Nullable
