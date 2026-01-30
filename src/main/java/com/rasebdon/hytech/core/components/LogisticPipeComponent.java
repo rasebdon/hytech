@@ -7,10 +7,10 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.protocol.BlockFace;
 import com.hypixel.hytale.server.core.asset.type.model.config.ModelAsset;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.rasebdon.hytech.core.face.BlockFaceConfig;
-import com.rasebdon.hytech.core.face.BlockFaceConfigType;
 import com.rasebdon.hytech.core.networks.LogisticNetwork;
-import com.rasebdon.hytech.core.systems.LogisticTransferTarget;
+import com.rasebdon.hytech.core.transport.BlockFaceConfig;
+import com.rasebdon.hytech.core.transport.BlockFaceConfigType;
+import com.rasebdon.hytech.core.transport.ILogisticContainerHolder;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -35,9 +35,9 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticContaine
                     .build();
     // Render Vars
     protected final Map<BlockFaceConfigType, String> connectionModelAssetNames = new HashMap<>();
+    private final List<Ref<EntityStore>> modelRefs = new ArrayList<>();
     @Nullable
     protected LogisticNetwork<TContainer> network;
-    private final List<Ref<EntityStore>> modelRefs = new ArrayList<>();
 
     public LogisticPipeComponent(BlockFaceConfig blockFaceConfig, Map<BlockFaceConfigType, String> connectionModelAssetNames) {
         super(blockFaceConfig);
@@ -54,26 +54,18 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticContaine
     }
 
     @Override
-    public void tryAddTransferTarget(ILogisticContainerHolder<TContainer> target, BlockFace from, BlockFace to) {
-        super.tryAddTransferTarget(target, from, to);
-        tryRebuildNetworkOnTargetAdd(target);
+    public void addNeighbor(BlockFace face, ILogisticContainerHolder<TContainer> neighbor) {
+        super.addNeighbor(face, neighbor);
+        rebuildNetwork(neighbor);
     }
 
     @Override
-    public void removeTransferTarget(ILogisticContainerHolder<TContainer> target) {
-        super.removeTransferTarget(target);
-        tryRebuildNetworkOnTargetAdd(target);
+    public void removeNeighbor(ILogisticContainerHolder<TContainer> neighbor) {
+        super.removeNeighbor(neighbor);
+        rebuildNetwork(neighbor);
     }
 
-    public boolean canPullFrom(BlockFace face) {
-        return this.currentBlockFaceConfig.getFaceConfigType(face) == BlockFaceConfigType.INPUT;
-    }
-
-    public boolean canPushTo(BlockFace face) {
-        return this.currentBlockFaceConfig.canExtractFromFace(face);
-    }
-
-    private void tryRebuildNetworkOnTargetAdd(ILogisticContainerHolder<TContainer> target) {
+    private void rebuildNetwork(ILogisticContainerHolder<TContainer> target) {
         if (this.network != null && target instanceof LogisticBlockComponent<TContainer>) {
             this.network.rebuildTargets();
         }
@@ -88,16 +80,32 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticContaine
     }
 
     @Nullable
-    public ModelAsset getConnectionModelAsset(LogisticTransferTarget<TContainer> target) {
-        if (target.target() instanceof LogisticPipeComponent<TContainer>) {
+    public ModelAsset getConnectionModelAsset(BlockFace face) {
+        var neighbor = this.getNeighborContainer(face);
+
+        if (neighbor instanceof LogisticPipeComponent<TContainer>) {
             return ModelAsset.getAssetMap().getAsset(connectionModelAssetNames.get(BlockFaceConfigType.BOTH));
         }
 
-        var blockFaceConfigType = currentBlockFaceConfig.getFaceConfigType(target.from());
+        var blockFaceConfigType = currentBlockFaceConfig.getFaceConfigType(face);
         return ModelAsset.getAssetMap().getAsset(connectionModelAssetNames.get(blockFaceConfigType));
     }
 
     public List<Ref<EntityStore>> getModelRefs() {
         return this.modelRefs;
+    }
+
+    public boolean canPullFrom(ILogisticContainerHolder<TContainer> target) {
+        return this.getFaceConfigTowards(target) == BlockFaceConfigType.INPUT &&
+                target.hasOutputFaceTowards(this);
+    }
+
+    public boolean canPushTo(ILogisticContainerHolder<TContainer> target) {
+        return this.hasOutputFaceTowards(target) && target.hasInputFaceTowards(this);
+    }
+
+    public boolean isConnectedTo(ILogisticContainerHolder<TContainer> neighbor) {
+        return neighbor.getFaceConfigTowards(this) != BlockFaceConfigType.NONE &&
+                this.getFaceConfigTowards(neighbor) != BlockFaceConfigType.NONE;
     }
 }

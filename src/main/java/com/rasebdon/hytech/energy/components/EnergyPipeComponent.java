@@ -7,9 +7,9 @@ import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.rasebdon.hytech.core.components.LogisticPipeComponent;
-import com.rasebdon.hytech.core.face.BlockFaceConfig;
-import com.rasebdon.hytech.core.face.BlockFaceConfigType;
 import com.rasebdon.hytech.core.systems.PipeRenderHelper;
+import com.rasebdon.hytech.core.transport.BlockFaceConfig;
+import com.rasebdon.hytech.core.transport.BlockFaceConfigType;
 import com.rasebdon.hytech.core.util.Validation;
 import com.rasebdon.hytech.energy.IEnergyContainer;
 

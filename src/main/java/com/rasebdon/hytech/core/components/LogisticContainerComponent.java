@@ -4,17 +4,12 @@ import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Component;
-import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.BlockFace;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
-import com.rasebdon.hytech.core.face.BlockFaceConfig;
-import com.rasebdon.hytech.core.face.BlockFaceConfigOverride;
-import com.rasebdon.hytech.core.systems.LogisticTransferTarget;
+import com.rasebdon.hytech.core.transport.*;
 
 import javax.annotation.Nullable;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 
 public abstract class LogisticContainerComponent<TContainer> implements ILogisticContainerHolder<TContainer>, Component<ChunkStore> {
@@ -30,49 +25,64 @@ public abstract class LogisticContainerComponent<TContainer> implements ILogisti
                             (c) -> c.currentBlockFaceConfig.getBitmap())
                     .documentation("Side configuration for Input/Output sides").add()
                     .build();
-    protected static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
-    protected final Map<ILogisticContainerHolder<TContainer>, LogisticTransferTarget<TContainer>> transferTargets;
+    protected final LogisticNeighborMap<TContainer> neighbors;
     protected BlockFaceConfig currentBlockFaceConfig;
     protected BlockFaceConfigOverride staticBlockFaceConfigOverride;
 
     protected LogisticContainerComponent(BlockFaceConfig blockFaceConfig) {
         this();
-
         this.currentBlockFaceConfig = blockFaceConfig.clone();
     }
 
     protected LogisticContainerComponent() {
         this.currentBlockFaceConfig = new BlockFaceConfig();
-        this.transferTargets = new HashMap<>();
+        this.neighbors = new LogisticNeighborMap<>();
     }
 
-    public List<LogisticTransferTarget<TContainer>> getTransferTargets() {
-        return transferTargets.values().stream().toList();
+    @Nullable
+    public ILogisticContainerHolder<TContainer> getNeighborContainer(BlockFace face) {
+        return neighbors.getByFace(face);
     }
 
-    public void tryAddTransferTarget(ILogisticContainerHolder<TContainer> target, BlockFace from, BlockFace to) {
-        if (this.transferTargets.containsKey(target)) return;
-
-        LOGGER.atInfo().log("%s (%s) adding transfer target %s (%s)", toString(), from.name(),
-                target.toString(), to.name());
-        this.transferTargets.put(target, new LogisticTransferTarget<>(this, target, from, to));
+    @Nullable
+    public BlockFace getNeighborFace(ILogisticContainerHolder<TContainer> neighbor) {
+        return neighbors.getByNeighbor(neighbor);
     }
 
-    public void removeTransferTarget(ILogisticContainerHolder<TContainer> target) {
-        LOGGER.atInfo().log("%s removed transfer target %s", toString(), target.toString());
-        this.transferTargets.remove(target);
+    public Set<ILogisticContainerHolder<TContainer>> getNeighbors() {
+        return neighbors.getAllNeighbors();
     }
 
-    public void clearTransferTargets() {
-        this.transferTargets.clear();
+    public void addNeighbor(BlockFace face, ILogisticContainerHolder<TContainer> neighbor) {
+        this.neighbors.put(face, neighbor);
     }
 
-    public boolean canReceiveFromFace(BlockFace face) {
-        return this.currentBlockFaceConfig.canReceiveFromFace(face);
+    public void removeNeighbor(ILogisticContainerHolder<TContainer> neighbor) {
+        this.neighbors.removeByNeighbor(neighbor);
     }
 
-    public boolean canExtractFromFace(BlockFace face) {
-        return this.currentBlockFaceConfig.canExtractFromFace(face);
+    public void clearNeighbors() {
+        this.neighbors.clear();
+    }
+
+    public BlockFaceConfigType getFaceConfigTowards(ILogisticContainerHolder<TContainer> neighbor) {
+        return this.getFaceConfigTowards(getNeighborFace(neighbor));
+    }
+
+    public BlockFaceConfigType getFaceConfigTowards(BlockFace face) {
+        return this.currentBlockFaceConfig.getFaceConfigType(face);
+    }
+
+    public boolean hasInputFaceTowards(ILogisticContainerHolder<TContainer> neighbor) {
+        return this.currentBlockFaceConfig.isInput(getNeighborFace(neighbor));
+    }
+
+    public boolean hasOutputFaceTowards(ILogisticContainerHolder<TContainer> neighbor) {
+        return this.currentBlockFaceConfig.isOutput(getNeighborFace(neighbor));
+    }
+
+    public void cycleBlockFaceConfig(BlockFace face) {
+        this.currentBlockFaceConfig.cycleFaceConfigType(face);
     }
 
     @Nullable

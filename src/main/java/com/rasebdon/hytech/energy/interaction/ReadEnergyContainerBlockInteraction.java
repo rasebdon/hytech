@@ -13,9 +13,9 @@ import com.hypixel.hytale.server.core.modules.interaction.interaction.config.cli
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.rasebdon.hytech.core.components.LogisticContainerComponent;
+import com.rasebdon.hytech.core.util.HytechUtil;
 import com.rasebdon.hytech.energy.EnergyModule;
 import com.rasebdon.hytech.energy.IEnergyContainer;
-import com.rasebdon.hytech.energy.util.EnergyUtils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -34,13 +34,13 @@ public class ReadEnergyContainerBlockInteraction extends SimpleBlockInteraction 
             @Nonnull World world,
             @Nonnull Vector3i targetBlock) {
 
-        var energyBlock = EnergyUtils.getComponentAtBlock(
+        var energyBlock = HytechUtil.getComponentAtBlock(
                 world,
                 targetBlock,
                 EnergyModule.get().getBlockEnergyContainerComponentType()
         );
 
-        var energyPipe = EnergyUtils.getComponentAtBlock(
+        var energyPipe = HytechUtil.getComponentAtBlock(
                 world,
                 targetBlock,
                 EnergyModule.get().getEnergyPipeComponentType()
@@ -53,7 +53,7 @@ public class ReadEnergyContainerBlockInteraction extends SimpleBlockInteraction 
     }
 
     private static void sendEnergyMessageToPlayer(Ref<EntityStore> playerRef, LogisticContainerComponent<IEnergyContainer> component) {
-        EnergyUtils.sendPlayerMessage(playerRef, component.toString());
+        HytechUtil.sendPlayerMessage(playerRef, component.toString());
     }
 
     @Override

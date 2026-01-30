@@ -3,7 +3,7 @@ package com.rasebdon.hytech.core.networks;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.rasebdon.hytech.core.components.IContainerHolder;
 import com.rasebdon.hytech.core.components.LogisticPipeComponent;
-import com.rasebdon.hytech.core.systems.LogisticTransferTarget;
+import com.rasebdon.hytech.core.transport.ILogisticContainerHolder;
 
 import java.util.*;
 
@@ -12,8 +12,8 @@ public abstract class LogisticNetwork<TContainer> implements IContainerHolder<TC
     protected static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
     protected final Set<LogisticPipeComponent<TContainer>> pipes = new HashSet<>();
-    protected final List<LogisticTransferTarget<TContainer>> pullTargets = new ArrayList<>();
-    protected final List<LogisticTransferTarget<TContainer>> pushTargets = new ArrayList<>();
+    protected final List<ILogisticContainerHolder<TContainer>> pullTargets = new ArrayList<>();
+    protected final List<ILogisticContainerHolder<TContainer>> pushTargets = new ArrayList<>();
 
     protected LogisticNetwork(Set<LogisticPipeComponent<TContainer>> initialPipes) {
         setPipes(initialPipes);
@@ -48,21 +48,20 @@ public abstract class LogisticNetwork<TContainer> implements IContainerHolder<TC
     }
 
     public void rebuildTargets() {
-        LOGGER.atInfo().log("Rebuilding Network Targets");
         pullTargets.clear();
         pushTargets.clear();
 
         for (var pipe : pipes) {
-            for (var target : pipe.getTransferTargets()) {
-                if (target == null || target.target() instanceof LogisticPipeComponent<TContainer>) {
+            for (var target : pipe.getNeighbors()) {
+                if (target instanceof LogisticPipeComponent<TContainer>) {
                     continue;
                 }
 
-                var face = target.from();
-                if (pipe.canPullFrom(face)) {
+                if (pipe.canPullFrom(target)) {
                     pullTargets.add(target);
                 }
-                if (pipe.canPushTo(face)) {
+
+                if (pipe.canPushTo(target)) {
                     pushTargets.add(target);
                 }
             }

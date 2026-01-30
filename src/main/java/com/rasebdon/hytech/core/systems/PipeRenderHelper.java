@@ -4,7 +4,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.protocol.BlockFace;
 import com.hypixel.hytale.server.core.asset.type.model.config.Model;
-import com.rasebdon.hytech.core.face.BlockFaceConfigType;
+import com.rasebdon.hytech.core.transport.BlockFaceConfigType;
 
 import java.util.EnumMap;
 import java.util.Map;

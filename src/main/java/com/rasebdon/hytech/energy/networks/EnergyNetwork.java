@@ -41,6 +41,7 @@ public class EnergyNetwork extends LogisticNetwork<IEnergyContainer> implements 
         long capacity = 0;
         long minSpeed = Long.MAX_VALUE;
 
+        // TODO : Look into world saving
         for (var pipe : pipes) {
             var energyPipe = (EnergyPipeComponent) pipe;
             energy += energyPipe.getSavedEnergy();
@@ -64,9 +65,8 @@ public class EnergyNetwork extends LogisticNetwork<IEnergyContainer> implements 
         for (var target : pullTargets) {
             if (isFull()) break;
 
-            var containerHolder = target.target();
-            if (containerHolder.isAvailable()) {
-                transferEnergy(containerHolder.getContainer(), this, transferSpeed);
+            if (target.isAvailable()) {
+                transferEnergy(target.getContainer(), this, transferSpeed);
             }
         }
     }
@@ -81,9 +81,9 @@ public class EnergyNetwork extends LogisticNetwork<IEnergyContainer> implements 
 
         for (var target : pushTargets) {
             if (isEmpty()) break;
-            var containerHolder = target.target();
-            if (containerHolder.isAvailable()) {
-                transferEnergy(this, containerHolder.getContainer(), perTarget);
+
+            if (target.isAvailable()) {
+                transferEnergy(this, target.getContainer(), perTarget);
             }
         }
     }

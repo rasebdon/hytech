@@ -14,7 +14,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.rasebdon.hytech.core.components.LogisticPipeComponent;
 import com.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
-import com.rasebdon.hytech.energy.util.EnergyUtils;
+import com.rasebdon.hytech.core.util.HytechUtil;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -66,22 +66,27 @@ public abstract class PipeRenderSystem<TContainer> {
 
         removePipeConnectionModels(modelRefList, entityStore);
 
-        var transform = EnergyUtils.getBlockTransform(pipeRef, pipeRef.getStore());
+        var transform = HytechUtil.getBlockTransform(pipeRef, pipeRef.getStore());
         if (transform == null) return;
 
         var basePos = transform.worldPos().toVector3d();
-        for (var transferTarget : pipeComponent.getTransferTargets()) {
-            var face = transferTarget.from();
+        for (var neighbor : pipeComponent.getNeighbors()) {
+            if (!pipeComponent.isConnectedTo(neighbor)) continue;
+
+            var face = pipeComponent.getNeighborFace(neighbor);
 
             var render = PipeRenderHelper.getRenderData(face);
             if (render == null) continue;
 
-            var modelAsset = pipeComponent.getConnectionModelAsset(transferTarget);
-            if (modelAsset == null) return;
+            var modelAsset = pipeComponent.getConnectionModelAsset(face);
+            if (modelAsset == null) continue;
 
             var model = Model.createStaticScaledModel(modelAsset, 2);
 
-            var modelRef = addPipeConnectionModel(entityStore, model, basePos.clone().add(render.offset()),
+            var modelRef = addPipeConnectionModel(
+                    entityStore,
+                    model,
+                    basePos.clone().add(render.offset()),
                     render.rotation(), face);
 
             modelRefList.add(modelRef);

@@ -5,7 +5,7 @@ import com.rasebdon.hytech.core.components.LogisticPipeComponent;
 import com.rasebdon.hytech.core.events.LogisticChangeType;
 import com.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
 import com.rasebdon.hytech.core.events.LogisticNetworkChangedEvent;
-import com.rasebdon.hytech.energy.util.EventBusUtil;
+import com.rasebdon.hytech.core.util.EventBusUtil;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -176,8 +176,8 @@ public abstract class LogisticNetworkSystem<TContainer> {
     ) {
         Set<LogisticNetwork<TContainer>> result = new HashSet<>();
 
-        for (var target : pipe.getTransferTargets()) {
-            if (target.target() instanceof LogisticPipeComponent<TContainer> neighborPipe) {
+        for (var neighbor : pipe.getNeighbors()) {
+            if (neighbor instanceof LogisticPipeComponent<TContainer> neighborPipe) {
                 var neighborNetwork = neighborPipe.getNetwork();
                 if (neighborNetwork != null) {
                     result.add(neighborNetwork);

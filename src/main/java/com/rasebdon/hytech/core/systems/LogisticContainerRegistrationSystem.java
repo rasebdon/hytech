@@ -13,8 +13,9 @@ import com.rasebdon.hytech.core.events.LogisticChangeType;
 import com.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
 import com.rasebdon.hytech.core.events.LogisticContainerSideConfigChangedEvent;
 import com.rasebdon.hytech.core.networks.LogisticNetworkSystem;
-import com.rasebdon.hytech.energy.util.EnergyUtils;
-import com.rasebdon.hytech.energy.util.EventBusUtil;
+import com.rasebdon.hytech.core.util.BlockFaceUtil;
+import com.rasebdon.hytech.core.util.EventBusUtil;
+import com.rasebdon.hytech.core.util.HytechUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,8 +47,9 @@ public abstract class LogisticContainerRegistrationSystem<TContainer>
         var ref = event.getBlockRef();
         var containerComponent = event.getContainerComponent();
 
+        // TODO : Only change side that is affected
         removeFromNeighbors(containerComponent, ref, store);
-        rebuildTransferTargets(containerComponent, ref, store);
+        rebuildNeighborMaps(containerComponent, ref, store);
 
         EventBusUtil.dispatchIfListening(
                 createLogisticContainerChangedEvent(ref, store, LogisticChangeType.CHANGED, containerComponent)
@@ -69,7 +71,7 @@ public abstract class LogisticContainerRegistrationSystem<TContainer>
         var component = getContainer(store, ref);
         if (component == null) return;
 
-        rebuildTransferTargets(component, ref, store);
+        rebuildNeighborMaps(component, ref, store);
 
         EventBusUtil.dispatchIfListening(
                 createLogisticContainerChangedEvent(ref, store, LogisticChangeType.ADDED, component)
@@ -93,55 +95,42 @@ public abstract class LogisticContainerRegistrationSystem<TContainer>
         );
     }
 
-    protected void rebuildTransferTargets(
+    protected void rebuildNeighborMaps(
             LogisticContainerComponent<TContainer> container,
             Ref<ChunkStore> ref,
             Store<ChunkStore> store
     ) {
-        container.clearTransferTargets();
+        container.clearNeighbors();
 
-        var transform = EnergyUtils.getBlockTransform(ref, store);
+        var transform = HytechUtil.getBlockTransform(ref, store);
         if (transform == null) return;
 
         var world = store.getExternalData().getWorld();
 
         for (var worldDir : Vector3i.BLOCK_SIDES) {
-            var localFace = EnergyUtils.getLocalFace(worldDir, transform.rotation());
+            var localFace = BlockFaceUtil.getLocalFace(worldDir, transform.rotation());
 
-            boolean canExtract = container.canExtractFromFace(localFace);
-            boolean canReceive = container.canReceiveFromFace(localFace);
-            if (!canExtract && !canReceive) continue;
-
-            var neighborRef = EnergyUtils.getBlockEntityRef(
+            var neighborRef = HytechUtil.getBlockEntityRef(
                     world, worldDir.clone().add(transform.worldPos())
             );
             if (neighborRef == null) continue;
 
             var neighborContainer = getContainer(store, neighborRef);
-            var neighborTransform = EnergyUtils.getBlockTransform(neighborRef, store);
+            var neighborTransform = HytechUtil.getBlockTransform(neighborRef, store);
             if (neighborContainer == null || neighborTransform == null) continue;
 
-            var neighborFace = EnergyUtils.getLocalFace(
+            var neighborFace = BlockFaceUtil.getLocalFace(
                     worldDir.clone().negate(),
                     neighborTransform.rotation()
             );
 
-            if (canExtract && neighborContainer.canReceiveFromFace(neighborFace)) {
-                container.tryAddTransferTarget(
-                        neighborContainer, localFace, neighborFace
-                );
-            }
+            container.addNeighbor(localFace, neighborContainer);
+            neighborContainer.addNeighbor(neighborFace, container);
 
-            if (canReceive && neighborContainer.canExtractFromFace(neighborFace)) {
-                neighborContainer.tryAddTransferTarget(
-                        container, neighborFace, localFace
-                );
-
-                EventBusUtil.dispatchIfListening(
-                        createLogisticContainerChangedEvent(neighborRef, store,
-                                LogisticChangeType.CHANGED, neighborContainer)
-                );
-            }
+            EventBusUtil.dispatchIfListening(
+                    createLogisticContainerChangedEvent(neighborRef, store,
+                            LogisticChangeType.CHANGED, neighborContainer)
+            );
         }
     }
 
@@ -150,13 +139,13 @@ public abstract class LogisticContainerRegistrationSystem<TContainer>
             Ref<ChunkStore> ref,
             Store<ChunkStore> store
     ) {
-        var transform = EnergyUtils.getBlockTransform(ref, store);
+        var transform = HytechUtil.getBlockTransform(ref, store);
         if (transform == null) return;
 
         var world = store.getExternalData().getWorld();
 
         for (var worldDir : Vector3i.BLOCK_SIDES) {
-            var neighborRef = EnergyUtils.getBlockEntityRef(
+            var neighborRef = HytechUtil.getBlockEntityRef(
                     world, worldDir.clone().add(transform.worldPos())
             );
             if (neighborRef == null) continue;
@@ -164,7 +153,7 @@ public abstract class LogisticContainerRegistrationSystem<TContainer>
             var neighborContainer = getContainer(store, neighborRef);
             if (neighborContainer == null) continue;
 
-            neighborContainer.removeTransferTarget(containerComponent);
+            neighborContainer.removeNeighbor(containerComponent);
 
             EventBusUtil.dispatchIfListening(
                     createLogisticContainerChangedEvent(neighborRef, store,

@@ -1,4 +1,4 @@
-package com.rasebdon.hytech.core.face;
+package com.rasebdon.hytech.core.transport;
 
 import com.hypixel.hytale.protocol.BlockFace;
 
@@ -58,12 +58,12 @@ public class BlockFaceConfig implements Cloneable {
                         | (config.getBits() << shift);
     }
 
-    public boolean canExtractFromFace(BlockFace face) {
-        return this.getFaceConfigType(face).canExtract();
+    public boolean isOutput(BlockFace face) {
+        return this.getFaceConfigType(face).isOutput();
     }
 
-    public boolean canReceiveFromFace(BlockFace face) {
-        return this.getFaceConfigType(face).canReceive();
+    public boolean isInput(BlockFace face) {
+        return this.getFaceConfigType(face).isInput();
     }
 
     public void cycleFaceConfigType(BlockFace face) {

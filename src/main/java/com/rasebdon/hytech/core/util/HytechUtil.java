@@ -1,4 +1,4 @@
-package com.rasebdon.hytech.energy.util;
+package com.rasebdon.hytech.core.util;
 
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.ComponentType;
@@ -6,10 +6,7 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3i;
-import com.hypixel.hytale.protocol.BlockFace;
 import com.hypixel.hytale.server.core.Message;
-import com.hypixel.hytale.server.core.asset.type.blocktype.config.Rotation;
-import com.hypixel.hytale.server.core.asset.type.blocktype.config.RotationTuple;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -21,7 +18,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class EnergyUtils {
+public class HytechUtil {
 
     /**
      * Retrieves the Entity Reference associated with a specific block position.
@@ -92,25 +89,5 @@ public class EnergyUtils {
                 worldChunk.getX(),
                 worldChunk.getZ()
         );
-    }
-
-    public static BlockFace getLocalFace(Vector3i worldDirection, RotationTuple rotation) {
-        // To go from World to Local, we apply the inverse rotations
-        Rotation invYaw = Rotation.None.subtract(rotation.yaw());
-        Rotation invPitch = Rotation.None.subtract(rotation.pitch());
-        Rotation invRoll = Rotation.None.subtract(rotation.roll());
-
-        // Use the Rotation class to rotate the vector by the inverse values
-        Vector3i localVec = Rotation.rotate(worldDirection, invYaw, invPitch, invRoll);
-
-        // Map the resulting vector to your BlockFace enum
-        if (localVec.x == 0 && localVec.y == 1 && localVec.z == 0) return BlockFace.Up;
-        if (localVec.x == 0 && localVec.y == -1 && localVec.z == 0) return BlockFace.Down;
-        if (localVec.x == 0 && localVec.y == 0 && localVec.z == -1) return BlockFace.North;
-        if (localVec.x == 0 && localVec.y == 0 && localVec.z == 1) return BlockFace.South;
-        if (localVec.x == 1 && localVec.y == 0 && localVec.z == 0) return BlockFace.East;
-        if (localVec.x == -1 && localVec.y == 0 && localVec.z == 0) return BlockFace.West;
-
-        return BlockFace.None;
     }
 }
