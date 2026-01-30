@@ -6,13 +6,16 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.protocol.BlockFace;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
-import com.rasebdon.hytech.core.transport.*;
+import com.rasebdon.hytech.core.transport.BlockFaceConfig;
+import com.rasebdon.hytech.core.transport.BlockFaceConfigOverride;
+import com.rasebdon.hytech.core.transport.BlockFaceConfigType;
+import com.rasebdon.hytech.core.transport.LogisticNeighborMap;
 
 import javax.annotation.Nullable;
 import java.util.Set;
 
 
-public abstract class LogisticContainerComponent<TContainer> implements ILogisticContainerHolder<TContainer>, Component<ChunkStore> {
+public abstract class LogisticContainerComponent<TContainer> implements IContainerHolder<TContainer>, Component<ChunkStore> {
     @SuppressWarnings("rawtypes")
     public static final BuilderCodec<LogisticContainerComponent> CODEC =
             BuilderCodec.abstractBuilder(LogisticContainerComponent.class)
@@ -40,32 +43,38 @@ public abstract class LogisticContainerComponent<TContainer> implements ILogisti
     }
 
     @Nullable
-    public ILogisticContainerHolder<TContainer> getNeighborContainer(BlockFace face) {
+    public LogisticContainerComponent<TContainer> getNeighborContainer(BlockFace face) {
         return neighbors.getByFace(face);
     }
 
     @Nullable
-    public BlockFace getNeighborFace(ILogisticContainerHolder<TContainer> neighbor) {
+    public BlockFace getNeighborFace(LogisticContainerComponent<TContainer> neighbor) {
         return neighbors.getByNeighbor(neighbor);
     }
 
-    public Set<ILogisticContainerHolder<TContainer>> getNeighbors() {
+    public Set<LogisticContainerComponent<TContainer>> getNeighbors() {
         return neighbors.getAllNeighbors();
     }
 
-    public void addNeighbor(BlockFace face, ILogisticContainerHolder<TContainer> neighbor) {
-        this.neighbors.put(face, neighbor);
+    public void addNeighbor(BlockFace localFace, BlockFace neighborFace, LogisticContainerComponent<TContainer> neighbor) {
+        this.neighbors.put(localFace, neighbor);
+        neighbor.neighbors.put(neighborFace, this);
     }
 
-    public void removeNeighbor(ILogisticContainerHolder<TContainer> neighbor) {
+    public void removeNeighbor(LogisticContainerComponent<TContainer> neighbor) {
         this.neighbors.removeByNeighbor(neighbor);
+        neighbor.neighbors.removeByNeighbor(this);
     }
 
     public void clearNeighbors() {
-        this.neighbors.clear();
+        var allNeighbors = this.neighbors.getAllNeighbors();
+        for (var neighbor : allNeighbors) {
+            this.neighbors.removeByNeighbor(neighbor);
+            neighbor.neighbors.removeByNeighbor(this);
+        }
     }
 
-    public BlockFaceConfigType getFaceConfigTowards(ILogisticContainerHolder<TContainer> neighbor) {
+    public BlockFaceConfigType getFaceConfigTowards(LogisticContainerComponent<TContainer> neighbor) {
         return this.getFaceConfigTowards(getNeighborFace(neighbor));
     }
 
@@ -73,11 +82,11 @@ public abstract class LogisticContainerComponent<TContainer> implements ILogisti
         return this.currentBlockFaceConfig.getFaceConfigType(face);
     }
 
-    public boolean hasInputFaceTowards(ILogisticContainerHolder<TContainer> neighbor) {
+    public boolean hasInputFaceTowards(LogisticContainerComponent<TContainer> neighbor) {
         return this.currentBlockFaceConfig.isInput(getNeighborFace(neighbor));
     }
 
-    public boolean hasOutputFaceTowards(ILogisticContainerHolder<TContainer> neighbor) {
+    public boolean hasOutputFaceTowards(LogisticContainerComponent<TContainer> neighbor) {
         return this.currentBlockFaceConfig.isOutput(getNeighborFace(neighbor));
     }
 

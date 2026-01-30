@@ -46,9 +46,10 @@ public class EnergyBlockComponent extends LogisticBlockComponent<IEnergyContaine
             long totalCapacity,
             long transferSpeed,
             BlockFaceConfig blockFaceConfig,
-            int transferPriority
+            int transferPriority,
+            boolean isExtracting
     ) {
-        super(blockFaceConfig, transferPriority);
+        super(blockFaceConfig, transferPriority, isExtracting);
 
         Validation.requireNonNegative(energy, "energy");
         Validation.requireNonNegative(totalCapacity, "totalCapacity");
@@ -60,13 +61,14 @@ public class EnergyBlockComponent extends LogisticBlockComponent<IEnergyContaine
     }
 
     public EnergyBlockComponent() {
-        this(0L, 0L, 0L, new BlockFaceConfig(), 0);
+        this(0L, 0L, 0L, new BlockFaceConfig(), 0, false);
     }
 
     @Nonnull
     public Component<ChunkStore> clone() {
         return new EnergyBlockComponent(this.energy, this.totalCapacity,
-                this.transferSpeed, this.currentBlockFaceConfig.clone(), this.transferPriority);
+                this.transferSpeed, this.currentBlockFaceConfig.clone(),
+                this.transferPriority, this.isExtracting);
     }
 
     public long getEnergy() {

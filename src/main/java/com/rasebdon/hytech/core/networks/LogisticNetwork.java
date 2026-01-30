@@ -2,8 +2,8 @@ package com.rasebdon.hytech.core.networks;
 
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.rasebdon.hytech.core.components.IContainerHolder;
+import com.rasebdon.hytech.core.components.LogisticContainerComponent;
 import com.rasebdon.hytech.core.components.LogisticPipeComponent;
-import com.rasebdon.hytech.core.transport.ILogisticContainerHolder;
 
 import java.util.*;
 
@@ -12,8 +12,8 @@ public abstract class LogisticNetwork<TContainer> implements IContainerHolder<TC
     protected static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
     protected final Set<LogisticPipeComponent<TContainer>> pipes = new HashSet<>();
-    protected final List<ILogisticContainerHolder<TContainer>> pullTargets = new ArrayList<>();
-    protected final List<ILogisticContainerHolder<TContainer>> pushTargets = new ArrayList<>();
+    protected final List<LogisticContainerComponent<TContainer>> pullTargets = new ArrayList<>();
+    protected final List<LogisticContainerComponent<TContainer>> pushTargets = new ArrayList<>();
 
     protected LogisticNetwork(Set<LogisticPipeComponent<TContainer>> initialPipes) {
         setPipes(initialPipes);

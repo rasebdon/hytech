@@ -10,7 +10,6 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.rasebdon.hytech.core.networks.LogisticNetwork;
 import com.rasebdon.hytech.core.transport.BlockFaceConfig;
 import com.rasebdon.hytech.core.transport.BlockFaceConfigType;
-import com.rasebdon.hytech.core.transport.ILogisticContainerHolder;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -54,18 +53,18 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticContaine
     }
 
     @Override
-    public void addNeighbor(BlockFace face, ILogisticContainerHolder<TContainer> neighbor) {
-        super.addNeighbor(face, neighbor);
+    public void addNeighbor(BlockFace localFace, BlockFace neighborFace, LogisticContainerComponent<TContainer> neighbor) {
+        super.addNeighbor(localFace, neighborFace, neighbor);
         rebuildNetwork(neighbor);
     }
 
     @Override
-    public void removeNeighbor(ILogisticContainerHolder<TContainer> neighbor) {
+    public void removeNeighbor(LogisticContainerComponent<TContainer> neighbor) {
         super.removeNeighbor(neighbor);
         rebuildNetwork(neighbor);
     }
 
-    private void rebuildNetwork(ILogisticContainerHolder<TContainer> target) {
+    public void rebuildNetwork(LogisticContainerComponent<TContainer> target) {
         if (this.network != null && target instanceof LogisticBlockComponent<TContainer>) {
             this.network.rebuildTargets();
         }
@@ -95,16 +94,16 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticContaine
         return this.modelRefs;
     }
 
-    public boolean canPullFrom(ILogisticContainerHolder<TContainer> target) {
+    public boolean canPullFrom(LogisticContainerComponent<TContainer> target) {
         return this.getFaceConfigTowards(target) == BlockFaceConfigType.INPUT &&
                 target.hasOutputFaceTowards(this);
     }
 
-    public boolean canPushTo(ILogisticContainerHolder<TContainer> target) {
+    public boolean canPushTo(LogisticContainerComponent<TContainer> target) {
         return this.hasOutputFaceTowards(target) && target.hasInputFaceTowards(this);
     }
 
-    public boolean isConnectedTo(ILogisticContainerHolder<TContainer> neighbor) {
+    public boolean isConnectedTo(LogisticContainerComponent<TContainer> neighbor) {
         return neighbor.getFaceConfigTowards(this) != BlockFaceConfigType.NONE &&
                 this.getFaceConfigTowards(neighbor) != BlockFaceConfigType.NONE;
     }

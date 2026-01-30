@@ -2,6 +2,7 @@ package com.rasebdon.hytech.core.transport;
 
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.BlockFace;
+import com.rasebdon.hytech.core.components.LogisticContainerComponent;
 
 import javax.annotation.Nullable;
 import java.util.EnumMap;
@@ -12,15 +13,15 @@ import java.util.Set;
 public final class LogisticNeighborMap<TContainer> {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
-    private final EnumMap<BlockFace, ILogisticContainerHolder<TContainer>> faceToNeighbor =
+    private final EnumMap<BlockFace, LogisticContainerComponent<TContainer>> faceToNeighbor =
             new EnumMap<>(BlockFace.class);
 
-    private final Map<ILogisticContainerHolder<TContainer>, BlockFace> neighborToFace =
+    private final Map<LogisticContainerComponent<TContainer>, BlockFace> neighborToFace =
             new HashMap<>();
 
     public void put(
             BlockFace face,
-            ILogisticContainerHolder<TContainer> neighbor
+            LogisticContainerComponent<TContainer> neighbor
     ) {
         if (this.faceToNeighbor.containsKey(face)) {
             LOGGER.atWarning().log("%s already has a registered neighbor container", face.name());
@@ -33,12 +34,12 @@ public final class LogisticNeighborMap<TContainer> {
     }
 
     @Nullable
-    public ILogisticContainerHolder<TContainer> getByFace(BlockFace face) {
+    public LogisticContainerComponent<TContainer> getByFace(BlockFace face) {
         return faceToNeighbor.get(face);
     }
 
     @Nullable
-    public BlockFace getByNeighbor(ILogisticContainerHolder<TContainer> neighbor
+    public BlockFace getByNeighbor(LogisticContainerComponent<TContainer> neighbor
     ) {
         return neighborToFace.get(neighbor);
     }
@@ -51,7 +52,7 @@ public final class LogisticNeighborMap<TContainer> {
     }
 
     public void removeByNeighbor(
-            ILogisticContainerHolder<TContainer> neighbor
+            LogisticContainerComponent<TContainer> neighbor
     ) {
         var face = neighborToFace.remove(neighbor);
         if (face != null) {
@@ -59,7 +60,7 @@ public final class LogisticNeighborMap<TContainer> {
         }
     }
 
-    public Set<ILogisticContainerHolder<TContainer>> getAllNeighbors() {
+    public Set<LogisticContainerComponent<TContainer>> getAllNeighbors() {
         return neighborToFace.keySet();
     }
 

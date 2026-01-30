@@ -56,9 +56,8 @@
         "hytech:energy:container": {
           "MaxTransfer": 10,
           "TransferPriority": 25,
-          "CanReceiveEnergy": true,
-          "CanExtractEnergy": true,
-          "TotalCapacity": 25000
+          "TotalCapacity": 25000,
+          "IsExtracting": false
         }
       }
     },
