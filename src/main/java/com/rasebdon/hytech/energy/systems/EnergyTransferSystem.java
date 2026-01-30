@@ -14,7 +14,7 @@ public class EnergyTransferSystem extends LogisticTransferSystem<IEnergyContaine
 
     @Override
     public void transfer(LogisticBlockComponent<IEnergyContainer> sourceComponent) {
-        if (!sourceComponent.isAvailable()) return;
+        if (!sourceComponent.isAvailable() || !sourceComponent.isExtracting()) return;
 
         var sourceContainer = sourceComponent.getContainer();
         var sourceEnergy = sourceContainer.getEnergy();

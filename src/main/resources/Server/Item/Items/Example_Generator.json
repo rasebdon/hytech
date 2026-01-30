@@ -59,10 +59,9 @@
         "hytech:energy:container": {
           "MaxTransfer": 25,
           "TransferPriority": 0,
-          "CanExtractEnergy": true,
-          "CanReceiveEnergy": false,
           "TotalCapacity": 500,
-          "BlackFaceConfig": {
+          "IsExtracting": true,
+          "BlockFaceConfigOverride": {
             "None": 2,
             "Up": 2,
             "Down": 2,

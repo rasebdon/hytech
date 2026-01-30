@@ -124,8 +124,11 @@ public abstract class LogisticContainerRegistrationSystem<TContainer>
                     neighborTransform.rotation()
             );
 
-            container.addNeighbor(localFace, neighborContainer);
-            neighborContainer.addNeighbor(neighborFace, container);
+            container.addNeighbor(localFace, neighborFace, neighborContainer);
+
+            if (neighborContainer instanceof LogisticPipeComponent<TContainer> pipe) {
+                pipe.rebuildNetwork(container);
+            }
 
             EventBusUtil.dispatchIfListening(
                     createLogisticContainerChangedEvent(neighborRef, store,
@@ -153,7 +156,11 @@ public abstract class LogisticContainerRegistrationSystem<TContainer>
             var neighborContainer = getContainer(store, neighborRef);
             if (neighborContainer == null) continue;
 
-            neighborContainer.removeNeighbor(containerComponent);
+            containerComponent.removeNeighbor(neighborContainer);
+
+            if (neighborContainer instanceof LogisticPipeComponent<TContainer> pipe) {
+                pipe.rebuildNetwork(containerComponent);
+            }
 
             EventBusUtil.dispatchIfListening(
                     createLogisticContainerChangedEvent(neighborRef, store,
