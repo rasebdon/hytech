@@ -1,4 +1,4 @@
-package com.rasebdon.hytech.core.face;
+package com.rasebdon.hytech.core.transport;
 
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;

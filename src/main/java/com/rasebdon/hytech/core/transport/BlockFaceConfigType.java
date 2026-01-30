@@ -1,4 +1,4 @@
-package com.rasebdon.hytech.core.face;
+package com.rasebdon.hytech.core.transport;
 
 public enum BlockFaceConfigType {
     NONE(0b00),
@@ -20,11 +20,11 @@ public enum BlockFaceConfigType {
         return bits;
     }
 
-    public boolean canReceive() {
+    public boolean isInput() {
         return (bits & 0b01) != 0;
     }
 
-    public boolean canExtract() {
+    public boolean isOutput() {
         return (bits & 0b10) != 0;
     }
 

@@ -39,8 +39,8 @@
     "CustomModel": "Blocks/Pipes/Default/Pipe_Center.blockymodel",
     "CustomModelTexture": [
       {
-        "Texture": "BlockTextures/Pipes/Default/Pipe.png",
-        "Weight": 0
+        "Texture": "BlockTextures/Pipes/Energy/Pipe_Energy.png",
+        "Weight": 1
       }
     ],
     "Group": "Stone",
@@ -55,7 +55,10 @@
         "hytech:energy:pipe": {
           "TransferPriority": 10,
           "PipeCapacity": 1000,
-          "PipeTransferSpeed": 250
+          "PipeTransferSpeed": 250,
+          "NormalConnectionModelAsset": "Pipe_Energy_Normal",
+          "PushConnectionModelAsset": "Pipe_Energy_Push",
+          "PullConnectionModelAsset": "Pipe_Energy_Pull"
         }
       }
     },

@@ -7,11 +7,16 @@ import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.rasebdon.hytech.core.components.LogisticPipeComponent;
-import com.rasebdon.hytech.core.face.BlockFaceConfig;
+import com.rasebdon.hytech.core.systems.PipeRenderHelper;
+import com.rasebdon.hytech.core.transport.BlockFaceConfig;
+import com.rasebdon.hytech.core.transport.BlockFaceConfigType;
 import com.rasebdon.hytech.core.util.Validation;
 import com.rasebdon.hytech.energy.IEnergyContainer;
 
 import javax.annotation.Nonnull;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class EnergyPipeComponent extends LogisticPipeComponent<IEnergyContainer> implements IEnergyContainer {
 
@@ -42,9 +47,10 @@ public class EnergyPipeComponent extends LogisticPipeComponent<IEnergyContainer>
             long savedEnergy,
             long pipeCapacity,
             long pipeTransferSpeed,
-            BlockFaceConfig blockFaceConfig
+            BlockFaceConfig blockFaceConfig,
+            Map<BlockFaceConfigType, String> connectionModelAssetNames
     ) {
-        super(blockFaceConfig);
+        super(blockFaceConfig, connectionModelAssetNames);
 
         Validation.requireNonNegative(savedEnergy, "savedEnergy");
         Validation.requireNonNegative(pipeCapacity, "pipeCapacity");
@@ -56,7 +62,13 @@ public class EnergyPipeComponent extends LogisticPipeComponent<IEnergyContainer>
     }
 
     public EnergyPipeComponent() {
-        this(0L, 0L, 0L, new BlockFaceConfig());
+        this(0L, 0L, 0L, new BlockFaceConfig(),
+                PipeRenderHelper.DEFAULT_CONNECTION_MODEL_ASSETS);
+    }
+
+    @Override
+    public boolean isAvailable() {
+        return this.network != null;
     }
 
     @Override
@@ -68,7 +80,7 @@ public class EnergyPipeComponent extends LogisticPipeComponent<IEnergyContainer>
     @Nonnull
     public Component<ChunkStore> clone() {
         return new EnergyPipeComponent(this.savedEnergy, this.pipeCapacity,
-                this.pipeTransferSpeed, this.currentBlockFaceConfig.clone());
+                this.pipeTransferSpeed, this.currentBlockFaceConfig.clone(), this.connectionModelAssetNames);
     }
 
     @Override
@@ -117,5 +129,21 @@ public class EnergyPipeComponent extends LogisticPipeComponent<IEnergyContainer>
 
     public long getPipeTransferSpeed() {
         return this.pipeTransferSpeed;
+    }
+
+
+    public String toString() {
+        var sides = Arrays.stream(this.currentBlockFaceConfig.toArray())
+                .map(Enum::name)
+                .collect(Collectors.joining(", "));
+
+        if (isAvailable()) {
+            var container = getNetworkContainer();
+            return String.format("(EnergyPipe): [NET] %d/%d RF | Sides: [%s]",
+                    container.getEnergy(), container.getTotalCapacity(), sides);
+        } else {
+            return String.format("(EnergyPipe): %d/%d RF | Sides: [%s]",
+                    savedEnergy, pipeCapacity, sides);
+        }
     }
 }

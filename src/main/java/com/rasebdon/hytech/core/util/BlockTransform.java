@@ -1,4 +1,4 @@
-package com.rasebdon.hytech.energy.util;
+package com.rasebdon.hytech.core.util;
 
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.RotationTuple;

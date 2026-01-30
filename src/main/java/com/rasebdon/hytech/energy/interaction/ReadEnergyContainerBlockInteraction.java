@@ -2,6 +2,7 @@ package com.rasebdon.hytech.energy.interaction;
 
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.Interaction;
 import com.hypixel.hytale.protocol.InteractionType;
@@ -11,8 +12,10 @@ import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHa
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.client.SimpleBlockInteraction;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.rasebdon.hytech.core.components.LogisticContainerComponent;
+import com.rasebdon.hytech.core.util.HytechUtil;
 import com.rasebdon.hytech.energy.EnergyModule;
-import com.rasebdon.hytech.energy.util.EnergyUtils;
+import com.rasebdon.hytech.energy.IEnergyContainer;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -31,15 +34,26 @@ public class ReadEnergyContainerBlockInteraction extends SimpleBlockInteraction 
             @Nonnull World world,
             @Nonnull Vector3i targetBlock) {
 
-        var energyContainer = EnergyUtils.getComponentAtBlock(
+        var energyBlock = HytechUtil.getComponentAtBlock(
                 world,
                 targetBlock,
                 EnergyModule.get().getBlockEnergyContainerComponentType()
         );
 
-        if (energyContainer != null) {
-            EnergyUtils.sendPlayerMessage(context.getEntity(), energyContainer.toString());
+        var energyPipe = HytechUtil.getComponentAtBlock(
+                world,
+                targetBlock,
+                EnergyModule.get().getEnergyPipeComponentType()
+        );
+
+        var component = energyBlock == null ? energyPipe : energyBlock;
+        if (component != null) {
+            sendEnergyMessageToPlayer(context.getEntity(), component);
         }
+    }
+
+    private static void sendEnergyMessageToPlayer(Ref<EntityStore> playerRef, LogisticContainerComponent<IEnergyContainer> component) {
+        HytechUtil.sendPlayerMessage(playerRef, component.toString());
     }
 
     @Override

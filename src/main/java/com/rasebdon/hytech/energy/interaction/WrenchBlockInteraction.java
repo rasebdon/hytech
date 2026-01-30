@@ -13,12 +13,13 @@ import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHa
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.client.SimpleBlockInteraction;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.rasebdon.hytech.core.events.LogisticChangeType;
+import com.rasebdon.hytech.core.components.LogisticContainerComponent;
+import com.rasebdon.hytech.core.util.BlockFaceUtil;
+import com.rasebdon.hytech.core.util.EventBusUtil;
+import com.rasebdon.hytech.core.util.HytechUtil;
 import com.rasebdon.hytech.energy.EnergyModule;
-import com.rasebdon.hytech.energy.events.EnergyContainerChangedEvent;
-import com.rasebdon.hytech.energy.util.BlockFaceUtil;
-import com.rasebdon.hytech.energy.util.EnergyUtils;
-import com.rasebdon.hytech.energy.util.EventBusUtil;
+import com.rasebdon.hytech.energy.IEnergyContainer;
+import com.rasebdon.hytech.energy.events.EnergyContainerSideConfigChangedEvent;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -37,8 +38,7 @@ public class WrenchBlockInteraction extends SimpleBlockInteraction {
             @Nonnull World world,
             @Nonnull Vector3i targetBlock) {
 
-        var energyContainer = EnergyUtils.getComponentAtBlock(world, targetBlock,
-                EnergyModule.get().getBlockEnergyContainerComponentType());
+        var energyContainer = getContainer(world, targetBlock);
 
         if (energyContainer != null) {
             var clientState = context.getClientState();
@@ -51,26 +51,34 @@ public class WrenchBlockInteraction extends SimpleBlockInteraction {
             BlockFace worldFace = clientState.blockFace;
             Vector3i worldDir = BlockFaceUtil.getVectorFromFace(worldFace);
 
-            var blockRef = EnergyUtils.getBlockEntityRef(world, targetBlock);
+            var blockRef = HytechUtil.getBlockEntityRef(world, targetBlock);
             assert blockRef != null;
 
-            var blockTransform = EnergyUtils.getBlockTransform(blockRef, world.getChunkStore().getStore());
+            var blockTransform = HytechUtil.getBlockTransform(blockRef, world.getChunkStore().getStore());
             assert blockTransform != null;
 
             var localFace = BlockFaceUtil.getLocalFace(worldDir, blockTransform.rotation());
-            var blockFaceConfig = energyContainer.getCurrentBlockFaceConfig();
-            blockFaceConfig.cycleFaceConfigType(localFace);
+            energyContainer.cycleBlockFaceConfig(localFace);
 
-            var event = new EnergyContainerChangedEvent(
+            var event = new EnergyContainerSideConfigChangedEvent(
+                    energyContainer,
+                    localFace,
                     blockRef,
-                    world.getChunkStore().getStore(),
-                    LogisticChangeType.CHANGED,
-                    energyContainer
+                    world.getChunkStore().getStore()
             );
             EventBusUtil.dispatchIfListening(event);
 
-            player.sendMessage(Message.raw("Side " + worldFace.name() + " (Local: " + localFace.name() + ") changed to: " + blockFaceConfig.getFaceConfigType(localFace).name()));
+            player.sendMessage(Message.raw("Side " + worldFace.name() + " (Local: " + localFace.name() + ") changed to: "
+                    + energyContainer.getFaceConfigTowards(localFace).name()));
         }
+    }
+
+    @Nullable
+    private static LogisticContainerComponent<IEnergyContainer> getContainer(World world, Vector3i targetBlock) {
+        var blockContainer = HytechUtil.getComponentAtBlock(world, targetBlock,
+                EnergyModule.get().getBlockEnergyContainerComponentType());
+        return blockContainer != null ? blockContainer :
+                HytechUtil.getComponentAtBlock(world, targetBlock, EnergyModule.get().getEnergyPipeComponentType());
     }
 
     @Override

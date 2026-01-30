@@ -13,34 +13,37 @@ public class EnergyTransferSystem extends LogisticTransferSystem<IEnergyContaine
     }
 
     @Override
-    public void transfer(LogisticBlockComponent<IEnergyContainer> source) {
-        var sourceContainer = source.getContainer();
+    public void transfer(LogisticBlockComponent<IEnergyContainer> sourceComponent) {
+        if (!sourceComponent.isAvailable()) return;
+
+        var sourceContainer = sourceComponent.getContainer();
         var sourceEnergy = sourceContainer.getEnergy();
         var sourceTransferSpeed = sourceContainer.getTransferSpeed();
 
         if (sourceEnergy <= 0 || sourceTransferSpeed <= 0) return;
 
-        var validTargets = source.getTransferTargets().stream()
-                .map(t -> t.target().getContainer())
-                .filter(t -> t.getRemainingCapacity() > 0)
+        var neighborsWithEnergyCapacityLeft = sourceComponent.getNeighbors().stream()
+                .filter(n ->
+                        n.isAvailable() && n.getContainer().getRemainingCapacity() > 0)
                 .toList();
-
-        if (validTargets.isEmpty()) return;
 
         long totalTransferred = 0;
 
-        // TODO : Only transfer to pipes that are in Normal (Both) mode
-
-        for (var target : validTargets) {
+        for (var neighbor : neighborsWithEnergyCapacityLeft) {
             if (sourceEnergy <= 0) break;
 
+            if (!sourceComponent.hasOutputFaceTowards(neighbor) || !neighbor.hasInputFaceTowards(sourceComponent)) {
+                continue;
+            }
+
+            var targetContainer = neighbor.getContainer();
             long transferable = Math.min(
-                    Math.min(sourceTransferSpeed, target.getTransferSpeed()),
-                    Math.min(sourceEnergy, target.getRemainingCapacity())
+                    Math.min(sourceTransferSpeed, targetContainer.getTransferSpeed()),
+                    Math.min(sourceEnergy, targetContainer.getRemainingCapacity())
             );
 
             if (transferable > 0) {
-                target.addEnergy(transferable);
+                targetContainer.addEnergy(transferable);
                 sourceEnergy -= transferable;
                 totalTransferred += transferable;
             }

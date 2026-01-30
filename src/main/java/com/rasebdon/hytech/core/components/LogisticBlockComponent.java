@@ -4,7 +4,7 @@ import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.validation.Validators;
-import com.rasebdon.hytech.core.face.BlockFaceConfig;
+import com.rasebdon.hytech.core.transport.BlockFaceConfig;
 
 public abstract class LogisticBlockComponent<TContainer> extends LogisticContainerComponent<TContainer> {
     @SuppressWarnings("rawtypes")

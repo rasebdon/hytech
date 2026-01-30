@@ -7,7 +7,7 @@ import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.rasebdon.hytech.core.components.LogisticBlockComponent;
-import com.rasebdon.hytech.core.face.BlockFaceConfig;
+import com.rasebdon.hytech.core.transport.BlockFaceConfig;
 import com.rasebdon.hytech.core.util.Validation;
 import com.rasebdon.hytech.energy.IEnergyContainer;
 
@@ -81,10 +81,6 @@ public class EnergyBlockComponent extends LogisticBlockComponent<IEnergyContaine
         return this.transferSpeed;
     }
 
-    public BlockFaceConfig getCurrentBlockFaceConfig() {
-        return this.currentBlockFaceConfig;
-    }
-
     public void addEnergy(long amount) {
         if (amount <= 0) return;
         this.energy = Math.min(this.totalCapacity, this.energy + amount);
@@ -106,5 +102,10 @@ public class EnergyBlockComponent extends LogisticBlockComponent<IEnergyContaine
     @Override
     public IEnergyContainer getContainer() {
         return this;
+    }
+
+    @Override
+    public boolean isAvailable() {
+        return true;
     }
 }

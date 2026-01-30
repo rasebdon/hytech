@@ -50,10 +50,10 @@ public final class NetworkGraphUtil {
         for (var pipe : pipes) {
             graph.putIfAbsent(pipe, new HashSet<>());
 
-            for (var target : pipe.getTransferTargets()) {
-                if (target.target() instanceof LogisticPipeComponent<TContainer> neighbor) {
-                    graph.get(pipe).add(neighbor);
-                    graph.computeIfAbsent(neighbor, _ -> new HashSet<>()).add(pipe);
+            for (var neighbor : pipe.getNeighbors()) {
+                if (neighbor instanceof LogisticPipeComponent<TContainer> neighborPipe) {
+                    graph.get(pipe).add(neighborPipe);
+                    graph.computeIfAbsent(neighborPipe, _ -> new HashSet<>()).add(pipe);
                 }
             }
         }

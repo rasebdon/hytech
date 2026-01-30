@@ -13,6 +13,7 @@ import com.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
 import com.rasebdon.hytech.core.systems.LogisticContainerRegistrationSystem;
 import com.rasebdon.hytech.energy.IEnergyContainer;
 import com.rasebdon.hytech.energy.events.EnergyContainerChangedEvent;
+import com.rasebdon.hytech.energy.events.EnergyContainerSideConfigChangedEvent;
 import com.rasebdon.hytech.energy.networks.EnergyNetworkSystem;
 
 public class EnergyContainerRegistrationSystem extends LogisticContainerRegistrationSystem<IEnergyContainer> {
@@ -23,7 +24,9 @@ public class EnergyContainerRegistrationSystem extends LogisticContainerRegistra
             IEventRegistry eventRegistry,
             EnergyNetworkSystem energyNetworkSystem) {
         super(blockComponentType, pipeComponentType, eventRegistry,
-                EnergyContainerChangedEvent.class, energyNetworkSystem);
+                EnergyContainerChangedEvent.class,
+                EnergyContainerSideConfigChangedEvent.class,
+                energyNetworkSystem);
     }
 
     @Override

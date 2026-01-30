@@ -1,4 +1,4 @@
-package com.rasebdon.hytech.energy.util;
+package com.rasebdon.hytech.core.util;
 
 import com.hypixel.hytale.event.IEvent;
 import com.hypixel.hytale.server.core.HytaleServer;
