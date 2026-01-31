@@ -3,7 +3,7 @@ plugins {
     id("hytale-mod") version "0.+"
 }
 
-group = "com.rasebdon"
+group = "at.rasebdon"
 version = "0.1.0"
 val javaVersion = 25
 
@@ -16,9 +16,14 @@ repositories {
     maven("https://maven.hytale-modding.info/releases") {
         name = "HytaleModdingReleases"
     }
+    maven("https://www.cursemaven.com") {
+        name = "Cursemaven"
+    }
 }
 
 dependencies {
+    implementation("curse.maven:hyui-1431415:7553930")
+
     compileOnly(libs.jetbrains.annotations)
     compileOnly(libs.jspecify)
 

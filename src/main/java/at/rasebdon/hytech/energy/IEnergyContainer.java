@@ -1,0 +1,29 @@
+package at.rasebdon.hytech.energy;
+
+public interface IEnergyContainer {
+    long getEnergy();
+
+    long getTotalCapacity();
+
+    long getTransferSpeed();
+
+    /* ---------------- Derived values ---------------- */
+
+    default long getRemainingCapacity() {
+        return Math.max(0L, getTotalCapacity() - getEnergy());
+    }
+
+    default boolean isFull() {
+        return getEnergy() >= getTotalCapacity();
+    }
+
+    default boolean isEmpty() {
+        return getEnergy() <= 0;
+    }
+
+    /* ---------------- Mutations ---------------- */
+
+    void addEnergy(long amount);
+
+    void reduceEnergy(long amount);
+}
