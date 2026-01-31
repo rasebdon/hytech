@@ -5,10 +5,7 @@ import com.hypixel.hytale.protocol.BlockFace;
 import com.rasebdon.hytech.core.components.LogisticContainerComponent;
 
 import javax.annotation.Nullable;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public final class LogisticNeighborMap<TContainer> {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
@@ -44,13 +41,6 @@ public final class LogisticNeighborMap<TContainer> {
         return neighborToFace.get(neighbor);
     }
 
-    public void removeByFace(BlockFace face) {
-        var neighbor = faceToNeighbor.remove(face);
-        if (neighbor != null) {
-            neighborToFace.remove(neighbor);
-        }
-    }
-
     public void removeByNeighbor(
             LogisticContainerComponent<TContainer> neighbor
     ) {
@@ -61,12 +51,7 @@ public final class LogisticNeighborMap<TContainer> {
     }
 
     public Set<LogisticContainerComponent<TContainer>> getAllNeighbors() {
-        return neighborToFace.keySet();
-    }
-
-    public void clear() {
-        this.faceToNeighbor.clear();
-        this.neighborToFace.clear();
+        return new HashSet<>(neighborToFace.keySet());
     }
 }
 

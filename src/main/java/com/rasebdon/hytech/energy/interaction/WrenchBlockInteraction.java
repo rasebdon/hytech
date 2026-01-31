@@ -15,11 +15,9 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.rasebdon.hytech.core.components.LogisticContainerComponent;
 import com.rasebdon.hytech.core.util.BlockFaceUtil;
-import com.rasebdon.hytech.core.util.EventBusUtil;
 import com.rasebdon.hytech.core.util.HytechUtil;
 import com.rasebdon.hytech.energy.EnergyModule;
 import com.rasebdon.hytech.energy.IEnergyContainer;
-import com.rasebdon.hytech.energy.events.EnergyContainerSideConfigChangedEvent;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -59,14 +57,6 @@ public class WrenchBlockInteraction extends SimpleBlockInteraction {
 
             var localFace = BlockFaceUtil.getLocalFace(worldDir, blockTransform.rotation());
             energyContainer.cycleBlockFaceConfig(localFace);
-
-            var event = new EnergyContainerSideConfigChangedEvent(
-                    energyContainer,
-                    localFace,
-                    blockRef,
-                    world.getChunkStore().getStore()
-            );
-            EventBusUtil.dispatchIfListening(event);
 
             player.sendMessage(Message.raw("Side " + worldFace.name() + " (Local: " + localFace.name() + ") changed to: "
                     + energyContainer.getFaceConfigTowards(localFace).name()));

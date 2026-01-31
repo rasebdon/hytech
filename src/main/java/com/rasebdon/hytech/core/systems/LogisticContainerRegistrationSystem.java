@@ -11,10 +11,8 @@ import com.rasebdon.hytech.core.components.LogisticContainerComponent;
 import com.rasebdon.hytech.core.components.LogisticPipeComponent;
 import com.rasebdon.hytech.core.events.LogisticChangeType;
 import com.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
-import com.rasebdon.hytech.core.events.LogisticContainerSideConfigChangedEvent;
 import com.rasebdon.hytech.core.networks.LogisticNetworkSystem;
 import com.rasebdon.hytech.core.util.BlockFaceUtil;
-import com.rasebdon.hytech.core.util.EventBusUtil;
 import com.rasebdon.hytech.core.util.HytechUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -31,29 +29,13 @@ public abstract class LogisticContainerRegistrationSystem<TContainer>
             ComponentType<ChunkStore, ? extends LogisticPipeComponent<TContainer>> pipeType,
             IEventRegistry eventRegistry,
             Class<? extends LogisticContainerChangedEvent<TContainer>> containerChangedEventClass,
-            Class<? extends LogisticContainerSideConfigChangedEvent<TContainer>> blockSideConfigChangedEvent,
             LogisticNetworkSystem<TContainer> networkRegistrationSystem
     ) {
         this.containerType = containerType;
         this.pipeType = pipeType;
         this.query = Query.or(containerType, pipeType);
 
-        eventRegistry.register(blockSideConfigChangedEvent, this::onBlockSideConfigChanged);
         eventRegistry.register(containerChangedEventClass, networkRegistrationSystem::onContainerChanged);
-    }
-
-    private void onBlockSideConfigChanged(LogisticContainerSideConfigChangedEvent<TContainer> event) {
-        var store = event.getStore();
-        var ref = event.getBlockRef();
-        var containerComponent = event.getContainerComponent();
-
-        // TODO : Only change side that is affected
-        removeFromNeighbors(containerComponent, ref, store);
-        rebuildNeighborMaps(containerComponent, ref, store);
-
-        EventBusUtil.dispatchIfListening(
-                createLogisticContainerChangedEvent(ref, store, LogisticChangeType.CHANGED, containerComponent)
-        );
     }
 
     @Override
@@ -68,14 +50,11 @@ public abstract class LogisticContainerRegistrationSystem<TContainer>
             @NotNull Store<ChunkStore> store,
             @NotNull CommandBuffer<ChunkStore> commandBuffer
     ) {
-        var component = getContainer(store, ref);
-        if (component == null) return;
+        var containerComponent = getContainer(store, ref);
+        if (containerComponent == null) return;
 
-        rebuildNeighborMaps(component, ref, store);
-
-        EventBusUtil.dispatchIfListening(
-                createLogisticContainerChangedEvent(ref, store, LogisticChangeType.ADDED, component)
-        );
+        containerComponent.dispatchChangeEvent(LogisticChangeType.ADDED);
+        rebuildNeighborMaps(containerComponent, ref, store);
     }
 
     @Override
@@ -89,10 +68,7 @@ public abstract class LogisticContainerRegistrationSystem<TContainer>
         if (containerComponent == null) return;
 
         removeFromNeighbors(containerComponent, ref, store);
-
-        EventBusUtil.dispatchIfListening(
-                createLogisticContainerChangedEvent(ref, store, LogisticChangeType.REMOVED, containerComponent)
-        );
+        containerComponent.dispatchChangeEvent(LogisticChangeType.REMOVED);
     }
 
     protected void rebuildNeighborMaps(
@@ -125,15 +101,6 @@ public abstract class LogisticContainerRegistrationSystem<TContainer>
             );
 
             container.addNeighbor(localFace, neighborFace, neighborContainer);
-
-            if (neighborContainer instanceof LogisticPipeComponent<TContainer> pipe) {
-                pipe.rebuildNetwork(container);
-            }
-
-            EventBusUtil.dispatchIfListening(
-                    createLogisticContainerChangedEvent(neighborRef, store,
-                            LogisticChangeType.CHANGED, neighborContainer)
-            );
         }
     }
 
@@ -157,15 +124,6 @@ public abstract class LogisticContainerRegistrationSystem<TContainer>
             if (neighborContainer == null) continue;
 
             containerComponent.removeNeighbor(neighborContainer);
-
-            if (neighborContainer instanceof LogisticPipeComponent<TContainer> pipe) {
-                pipe.rebuildNetwork(containerComponent);
-            }
-
-            EventBusUtil.dispatchIfListening(
-                    createLogisticContainerChangedEvent(neighborRef, store,
-                            LogisticChangeType.CHANGED, neighborContainer)
-            );
         }
     }
 
@@ -175,11 +133,4 @@ public abstract class LogisticContainerRegistrationSystem<TContainer>
         var container = store.getComponent(ref, containerType);
         return container != null ? container : store.getComponent(ref, pipeType);
     }
-
-    protected abstract LogisticContainerChangedEvent<TContainer> createLogisticContainerChangedEvent(
-            Ref<ChunkStore> blockRef,
-            Store<ChunkStore> store,
-            LogisticChangeType changeType,
-            LogisticContainerComponent<TContainer> component
-    );
 }

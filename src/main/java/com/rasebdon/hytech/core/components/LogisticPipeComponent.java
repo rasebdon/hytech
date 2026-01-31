@@ -35,6 +35,8 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticContaine
     // Render Vars
     protected final Map<BlockFaceConfigType, String> connectionModelAssetNames = new HashMap<>();
     private final List<Ref<EntityStore>> modelRefs = new ArrayList<>();
+    private boolean needsRenderReload;
+
     @Nullable
     protected LogisticNetwork<TContainer> network;
 
@@ -53,21 +55,12 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticContaine
     }
 
     @Override
-    public void addNeighbor(BlockFace localFace, BlockFace neighborFace, LogisticContainerComponent<TContainer> neighbor) {
-        super.addNeighbor(localFace, neighborFace, neighbor);
-        rebuildNetwork(neighbor);
-    }
-
-    @Override
-    public void removeNeighbor(LogisticContainerComponent<TContainer> neighbor) {
-        super.removeNeighbor(neighbor);
-        rebuildNetwork(neighbor);
-    }
-
-    public void rebuildNetwork(LogisticContainerComponent<TContainer> target) {
-        if (this.network != null && target instanceof LogisticBlockComponent<TContainer>) {
+    public void reloadContainer() {
+        super.reloadContainer();
+        if (this.network != null) {
             this.network.rebuildTargets();
         }
+        this.needsRenderReload = true;
     }
 
     private String getModelAssetName(BlockFaceConfigType faceConfigType) {
@@ -86,8 +79,16 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticContaine
             return ModelAsset.getAssetMap().getAsset(connectionModelAssetNames.get(BlockFaceConfigType.BOTH));
         }
 
-        var blockFaceConfigType = currentBlockFaceConfig.getFaceConfigType(face);
-        return ModelAsset.getAssetMap().getAsset(connectionModelAssetNames.get(blockFaceConfigType));
+        if (this.canPullFrom(neighbor)) {
+            var blockFaceConfigType = currentBlockFaceConfig.getFaceConfigType(face);
+            return ModelAsset.getAssetMap().getAsset(connectionModelAssetNames.get(blockFaceConfigType));
+        }
+
+        if (this.canPushTo(neighbor)) {
+            return ModelAsset.getAssetMap().getAsset(connectionModelAssetNames.get(BlockFaceConfigType.OUTPUT));
+        }
+
+        return null;
     }
 
     public List<Ref<EntityStore>> getModelRefs() {
@@ -106,5 +107,13 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticContaine
     public boolean isConnectedTo(LogisticContainerComponent<TContainer> neighbor) {
         return neighbor.getFaceConfigTowards(this) != BlockFaceConfigType.NONE &&
                 this.getFaceConfigTowards(neighbor) != BlockFaceConfigType.NONE;
+    }
+
+    public boolean needsRenderReload() {
+        return needsRenderReload;
+    }
+
+    public void resetNeedsRenderReload() {
+        this.needsRenderReload = false;
     }
 }

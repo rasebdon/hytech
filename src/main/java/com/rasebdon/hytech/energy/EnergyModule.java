@@ -6,13 +6,17 @@ import com.hypixel.hytale.event.IEventRegistry;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
+import com.rasebdon.hytech.core.systems.PipeRenderModule;
 import com.rasebdon.hytech.energy.components.EnergyBlockComponent;
 import com.rasebdon.hytech.energy.components.EnergyGeneratorComponent;
 import com.rasebdon.hytech.energy.components.EnergyPipeComponent;
 import com.rasebdon.hytech.energy.interaction.ReadEnergyContainerBlockInteraction;
 import com.rasebdon.hytech.energy.interaction.WrenchBlockInteraction;
 import com.rasebdon.hytech.energy.networks.EnergyNetworkSystem;
-import com.rasebdon.hytech.energy.systems.*;
+import com.rasebdon.hytech.energy.systems.EnergyContainerRegistrationSystem;
+import com.rasebdon.hytech.energy.systems.EnergyGenerationSystem;
+import com.rasebdon.hytech.energy.systems.EnergyNetworkSaveSystem;
+import com.rasebdon.hytech.energy.systems.EnergyTransferSystem;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -36,8 +40,9 @@ public class EnergyModule {
                 "hytech:energy:pipe",
                 EnergyPipeComponent.CODEC);
 
-        new EnergyPipeRenderSystem(eventRegistry);
         var energyNetworkSystem = new EnergyNetworkSystem();
+
+        PipeRenderModule.registerPipe(chunkStoreRegistry, energyPipeComponentType);
 
         chunkStoreRegistry.registerSystem(new EnergyTransferSystem(eventRegistry));
         chunkStoreRegistry.registerSystem(new EnergyContainerRegistrationSystem(

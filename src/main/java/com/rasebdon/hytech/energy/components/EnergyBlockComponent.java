@@ -7,9 +7,13 @@ import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.rasebdon.hytech.core.components.LogisticBlockComponent;
+import com.rasebdon.hytech.core.components.LogisticContainerComponent;
+import com.rasebdon.hytech.core.events.LogisticChangeType;
+import com.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
 import com.rasebdon.hytech.core.transport.BlockFaceConfig;
 import com.rasebdon.hytech.core.util.Validation;
 import com.rasebdon.hytech.energy.IEnergyContainer;
+import com.rasebdon.hytech.energy.events.EnergyContainerChangedEvent;
 
 import javax.annotation.Nonnull;
 import java.util.Arrays;
@@ -69,6 +73,11 @@ public class EnergyBlockComponent extends LogisticBlockComponent<IEnergyContaine
         return new EnergyBlockComponent(this.energy, this.totalCapacity,
                 this.transferSpeed, this.currentBlockFaceConfig.clone(),
                 this.transferPriority, this.isExtracting);
+    }
+
+    @Override
+    protected LogisticContainerChangedEvent<IEnergyContainer> createContainerChangedEvent(LogisticChangeType type, LogisticContainerComponent<IEnergyContainer> component) {
+        return new EnergyContainerChangedEvent(type, component);
     }
 
     public long getEnergy() {
