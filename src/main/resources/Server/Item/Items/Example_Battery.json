@@ -29,11 +29,11 @@
   "BlockType": {
     "Material": "Solid",
     "DrawType": "Cube",
-    "Group": "Soil",
+    "Group": "Props",
     "Flags": {},
     "Gathering": {
       "Breaking": {
-        "GatherType": "Soils"
+        "GatherType": "Rocks"
       }
     },
     "BlockParticleSetId": "Sand",

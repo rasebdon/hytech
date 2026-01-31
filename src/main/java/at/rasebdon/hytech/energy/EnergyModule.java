@@ -5,6 +5,7 @@ import at.rasebdon.hytech.energy.components.EnergyBlockComponent;
 import at.rasebdon.hytech.energy.components.EnergyGeneratorComponent;
 import at.rasebdon.hytech.energy.components.EnergyPipeComponent;
 import at.rasebdon.hytech.energy.interaction.ReadEnergyContainerBlockInteraction;
+import at.rasebdon.hytech.energy.interaction.SolarPanelPageInteraction;
 import at.rasebdon.hytech.energy.interaction.WrenchBlockInteraction;
 import at.rasebdon.hytech.energy.networks.EnergyNetworkSystem;
 import at.rasebdon.hytech.energy.systems.EnergyContainerRegistrationSystem;
@@ -61,6 +62,10 @@ public class EnergyModule {
                 "Wrench",
                 WrenchBlockInteraction.class,
                 WrenchBlockInteraction.CODEC);
+        Interaction.CODEC.register(
+                "SolarPanelPage",
+                SolarPanelPageInteraction.class,
+                SolarPanelPageInteraction.CODEC);
 
         LOGGER.atInfo().log("Energy Module Systems Registered");
     }

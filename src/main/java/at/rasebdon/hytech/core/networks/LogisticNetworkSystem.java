@@ -144,7 +144,7 @@ public abstract class LogisticNetworkSystem<TContainer> {
         }
 
         if (components.size() == 1) {
-            LOGGER.atInfo().log("Network remains connected");
+            LOGGER.atInfo().log("Network remains connected (%d Pipes)", components.getFirst().size());
             dispatch(network, LogisticChangeType.CHANGED);
             return;
         }

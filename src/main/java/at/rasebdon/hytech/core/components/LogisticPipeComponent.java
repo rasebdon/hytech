@@ -80,12 +80,12 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticContaine
         }
 
         if (this.canPullFrom(neighbor)) {
-            var blockFaceConfigType = currentBlockFaceConfig.getFaceConfigType(face);
-            return ModelAsset.getAssetMap().getAsset(connectionModelAssetNames.get(blockFaceConfigType));
+            return ModelAsset.getAssetMap().getAsset(connectionModelAssetNames.get(BlockFaceConfigType.INPUT));
         }
 
         if (this.canPushTo(neighbor)) {
-            return ModelAsset.getAssetMap().getAsset(connectionModelAssetNames.get(BlockFaceConfigType.OUTPUT));
+            var blockFaceConfigType = currentBlockFaceConfig.getFaceConfigType(face);
+            return ModelAsset.getAssetMap().getAsset(connectionModelAssetNames.get(blockFaceConfigType));
         }
 
         return null;

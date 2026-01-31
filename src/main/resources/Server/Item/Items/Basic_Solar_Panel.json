@@ -7,13 +7,13 @@
     "Technic.General"
   ],
   "PlayerAnimationsId": "Block",
-  "Set": "Soil",
+  "Set": "Technic",
   "Tags": {
     "Type": [
       "Soil"
     ]
   },
-  "ItemSoundSetId": "ISS_Blocks_Soft",
+  "ItemSoundSetId": "ISS_Blocks_Stone",
   "IconProperties": {
     "Scale": 0.58823,
     "Rotation": [
@@ -37,7 +37,7 @@
         "Weight": 1
       }
     ],
-    "Group": "Soil",
+    "Group": "Props",
     "Gathering": {
       "Breaking": {
         "GatherType": "Rocks"
@@ -65,7 +65,22 @@
         }
       }
     },
-    "VariantRotation": "NESW"
+    "VariantRotation": "NESW",
+    "BlockParticleSetId": "Metal",
+    "ParticleColor": "#353535",
+    "Flags": {
+      "IsUsable": true
+    },
+    "Interactions": {
+      "Use": {
+        "Interactions": [
+          {
+            "Type": "SolarPanelPage"
+          }
+        ]
+      }
+    },
+    "BlockSoundSetId": "Metal"
   },
-  "Icon": "Icons/ItemsGenerated/Example_Generator.png"
+  "Icon": "Icons/ItemsGenerated/Basic_Solar_Panel.png"
 }
