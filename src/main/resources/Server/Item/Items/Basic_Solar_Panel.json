@@ -1,0 +1,71 @@
+{
+  "TranslationProperties": {
+    "Name": "server.items.Basic_Solar_Panel.name"
+  },
+  "ItemLevel": 600,
+  "Categories": [
+    "Technic.General"
+  ],
+  "PlayerAnimationsId": "Block",
+  "Set": "Soil",
+  "Tags": {
+    "Type": [
+      "Soil"
+    ]
+  },
+  "ItemSoundSetId": "ISS_Blocks_Soft",
+  "IconProperties": {
+    "Scale": 0.58823,
+    "Rotation": [
+      22.5,
+      45,
+      22.5
+    ],
+    "Translation": [
+      0,
+      -13.5
+    ]
+  },
+  "BlockType": {
+    "Material": "Solid",
+    "DrawType": "Model",
+    "Opacity": "Transparent",
+    "CustomModel": "Blocks/Generators/Solar/Basic_Solar_Panel.blockymodel",
+    "CustomModelTexture": [
+      {
+        "Texture": "BlockTextures/Generators/Solar/Basic_Solar_Panel.png",
+        "Weight": 1
+      }
+    ],
+    "Group": "Soil",
+    "Gathering": {
+      "Breaking": {
+        "GatherType": "Rocks"
+      }
+    },
+    "BlockEntity": {
+      "Components": {
+        "hytech:energy:generator": {
+          "GenerationRate": 5
+        },
+        "hytech:energy:container": {
+          "MaxTransfer": 25,
+          "TransferPriority": 0,
+          "TotalCapacity": 500,
+          "IsExtracting": true,
+          "BlockFaceConfigOverride": {
+            "None": 2,
+            "Up": 2,
+            "Down": 2,
+            "North": 2,
+            "South": 2,
+            "East": 2,
+            "West": 2
+          }
+        }
+      }
+    },
+    "VariantRotation": "NESW"
+  },
+  "Icon": "Icons/ItemsGenerated/Example_Generator.png"
+}
