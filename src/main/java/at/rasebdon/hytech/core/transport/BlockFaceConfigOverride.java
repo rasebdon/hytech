@@ -3,9 +3,11 @@ package at.rasebdon.hytech.core.transport;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
-import com.hypixel.hytale.codec.builder.BuilderField;
-import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.protocol.BlockFace;
+
+import javax.annotation.Nonnull;
+import java.util.EnumMap;
+import java.util.EnumSet;
 
 public class BlockFaceConfigOverride {
     public static final BuilderCodec<BlockFaceConfigOverride> CODEC;
@@ -14,35 +16,87 @@ public class BlockFaceConfigOverride {
         var builder = BuilderCodec.builder(BlockFaceConfigOverride.class, BlockFaceConfigOverride::new);
 
         for (BlockFace face : BlockFace.values()) {
-            createKeyedConfigCodec(builder, face)
-                    .documentation("Defines that this face can be configured for all given states " +
-                            "(0 = No I/O, 1 = Only Input/None, 2 = Only Output/None, 3 = I/O or None)")
-                    .addValidator(Validators.range(0b00, 0b11))
+            builder.append(
+                            new KeyedCodec<>(face.name(), Codec.STRING_ARRAY),
+                            (c, v) -> c.setAllowed(face, v),
+                            (c) -> c.getAllowed(face)
+                    )
+                    .documentation(
+                            "Allowed face configs for this side.\n" +
+                                    "Valid values: NONE, INPUT, OUTPUT, INPUT_OUTPUT"
+                    )
                     .add();
         }
 
         CODEC = builder.build();
     }
 
-    private final BlockFaceConfig config;
+    private final EnumMap<BlockFace, EnumSet<BlockFaceConfigType>> allowed =
+            new EnumMap<>(BlockFace.class);
 
     public BlockFaceConfigOverride() {
-        this.config = new BlockFaceConfig();
+        for (BlockFace face : BlockFace.values()) {
+            allowed.put(face, EnumSet.allOf(BlockFaceConfigType.class));
+        }
     }
 
-    private static BuilderField.FieldBuilder<BlockFaceConfigOverride, Integer, BuilderCodec.Builder<BlockFaceConfigOverride>>
-    createKeyedConfigCodec(
-            BuilderCodec.Builder<BlockFaceConfigOverride> builder,
-            BlockFace face
+    private void setAllowed(BlockFace face, @Nonnull String[] values) {
+        EnumSet<BlockFaceConfigType> set = EnumSet.noneOf(BlockFaceConfigType.class);
+
+        for (String value : values) {
+            set.add(BlockFaceConfigType.valueOf(value));
+        }
+
+        // Safety: never allow empty
+        if (set.isEmpty()) {
+            set.add(BlockFaceConfigType.NONE);
+        }
+
+        allowed.put(face, set);
+    }
+
+    private String[] getAllowed(BlockFace face) {
+        return allowed.get(face)
+                .stream()
+                .map(Enum::name)
+                .toArray(String[]::new);
+    }
+
+    public boolean isAllowed(BlockFace face, BlockFaceConfigType type) {
+        return allowed.get(face).contains(type);
+    }
+
+    public BlockFaceConfigType getFallback(BlockFace face) {
+        return allowed.get(face).iterator().next();
+    }
+
+    public void applyTo(BlockFaceConfig config) {
+        for (BlockFace face : BlockFace.values()) {
+            BlockFaceConfigType current = config.getFaceConfigType(face);
+
+            if (!isAllowed(face, current)) {
+                config.setFaceConfigType(face, getFallback(face));
+            }
+        }
+    }
+
+    public BlockFaceConfigType nextAllowed(
+            BlockFace face,
+            BlockFaceConfigType current
     ) {
-        return builder.append(
-                new KeyedCodec<>(face.name(), Codec.INTEGER),
-                (c, v) -> c.config.setFaceConfigType(face, BlockFaceConfigType.fromBits(v)),
-                (c) -> c.config.getFaceConfigType(face).getBits()
-        );
-    }
+        BlockFaceConfigType[] values = BlockFaceConfigType.values();
 
-    public BlockFaceConfig getConfig() {
-        return config;
+        int start = (current.ordinal() + 1) % values.length;
+
+        for (int i = 0; i < values.length; i++) {
+            BlockFaceConfigType candidate = values[(start + i) % values.length];
+
+            if (isAllowed(face, candidate)) {
+                return candidate;
+            }
+        }
+
+        return current;
     }
 }
+

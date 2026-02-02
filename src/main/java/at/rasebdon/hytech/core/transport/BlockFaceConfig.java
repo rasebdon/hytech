@@ -66,10 +66,6 @@ public class BlockFaceConfig implements Cloneable {
         return this.getFaceConfigType(face).isInput();
     }
 
-    public void cycleFaceConfigType(BlockFace face) {
-        setFaceConfigType(face, getFaceConfigType(face).next());
-    }
-
     public int getBitmap() {
         return this.blockFaceConfigBitmap;
     }
