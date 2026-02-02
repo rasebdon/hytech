@@ -62,13 +62,27 @@
           "TotalCapacity": 500,
           "IsExtracting": true,
           "BlockFaceConfigOverride": {
-            "None": 2,
-            "Up": 2,
-            "Down": 2,
-            "North": 2,
-            "South": 2,
-            "East": 2,
-            "West": 2
+            "None": [
+              "OUTPUT"
+            ],
+            "Up": [
+              "OUTPUT"
+            ],
+            "Down": [
+              "OUTPUT"
+            ],
+            "North": [
+              "OUTPUT"
+            ],
+            "South": [
+              "OUTPUT"
+            ],
+            "East": [
+              "OUTPUT"
+            ],
+            "West": [
+              "OUTPUT"
+            ]
           }
         }
       }

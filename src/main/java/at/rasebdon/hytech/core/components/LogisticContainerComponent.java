@@ -23,7 +23,12 @@ public abstract class LogisticContainerComponent<TContainer> implements IContain
     public static final BuilderCodec<LogisticContainerComponent> CODEC =
             BuilderCodec.abstractBuilder(LogisticContainerComponent.class)
                     .append(new KeyedCodec<>("BlockFaceConfigOverride", BlockFaceConfigOverride.CODEC),
-                            (c, v) -> c.staticBlockFaceConfigOverride = v,
+                            (c, v) -> {
+                                c.staticBlockFaceConfigOverride = v;
+                                if (v != null) {
+                                    v.applyTo(c.currentBlockFaceConfig);
+                                }
+                            },
                             (c) -> c.staticBlockFaceConfigOverride)
                     .documentation("Side configuration for Input/Output sides").add()
                     .append(new KeyedCodec<>("BlockFaceConfigBitmap", Codec.INTEGER),
@@ -38,6 +43,10 @@ public abstract class LogisticContainerComponent<TContainer> implements IContain
     protected LogisticContainerComponent(BlockFaceConfig blockFaceConfig) {
         this();
         this.currentBlockFaceConfig = blockFaceConfig.clone();
+
+        if (staticBlockFaceConfigOverride != null) {
+            staticBlockFaceConfigOverride.applyTo(this.currentBlockFaceConfig);
+        }
     }
 
     protected LogisticContainerComponent() {
@@ -103,7 +112,14 @@ public abstract class LogisticContainerComponent<TContainer> implements IContain
     }
 
     public void cycleBlockFaceConfig(BlockFace face) {
-        this.currentBlockFaceConfig.cycleFaceConfigType(face);
+        var current = currentBlockFaceConfig.getFaceConfigType(face);
+
+        var next = staticBlockFaceConfigOverride == null
+                ? current.next()
+                : staticBlockFaceConfigOverride.nextAllowed(face, current);
+
+        currentBlockFaceConfig.setFaceConfigType(face, next);
+
         this.reloadContainer();
         this.reloadNeighborContainer(face);
     }
