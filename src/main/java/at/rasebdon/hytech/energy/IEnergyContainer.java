@@ -21,6 +21,11 @@ public interface IEnergyContainer {
         return getEnergy() <= 0;
     }
 
+    default float getFillRatio() {
+        long capacity = getTotalCapacity();
+        return capacity == 0 ? 0f : (float) getEnergy() / capacity;
+    }
+
     /* ---------------- Mutations ---------------- */
 
     void addEnergy(long amount);

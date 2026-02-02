@@ -4,6 +4,7 @@ import at.rasebdon.hytech.core.systems.PipeRenderModule;
 import at.rasebdon.hytech.energy.components.EnergyBlockComponent;
 import at.rasebdon.hytech.energy.components.EnergyGeneratorComponent;
 import at.rasebdon.hytech.energy.components.EnergyPipeComponent;
+import at.rasebdon.hytech.energy.interaction.BatteryPageInteraction;
 import at.rasebdon.hytech.energy.interaction.ReadEnergyContainerBlockInteraction;
 import at.rasebdon.hytech.energy.interaction.SolarPanelPageInteraction;
 import at.rasebdon.hytech.energy.interaction.WrenchBlockInteraction;
@@ -66,6 +67,10 @@ public class EnergyModule {
                 "SolarPanelPage",
                 SolarPanelPageInteraction.class,
                 SolarPanelPageInteraction.CODEC);
+        Interaction.CODEC.register(
+                "BatteryPage",
+                BatteryPageInteraction.class,
+                BatteryPageInteraction.CODEC);
 
         LOGGER.atInfo().log("Energy Module Systems Registered");
     }

@@ -30,7 +30,18 @@
     "Material": "Solid",
     "DrawType": "Cube",
     "Group": "Props",
-    "Flags": {},
+    "Flags": {
+      "IsUsable": true
+    },
+    "Interactions": {
+      "Use": {
+        "Interactions": [
+          {
+            "Type": "BatteryPage"
+          }
+        ]
+      }
+    },
     "Gathering": {
       "Breaking": {
         "GatherType": "Rocks"
