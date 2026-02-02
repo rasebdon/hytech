@@ -61,7 +61,7 @@ public abstract class LogisticNetwork<TContainer> implements IContainerHolder<TC
                     pullTargets.add(target);
                 }
 
-                if (pipe.canPushTo(target)) {
+                if (pipe.canOutputTo(target)) {
                     pushTargets.add(target);
                 }
             }

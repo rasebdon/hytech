@@ -75,6 +75,8 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticContaine
     public ModelAsset getConnectionModelAsset(BlockFace face) {
         var neighbor = this.getNeighborContainer(face);
 
+        if (neighbor == null) return null;
+
         if (neighbor instanceof LogisticPipeComponent<TContainer>) {
             return ModelAsset.getAssetMap().getAsset(connectionModelAssetNames.get(BlockFaceConfigType.BOTH));
         }
@@ -84,8 +86,11 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticContaine
         }
 
         if (this.canPushTo(neighbor)) {
-            var blockFaceConfigType = currentBlockFaceConfig.getFaceConfigType(face);
-            return ModelAsset.getAssetMap().getAsset(connectionModelAssetNames.get(blockFaceConfigType));
+            return ModelAsset.getAssetMap().getAsset(connectionModelAssetNames.get(BlockFaceConfigType.OUTPUT));
+        }
+
+        if (this.isConnectedTo(neighbor)) {
+            return ModelAsset.getAssetMap().getAsset(connectionModelAssetNames.get(BlockFaceConfigType.BOTH));
         }
 
         return null;
@@ -101,6 +106,11 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticContaine
     }
 
     public boolean canPushTo(LogisticContainerComponent<TContainer> target) {
+        return this.getFaceConfigTowards(target) == BlockFaceConfigType.OUTPUT &&
+                target.hasOutputFaceTowards(this);
+    }
+
+    public boolean canOutputTo(LogisticContainerComponent<TContainer> target) {
         return this.hasOutputFaceTowards(target) && target.hasInputFaceTowards(this);
     }
 
