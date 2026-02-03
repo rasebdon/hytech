@@ -1,0 +1,75 @@
+{
+  "TranslationProperties": {
+    "Name": "server.items.Battery_Tier_1.name"
+  },
+  "ItemLevel": 600,
+  "Categories": [
+    "Technic.Machines"
+  ],
+  "PlayerAnimationsId": "Block",
+  "Set": "Machine",
+  "Tags": {
+    "Type": [
+      "Machine"
+    ]
+  },
+  "ItemSoundSetId": "ISS_Blocks_Soft",
+  "IconProperties": {
+    "Scale": 0.58823,
+    "Rotation": [
+      22.5,
+      45,
+      22.5
+    ],
+    "Translation": [
+      0,
+      -13.5
+    ]
+  },
+  "BlockType": {
+    "Material": "Solid",
+    "DrawType": "Model",
+    "Opacity": "Transparent",
+    "CustomModel": "Blocks/Storage/Batteries/Battery_Tier_1.blockymodel",
+    "CustomModelTexture": [
+      {
+        "Texture": "BlockTextures/Storage/Batteries/Battery_Tier_1.png",
+        "Weight": 1
+      }
+    ],
+    "Group": "Props",
+    "Gathering": {
+      "Breaking": {
+        "GatherType": "Rocks"
+      }
+    },
+    "Flags": {
+      "IsUsable": true
+    },
+    "Interactions": {
+      "Use": {
+        "Interactions": [
+          {
+            "Type": "BatteryPage"
+          }
+        ]
+      }
+    },
+    "BlockParticleSetId": "Metal",
+    "ParticleColor": "#353535",
+    "BlockSoundSetId": "Metal",
+    "BlockEntity": {
+      "Components": {
+        "hytech:energy:container": {
+          "MaxTransfer": 100,
+          "TransferPriority": 25,
+          "TotalCapacity": 100000,
+          "IsExtracting": false
+        }
+      }
+    },
+    "VariantRotation": "NESW",
+    "CustomModelAnimation": "Blocks/Storage/Batteries/Battery_Tier_1_Animation.blockyanim"
+  },
+  "Icon": "Icons/ItemsGenerated/Battery_Tier_1.png"
+}

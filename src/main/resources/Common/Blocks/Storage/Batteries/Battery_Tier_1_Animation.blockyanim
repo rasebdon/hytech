@@ -1,0 +1,523 @@
+{
+  "formatVersion": 1,
+  "duration": 42,
+  "holdLastKeyframe": false,
+  "nodeAnimations": {
+    "Battery_Block_1_Empty": {
+      "position": [],
+      "orientation": [],
+      "shapeStretch": [],
+      "shapeVisible": [
+        {
+          "time": 0,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 6,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 12,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 18,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 24,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 30,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 36,
+          "delta": false,
+          "interpolationType": "linear"
+        }
+      ],
+      "shapeUvOffset": []
+    },
+    "Battery_Block_2_Empty": {
+      "position": [],
+      "orientation": [],
+      "shapeStretch": [],
+      "shapeVisible": [
+        {
+          "time": 0,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 6,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 12,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 18,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 24,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 30,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 36,
+          "delta": false,
+          "interpolationType": "linear"
+        }
+      ],
+      "shapeUvOffset": []
+    },
+    "Battery_Block_3_Empty": {
+      "position": [],
+      "orientation": [],
+      "shapeStretch": [],
+      "shapeVisible": [
+        {
+          "time": 0,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 6,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 12,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 18,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 24,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 30,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 36,
+          "delta": false,
+          "interpolationType": "linear"
+        }
+      ],
+      "shapeUvOffset": []
+    },
+    "Battery_Block_4_Empty": {
+      "position": [],
+      "orientation": [],
+      "shapeStretch": [],
+      "shapeVisible": [
+        {
+          "time": 0,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 6,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 12,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 18,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 24,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 30,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 36,
+          "delta": false,
+          "interpolationType": "linear"
+        }
+      ],
+      "shapeUvOffset": []
+    },
+    "Battery_Block_5_Empty": {
+      "position": [],
+      "orientation": [],
+      "shapeStretch": [],
+      "shapeVisible": [
+        {
+          "time": 0,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 6,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 12,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 18,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 24,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 30,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 36,
+          "delta": false,
+          "interpolationType": "linear"
+        }
+      ],
+      "shapeUvOffset": []
+    },
+    "Battery_Block_6_Empty": {
+      "position": [],
+      "orientation": [],
+      "shapeStretch": [],
+      "shapeVisible": [
+        {
+          "time": 0,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 6,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 12,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 18,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 24,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 30,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 36,
+          "delta": false,
+          "interpolationType": "linear"
+        }
+      ],
+      "shapeUvOffset": []
+    },
+    "Battery_Block_1_Full": {
+      "position": [],
+      "orientation": [],
+      "shapeStretch": [],
+      "shapeVisible": [
+        {
+          "time": 0,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 6,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 12,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 18,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 24,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 30,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 36,
+          "delta": true,
+          "interpolationType": "linear"
+        }
+      ],
+      "shapeUvOffset": []
+    },
+    "Battery_Block_2_Full": {
+      "position": [],
+      "orientation": [],
+      "shapeStretch": [],
+      "shapeVisible": [
+        {
+          "time": 0,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 6,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 12,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 18,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 24,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 30,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 36,
+          "delta": true,
+          "interpolationType": "linear"
+        }
+      ],
+      "shapeUvOffset": []
+    },
+    "Battery_Block_3_Full": {
+      "position": [],
+      "orientation": [],
+      "shapeStretch": [],
+      "shapeVisible": [
+        {
+          "time": 0,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 6,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 12,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 18,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 24,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 30,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 36,
+          "delta": true,
+          "interpolationType": "linear"
+        }
+      ],
+      "shapeUvOffset": []
+    },
+    "Battery_Block_4_Full": {
+      "position": [],
+      "orientation": [],
+      "shapeStretch": [],
+      "shapeVisible": [
+        {
+          "time": 0,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 6,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 12,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 18,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 24,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 30,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 36,
+          "delta": true,
+          "interpolationType": "linear"
+        }
+      ],
+      "shapeUvOffset": []
+    },
+    "Battery_Block_5_Full": {
+      "position": [],
+      "orientation": [],
+      "shapeStretch": [],
+      "shapeVisible": [
+        {
+          "time": 0,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 6,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 12,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 18,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 24,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 30,
+          "delta": true,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 36,
+          "delta": true,
+          "interpolationType": "linear"
+        }
+      ],
+      "shapeUvOffset": []
+    },
+    "Battery_Block_6_Full": {
+      "position": [],
+      "orientation": [],
+      "shapeStretch": [],
+      "shapeVisible": [
+        {
+          "time": 0,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 6,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 12,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 18,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 24,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 30,
+          "delta": false,
+          "interpolationType": "linear"
+        },
+        {
+          "time": 36,
+          "delta": true,
+          "interpolationType": "linear"
+        }
+      ],
+      "shapeUvOffset": []
+    }
+  }
+}

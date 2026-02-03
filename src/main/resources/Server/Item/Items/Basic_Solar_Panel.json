@@ -4,13 +4,13 @@
   },
   "ItemLevel": 600,
   "Categories": [
-    "Technic.General"
+    "Technic.Machines"
   ],
   "PlayerAnimationsId": "Block",
-  "Set": "Technic",
+  "Set": "Machine",
   "Tags": {
     "Type": [
-      "Soil"
+      "Machine"
     ]
   },
   "ItemSoundSetId": "ISS_Blocks_Stone",

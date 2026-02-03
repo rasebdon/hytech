@@ -22,7 +22,7 @@ repositories {
 }
 
 dependencies {
-    implementation("curse.maven:hyui-1431415:7553930")
+    implementation("curse.maven:hyui-1431415:7567866")
 
     compileOnly(libs.jetbrains.annotations)
     compileOnly(libs.jspecify)

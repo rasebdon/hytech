@@ -2,8 +2,9 @@ package at.rasebdon.hytech.energy.interaction;
 
 import at.rasebdon.hytech.core.util.HytechUtil;
 import at.rasebdon.hytech.energy.EnergyModule;
-import au.ellie.hyui.builders.PageBuilder;
-import au.ellie.hyui.html.TemplateProcessor;
+import at.rasebdon.hytech.energy.IEnergyContainer;
+import au.ellie.hyui.builders.*;
+import au.ellie.hyui.events.PageRefreshResult;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.math.vector.Vector3i;
@@ -20,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.Nonnull;
+import java.util.function.Function;
 
 public class BatteryPageInteraction extends SimpleBlockInteraction {
     @Nonnull
@@ -55,30 +57,66 @@ public class BatteryPageInteraction extends SimpleBlockInteraction {
     private void openUi(@NotNull InteractionContext context,
                         @NotNull World world,
                         @NotNull Vector3i blockPos) {
-        var containerComponent = HytechUtil.getComponentAtBlock(
-                world,
-                blockPos,
-                EnergyModule.get().getBlockEnergyContainerComponentType());
+        world.execute(() -> {
 
-        if (containerComponent == null) {
-            return;
-        }
+            var containerComponent = HytechUtil.getComponentAtBlock(
+                    world,
+                    blockPos,
+                    EnergyModule.get().getBlockEnergyContainerComponentType());
 
+            if (containerComponent == null) {
+                return;
+            }
 
-        var entityStore = world.getEntityStore().getStore();
-        var playerRef = entityStore.getComponent(context.getEntity(), PlayerRef.getComponentType());
-        if (playerRef != null && containerComponent.isAvailable()) {
-            var container = containerComponent.getContainer();
-            var template = new TemplateProcessor()
-                    .setVariable("energyRatio", container.getFillRatio())
-                    .setVariable("currentEnergy", container.getEnergy())
-                    .setVariable("maxEnergy", container.getTotalCapacity());
+            var entityStore = world.getEntityStore().getStore();
+            var playerRef = entityStore.getComponent(context.getEntity(), PlayerRef.getComponentType());
+            if (playerRef != null && containerComponent.isAvailable()) {
+                createBatteryPage()
+                        .withLifetime(CustomPageLifetime.CanDismiss)
+                        .withRefreshRate(1000)
+                        .onRefresh(this.onPageRefresh(containerComponent.getContainer()))
+                        .open(playerRef, entityStore);
+            }
+        });
+    }
 
-            var page = PageBuilder.detachedPage()
-                    .withLifetime(CustomPageLifetime.CanDismiss)
-                    .loadHtml("Energy/BatteryPage.html", template);
+    private Function<HyUIPage, PageRefreshResult> onPageRefresh(IEnergyContainer container) {
+        return (HyUIPage page) -> {
+            page.getById("energylabel", LabelBuilder.class)
+                    .ifPresent(label -> label.withText(container.getEnergy() + " / " + container.getTotalCapacity() + " RF"));
+            page.getById("energybar", ProgressBarBuilder.class)
+                    .ifPresent(bar -> bar.withValue(container.getFillRatio()));
 
-            page.open(playerRef, entityStore);
-        }
+            return PageRefreshResult.UPDATE;
+        };
+    }
+
+    private PageBuilder createBatteryPage() {
+        return PageBuilder.detachedPage()
+                .addElement(
+                        ContainerBuilder.container()
+                                .withLayoutMode("Top")
+                                .addTitleChild(
+                                        LabelBuilder.label()
+                                                .withText("Battery")
+                                )
+                                .addContentChild(
+                                        ProgressBarBuilder.progressBar()
+                                                .withId("energybar")
+                                                .withValue(0.5f)
+                                                .withAlignment("Horizontal")
+                                                .withAnchor(new HyUIAnchor().setWidth(200).setHeight(10))
+                                )
+                                .addContentChild(
+                                        GroupBuilder.group()
+                                                .withLayoutMode("Middle")
+                                                .addChild(
+                                                        LabelBuilder.label()
+                                                                .withId("energylabel")
+                                                                .withText("-/- RF")
+
+                                                )
+                                )
+                );
     }
 }

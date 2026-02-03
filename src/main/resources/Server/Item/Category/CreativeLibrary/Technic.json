@@ -3,7 +3,12 @@
   "Children": [
     {
       "Id": "General",
-      "Name": "server.ui.itemcategory.tools",
+      "Name": "server.ui.itemcategory.technic.general",
+      "Icon": "Icons/ItemCategories/Items-Tools.png"
+    },
+    {
+      "Id": "Machines",
+      "Name": "server.ui.itemcategory.technic.machines",
       "Icon": "Icons/ItemCategories/Items-Tools.png"
     }
   ],
