@@ -8,27 +8,46 @@ import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
+import com.hypixel.hytale.component.system.tick.TickingSystem;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
+import org.jspecify.annotations.NonNull;
 
 import javax.annotation.Nonnull;
 
-// TODO : Make ticking system and improve performance
-public class EnergyBlockStateSystem extends EntityTickingSystem<ChunkStore> {
+public class EnergyBlockStateSystem extends TickingSystem<ChunkStore> {
     private final ComponentType<ChunkStore, EnergyBlockComponent> componentType;
+
+    private static final float UPDATE_INTERVAL_SECONDS = 1f;
+    private float updateTime;
 
     public EnergyBlockStateSystem(
             ComponentType<ChunkStore, EnergyBlockComponent> componentType) {
         this.componentType = componentType;
+        this.updateTime = 0f;
     }
 
     @Override
-    public void tick(float dt,
-                     int index,
-                     @Nonnull ArchetypeChunk<ChunkStore> archetypeChunk,
-                     @Nonnull Store<ChunkStore> store,
-                     @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
+    public void tick(float dt, int systemIndex, @NonNull Store<ChunkStore> store) {
+        if (this.updateTime < UPDATE_INTERVAL_SECONDS) {
+            this.updateTime += dt;
+            return;
+        }
+
+        this.updateTime = 0f;
+
+        store.forEachChunk(componentType, (chunk, buffer) -> {
+            for (int i = 0; i < chunk.size(); i++) {
+                updateBlock(store, chunk, i);
+            }
+        });
+    }
+
+    void updateBlock(
+            Store<ChunkStore> store,
+            ArchetypeChunk<ChunkStore> archetypeChunk,
+            int index) {
         var container = archetypeChunk.getComponent(index, this.componentType);
 
         if (container == null) return;
@@ -49,10 +68,5 @@ public class EnergyBlockStateSystem extends EntityTickingSystem<ChunkStore> {
         if (blockState == null) return;
 
         chunk.setBlockInteractionState(blockPosition, blockType, blockState);
-    }
-
-    @Override
-    public Query<ChunkStore> getQuery() {
-        return componentType;
     }
 }
