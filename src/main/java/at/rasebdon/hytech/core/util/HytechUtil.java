@@ -51,14 +51,28 @@ public class HytechUtil {
         return blockRef.getStore().getComponent(blockRef, type);
     }
 
-    /**
-     * Sends a message to a player entity reference if the player component exists.
-     */
     public static void sendPlayerMessage(@Nonnull Ref<EntityStore> playerRef, @Nonnull String text) {
         var player = playerRef.getStore().getComponent(playerRef, Player.getComponentType());
         if (player != null) {
             player.sendMessage(Message.raw(text));
         }
+    }
+
+    @Nullable
+    public static Vector3i getLocalBlockPosition(@Nonnull Ref<ChunkStore> blockRef, @Nonnull Store<ChunkStore> store) {
+        var info = store.getComponent(blockRef, BlockModule.BlockStateInfo.getComponentType());
+        if (info == null) return null;
+        return getLocalBlockPosition(info);
+    }
+
+    public static Vector3i getLocalBlockPosition(@Nonnull BlockModule.BlockStateInfo blockStateInfo) {
+        int blockIndex = blockStateInfo.getIndex();
+
+        int localX = ChunkUtil.xFromBlockInColumn(blockIndex);
+        int localY = ChunkUtil.yFromBlockInColumn(blockIndex);
+        int localZ = ChunkUtil.zFromBlockInColumn(blockIndex);
+
+        return new Vector3i(localX, localY, localZ);
     }
 
     @Nullable
@@ -69,22 +83,17 @@ public class HytechUtil {
         var worldChunk = store.getComponent(info.getChunkRef(), WorldChunk.getComponentType());
         if (worldChunk == null) return null;
 
-        int blockIndex = info.getIndex();
-
-        // Local coordinates within the chunk
-        int localX = ChunkUtil.xFromBlockInColumn(blockIndex);
-        int localY = ChunkUtil.yFromBlockInColumn(blockIndex);
-        int localZ = ChunkUtil.zFromBlockInColumn(blockIndex);
+        var localPosition = getLocalBlockPosition(info);
 
         // Transform to world coordinates
-        int worldX = ChunkUtil.worldCoordFromLocalCoord(worldChunk.getX(), localX);
-        int worldZ = ChunkUtil.worldCoordFromLocalCoord(worldChunk.getZ(), localZ);
+        int worldX = ChunkUtil.worldCoordFromLocalCoord(worldChunk.getX(), localPosition.getX());
+        int worldZ = ChunkUtil.worldCoordFromLocalCoord(worldChunk.getZ(), localPosition.getZ());
 
-        var rotation = worldChunk.getRotation(worldX, localY, worldZ);
+        var rotation = worldChunk.getRotation(worldX, localPosition.getY(), worldZ);
 
         return new BlockTransform(
-                new Vector3i(worldX, localY, worldZ),
-                new Vector3i(localX, localY, localZ),
+                new Vector3i(worldX, localPosition.getY(), worldZ),
+                localPosition,
                 rotation,
                 worldChunk.getX(),
                 worldChunk.getZ()

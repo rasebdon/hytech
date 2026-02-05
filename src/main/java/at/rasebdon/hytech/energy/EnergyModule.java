@@ -13,6 +13,7 @@ import at.rasebdon.hytech.energy.systems.EnergyContainerRegistrationSystem;
 import at.rasebdon.hytech.energy.systems.EnergyGenerationSystem;
 import at.rasebdon.hytech.energy.systems.EnergyNetworkSaveSystem;
 import at.rasebdon.hytech.energy.systems.EnergyTransferSystem;
+import at.rasebdon.hytech.energy.systems.visual.EnergyBlockStateSystem;
 import com.hypixel.hytale.component.ComponentRegistryProxy;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.event.IEventRegistry;
@@ -50,6 +51,7 @@ public class EnergyModule {
         chunkStoreRegistry.registerSystem(new EnergyContainerRegistrationSystem(
                 blockEnergyContainerComponentType, energyPipeComponentType, eventRegistry, energyNetworkSystem));
         chunkStoreRegistry.registerSystem(new EnergyNetworkSaveSystem(energyNetworkSystem));
+        chunkStoreRegistry.registerSystem(new EnergyBlockStateSystem(blockEnergyContainerComponentType));
 
         ComponentType<ChunkStore, EnergyGeneratorComponent> energyGeneratorType = chunkStoreRegistry.registerComponent(
                 EnergyGeneratorComponent.class, "hytech:energy:generator", EnergyGeneratorComponent.CODEC);

@@ -29,11 +29,11 @@
   "BlockType": {
     "Material": "Solid",
     "DrawType": "Model",
-    "Opacity": "Transparent",
+    "Opacity": "Solid",
     "CustomModel": "Blocks/Storage/Batteries/Battery_Tier_1.blockymodel",
     "CustomModelTexture": [
       {
-        "Texture": "BlockTextures/Storage/Batteries/Battery_Tier_1.png",
+        "Texture": "BlockTextures/Storage/Batteries/Battery_Tier_1_0.png",
         "Weight": 1
       }
     ],
@@ -69,7 +69,52 @@
       }
     },
     "VariantRotation": "NESW",
-    "CustomModelAnimation": "Blocks/Storage/Batteries/Battery_Tier_1_Animation.blockyanim"
+    "State": {
+      "Definitions": {
+        "Charge_0": {
+          "CustomModelTexture": [
+            {
+              "Texture": "BlockTextures/Storage/Batteries/Battery_Tier_1_0.png"
+            }
+          ]
+        },
+        "Charge_20": {
+          "CustomModelTexture": [
+            {
+              "Texture": "BlockTextures/Storage/Batteries/Battery_Tier_1_1.png"
+            }
+          ]
+        },
+        "Charge_40": {
+          "CustomModelTexture": [
+            {
+              "Texture": "BlockTextures/Storage/Batteries/Battery_Tier_1_2.png"
+            }
+          ]
+        },
+        "Charge_60": {
+          "CustomModelTexture": [
+            {
+              "Texture": "BlockTextures/Storage/Batteries/Battery_Tier_1_3.png"
+            }
+          ]
+        },
+        "Charge_80": {
+          "CustomModelTexture": [
+            {
+              "Texture": "BlockTextures/Storage/Batteries/Battery_Tier_1_4.png"
+            }
+          ]
+        },
+        "Charge_100": {
+          "CustomModelTexture": [
+            {
+              "Texture": "BlockTextures/Storage/Batteries/Battery_Tier_1_5.png"
+            }
+          ]
+        }
+      }
+    }
   },
   "Icon": "Icons/ItemsGenerated/Battery_Tier_1.png"
 }
