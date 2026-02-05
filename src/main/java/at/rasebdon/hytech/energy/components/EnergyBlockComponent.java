@@ -9,29 +9,24 @@ import at.rasebdon.hytech.core.util.Validation;
 import at.rasebdon.hytech.energy.IEnergyContainer;
 import at.rasebdon.hytech.energy.events.EnergyContainerChangedEvent;
 import com.hypixel.hytale.codec.Codec;
-import com.hypixel.hytale.codec.ExtraInfo;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
-import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
-import com.hypixel.hytale.codec.codecs.simple.FloatCodec;
-import com.hypixel.hytale.codec.schema.SchemaContext;
-import com.hypixel.hytale.codec.schema.config.Schema;
+import com.hypixel.hytale.codec.codecs.map.MapCodec;
 import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
-import org.bson.BsonValue;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class EnergyBlockComponent extends LogisticBlockComponent<IEnergyContainer> implements IEnergyContainer {
 
-    public static final EnergyStateCodec ENERGY_STATE_CODEC = new EnergyStateCodec();
-    public static final ArrayCodec<EnergyState> ENERGY_STATE_ARRAY_CODEC = new ArrayCodec<>(ENERGY_STATE_CODEC, EnergyState[]::new);
+    public static final MapCodec<Integer, Map<String, Integer>> INTEGER_MAP_CODEC = new MapCodec<>(Codec.INTEGER, HashMap::new);
+
     public static final BuilderCodec<EnergyBlockComponent> CODEC =
             BuilderCodec.builder(EnergyBlockComponent.class, EnergyBlockComponent::new, LogisticBlockComponent.CODEC)
                     .append(new KeyedCodec<>("Energy", Codec.LONG),
@@ -50,15 +45,17 @@ public class EnergyBlockComponent extends LogisticBlockComponent<IEnergyContaine
                             (c) -> c.transferSpeed)
                     .addValidator(Validators.greaterThanOrEqual(0L))
                     .documentation("Maximum energy transferred per tick").add()
-                    .append(new KeyedCodec<>("EnergyStates", ENERGY_STATE_ARRAY_CODEC),
-                            (c, v) -> c.energyStates = v,
-                            (c) -> c.energyStates)
+                    .append(new KeyedCodec<>("EnergyLevelBlockStates", INTEGER_MAP_CODEC),
+                            (c, v) -> c.energyLevelStates = v,
+                            (c) -> c.energyLevelStates)
                     .documentation("Block states that are set whenever the given energy percentage is crossed").add()
                     .build();
-    protected EnergyState[] energyStates;
+
+    protected Map<String, Integer> energyLevelStates;
     protected long energy;
     protected long totalCapacity;
     protected long transferSpeed;
+
     public EnergyBlockComponent(
             long energy,
             long totalCapacity,
@@ -66,7 +63,7 @@ public class EnergyBlockComponent extends LogisticBlockComponent<IEnergyContaine
             BlockFaceConfig blockFaceConfig,
             int transferPriority,
             boolean isExtracting,
-            ArrayList<EnergyState> energyStates
+            Map<String, Integer> energyLevelStates
     ) {
         super(blockFaceConfig, transferPriority, isExtracting);
 
@@ -77,43 +74,19 @@ public class EnergyBlockComponent extends LogisticBlockComponent<IEnergyContaine
         this.totalCapacity = totalCapacity;
         this.energy = Math.min(energy, totalCapacity);
         this.transferSpeed = transferSpeed;
-        this.energyStates = energyStates;
+        this.energyLevelStates = energyLevelStates;
     }
 
     public EnergyBlockComponent() {
-        this(0L, 0L, 0L, new BlockFaceConfig(), 0, false);
+        this(0L, 0L, 0L,
+                new BlockFaceConfig(), 0, false, new HashMap<>());
     }
 
     @Nonnull
     public Component<ChunkStore> clone() {
         return new EnergyBlockComponent(this.energy, this.totalCapacity,
                 this.transferSpeed, this.currentBlockFaceConfig.clone(),
-                this.transferPriority, this.isExtracting, this.energyStates);
-    }
-
-    public record EnergyState(String blockState, float energyThreshold) {
-    }
-
-    public static class EnergyStateCodec implements Codec<EnergyState> {
-        @Override
-        public @Nullable EnergyState decode(BsonValue bsonValue, ExtraInfo info) {
-            var doc = bsonValue.asDocument();
-
-            return new EnergyState(
-                    doc.getString("BlockState").getValue(),
-                    FloatCodec.decodeFloat(doc.get("EnergyThreshold"))
-            );
-        }
-
-        @Override
-        public BsonValue encode(EnergyState var1, ExtraInfo var2) {
-            return null;
-        }
-
-        @Override
-        public @NotNull Schema toSchema(@NotNull SchemaContext var1) {
-            return null;
-        }
+                this.transferPriority, this.isExtracting, this.energyLevelStates);
     }
 
     @Override
@@ -149,6 +122,25 @@ public class EnergyBlockComponent extends LogisticBlockComponent<IEnergyContaine
                 .collect(Collectors.joining(", "));
         return String.format("Energy: %d/%d RF (Prio: %d) | Sides: [%s]",
                 energy, totalCapacity, transferPriority, sides);
+    }
+
+    @Nullable
+    public String getEnergyLevelBlockState() {
+        int energyPercent = (int) (this.getContainer().getFillRatio() * 100);
+
+        String bestKey = null;
+        int bestValue = Integer.MIN_VALUE;
+
+        for (var entry : energyLevelStates.entrySet()) {
+            int value = entry.getValue();
+
+            if (value <= energyPercent && value > bestValue) {
+                bestValue = value;
+                bestKey = entry.getKey();
+            }
+        }
+
+        return bestKey;
     }
 
     @Override

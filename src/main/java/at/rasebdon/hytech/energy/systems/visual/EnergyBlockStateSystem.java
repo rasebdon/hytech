@@ -14,6 +14,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
 import javax.annotation.Nonnull;
 
+// TODO : Make ticking system and improve performance
 public class EnergyBlockStateSystem extends EntityTickingSystem<ChunkStore> {
     private final ComponentType<ChunkStore, EnergyBlockComponent> componentType;
 
@@ -44,8 +45,10 @@ public class EnergyBlockStateSystem extends EntityTickingSystem<ChunkStore> {
         var blockType = chunk.getBlockType(blockPosition);
         if (blockType == null) return;
 
-        blockType.getCustomModelTexture()[0] =
-                chunk.setBlockInteractionState(blockPosition, blockType, "");
+        var blockState = container.getEnergyLevelBlockState();
+        if (blockState == null) return;
+
+        chunk.setBlockInteractionState(blockPosition, blockType, blockState);
     }
 
     @Override

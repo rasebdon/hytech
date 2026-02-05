@@ -64,7 +64,15 @@
           "MaxTransfer": 100,
           "TransferPriority": 25,
           "TotalCapacity": 100000,
-          "IsExtracting": false
+          "IsExtracting": false,
+          "EnergyLevelBlockStates": {
+            "Charge_0": 0,
+            "Charge_20": 20,
+            "Charge_40": 40,
+            "Charge_60": 60,
+            "Charge_80": 80,
+            "Charge_100": 100
+          }
         }
       }
     },

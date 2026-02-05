@@ -35,10 +35,9 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticContaine
     // Render Vars
     protected final Map<BlockFaceConfigType, String> connectionModelAssetNames = new HashMap<>();
     private final List<Ref<EntityStore>> modelRefs = new ArrayList<>();
-    private boolean needsRenderReload;
-
     @Nullable
     protected LogisticNetwork<TContainer> network;
+    private boolean needsRenderReload;
 
     public LogisticPipeComponent(BlockFaceConfig blockFaceConfig, Map<BlockFaceConfigType, String> connectionModelAssetNames) {
         super(blockFaceConfig);
