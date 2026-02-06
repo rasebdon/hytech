@@ -1,10 +1,13 @@
 package at.rasebdon.hytech.energy.systems;
 
+import at.rasebdon.hytech.core.util.HytechUtil;
 import at.rasebdon.hytech.energy.components.EnergyBlockComponent;
 import at.rasebdon.hytech.energy.components.EnergyGeneratorComponent;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
+import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
 import javax.annotation.Nonnull;
@@ -28,12 +31,95 @@ public class EnergyGenerationSystem extends EntityTickingSystem<ChunkStore> {
                      @Nonnull ArchetypeChunk<ChunkStore> archetypeChunk,
                      @Nonnull Store<ChunkStore> store,
                      @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
-        var generator = archetypeChunk.getComponent(index, this.generatorType);
-        var container = archetypeChunk.getComponent(index, this.containerType);
 
-        if (generator != null && container != null) {
-            container.addEnergy(generator.getGenerationRate());
+        EnergyGeneratorComponent gen = archetypeChunk.getComponent(index, generatorType);
+        EnergyBlockComponent container = archetypeChunk.getComponent(index, containerType);
+        if (gen == null || container == null) return;
+
+        var blockRef = archetypeChunk.getReferenceTo(index);
+        var blockPosition = HytechUtil.getBlockTransform(blockRef, store);
+        assert blockPosition != null;
+
+        long amount = calculateOutput(gen, store, blockPosition.worldPos().clone(), dt);
+        if (amount > 0) {
+            container.addEnergy(amount);
         }
+    }
+
+    private long calculateOutput(
+            EnergyGeneratorComponent gen,
+            Store<ChunkStore> store,
+            Vector3i pos,
+            float dt
+    ) {
+        return switch (gen.getGeneratorType()) {
+            case SOLAR -> generateSolar(gen, store, dt);
+            case WIND -> generateWind(gen, pos, dt);
+            case FUEL_SOLID -> generateFuel(gen, store, true, dt);
+            case FUEL_LIQUID -> generateFuel(gen, store, false, dt);
+        };
+    }
+
+    private long generateSolar(
+            EnergyGeneratorComponent gen,
+            Store<ChunkStore> store,
+            float dt
+    ) {
+
+        var time = store.getExternalData().getWorld().getEntityStore().getStore()
+                .getResource(WorldTimeResource.getResourceType()); // 0.0 - 1.0
+        var efficiency = time.getSunlightFactor();
+
+        var energy = gen.getBaseRate() * efficiency * dt;
+        return Math.max(0L, (long) energy);
+    }
+
+    private long generateWind(
+            EnergyGeneratorComponent gen,
+            Vector3i pos,
+            float dt
+    ) {
+        int height = pos.y;
+
+        int minHeight = 64;
+        int maxHeight = 160;
+
+        if (height <= minHeight) {
+            return 0;
+        }
+
+        float heightFactor = Math.min(
+                1.0f,
+                (height - minHeight) / (float) (maxHeight - minHeight)
+        );
+
+        float energy = gen.getBaseRate() * heightFactor * dt;
+        return Math.max(0L, (long) energy);
+    }
+
+    private long generateFuel(
+            EnergyGeneratorComponent gen,
+            Store<ChunkStore> store,
+            boolean solid,
+            float dt
+    ) {
+        return 0;
+
+//        FuelComponent fuel = store.getComponent(FuelComponent.class);
+//        if (fuel == null) return 0;
+//
+//        if (!fuel.isBurning()) {
+//            boolean consumed = solid
+//                    ? fuel.consumeSolidFuel()
+//                    : fuel.consumeLiquidFuel();
+//
+//            if (!consumed) return 0;
+//        }
+//
+//        fuel.tickBurn(dt);
+//
+//        float energy = gen.getBaseRate() * dt;
+//        return Math.max(0L, (long) energy);
     }
 
     @Override

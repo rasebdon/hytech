@@ -10,31 +10,33 @@ import javax.annotation.Nonnull;
 
 public class EnergyGeneratorComponent implements Component<ChunkStore> {
     @Nonnull
-    public static final BuilderCodec<EnergyGeneratorComponent> CODEC = BuilderCodec.builder(
-                    EnergyGeneratorComponent.class, EnergyGeneratorComponent::new)
-            .append(new KeyedCodec<>("GenerationRate", Codec.LONG),
-                    (c, v) -> c.generationRate = v,
-                    (c) -> c.generationRate)
-            .documentation("Amount of energy generated per tick")
-            .add()
-            .build();
-    private long generationRate;
+    public static final BuilderCodec<EnergyGeneratorComponent> CODEC =
+            BuilderCodec.builder(EnergyGeneratorComponent.class, EnergyGeneratorComponent::new)
+                    .append(new KeyedCodec<>("GeneratorType", Codec.STRING),
+                            (c, v) -> c.generatorType = GeneratorType.valueOf(v),
+                            (c) -> c.generatorType.name())
+                    .add()
+                    .append(new KeyedCodec<>("GenerationRate", Codec.LONG),
+                            (c, v) -> c.baseRate = v,
+                            (c) -> c.baseRate)
+                    .add()
+                    .build();
 
-    public EnergyGeneratorComponent(long generationRate) {
-        this.generationRate = Math.max(0L, generationRate);
+    private GeneratorType generatorType;
+    private long baseRate;
+
+    public EnergyGeneratorComponent() { this(GeneratorType.SOLAR, 10L); }
+    public EnergyGeneratorComponent(GeneratorType kind, long baseRate) {
+        this.generatorType = kind;
+        this.baseRate = baseRate;
     }
 
-    public EnergyGeneratorComponent() {
-        this(10L); // Default 10 RF/tick
-    }
-
-    public long getGenerationRate() {
-        return generationRate;
-    }
+    public GeneratorType getGeneratorType() { return generatorType; }
+    public long getBaseRate() { return baseRate; }
 
     @Override
     public Component<ChunkStore> clone() {
-        return new EnergyGeneratorComponent(this.generationRate);
+        return new EnergyGeneratorComponent(generatorType, baseRate);
     }
-
 }
+

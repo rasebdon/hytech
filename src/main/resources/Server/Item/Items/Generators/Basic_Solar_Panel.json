@@ -46,7 +46,8 @@
     "BlockEntity": {
       "Components": {
         "hytech:energy:generator": {
-          "GenerationRate": 5
+          "GenerationRate": 50,
+          "GeneratorType": "SOLAR"
         },
         "hytech:energy:container": {
           "MaxTransfer": 25,
