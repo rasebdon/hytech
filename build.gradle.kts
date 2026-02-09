@@ -22,7 +22,7 @@ repositories {
 }
 
 dependencies {
-    implementation("curse.maven:hyui-1431415:7567866")
+    implementation("curse.maven:hyui-1431415:7598682")
 
     compileOnly(libs.jetbrains.annotations)
     compileOnly(libs.jspecify)
@@ -100,6 +100,13 @@ idea {
         isDownloadSources = true
         isDownloadJavadoc = true
     }
+}
+
+tasks.register<Exec>("runDevServer") {
+    group = "hytale"
+    description = "Runs the hytale server in offline mode"
+
+    
 }
 
 val syncAssets = tasks.register<Copy>("syncAssets") {

@@ -1,5 +1,7 @@
 package at.rasebdon.hytech.core.systems;
 
+import at.rasebdon.hytech.core.components.LogisticContainerComponent;
+import at.rasebdon.hytech.core.components.LogisticEntityProxyComponent;
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import at.rasebdon.hytech.core.util.HytechUtil;
 import com.hypixel.hytale.component.*;
@@ -85,7 +87,9 @@ public class PipeRenderModule {
                     entityStore,
                     model,
                     basePos.clone().add(render.offset()),
-                    render.rotation(), face);
+                    render.rotation(),
+                    face,
+                    pipeComponent);
 
             modelRefList.add(modelRef);
         }
@@ -98,7 +102,8 @@ public class PipeRenderModule {
             Model model,
             Vector3d worldPosition,
             Vector3f rotation,
-            BlockFace face
+            BlockFace face,
+            LogisticContainerComponent<?> containerComponent
     ) {
         Holder<EntityStore> holder = store.getRegistry().newHolder();
 
@@ -111,6 +116,11 @@ public class PipeRenderModule {
                 new ModelComponent(model));
         holder.addComponent(NetworkId.getComponentType(),
                 new NetworkId(store.getExternalData().takeNextNetworkId()));
+        holder.addComponent(
+                LogisticEntityProxyComponent.getComponentType(),
+                new LogisticEntityProxyComponent(containerComponent, face)
+        );
+
         holder.ensureComponent(UUIDComponent.getComponentType());
 
         return store.addEntity(holder, AddReason.SPAWN);

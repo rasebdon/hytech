@@ -1,5 +1,6 @@
 package at.rasebdon.hytech;
 
+import at.rasebdon.hytech.core.HytechCoreModule;
 import at.rasebdon.hytech.energy.EnergyModule;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
@@ -17,6 +18,7 @@ public final class HytechPlugin extends JavaPlugin {
 
     @Override
     protected void setup() {
+        HytechCoreModule.init(this.getEntityStoreRegistry());
         EnergyModule.init(this.getChunkStoreRegistry(), this.getEventRegistry());
     }
 }

@@ -3,23 +3,17 @@ package at.rasebdon.hytech.energy.systems.visual;
 import at.rasebdon.hytech.core.util.HytechUtil;
 import at.rasebdon.hytech.energy.components.EnergyBlockComponent;
 import com.hypixel.hytale.component.ArchetypeChunk;
-import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.component.query.Query;
-import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.component.system.tick.TickingSystem;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import org.jspecify.annotations.NonNull;
 
-import javax.annotation.Nonnull;
-
 public class EnergyBlockStateSystem extends TickingSystem<ChunkStore> {
-    private final ComponentType<ChunkStore, EnergyBlockComponent> componentType;
-
     private static final float UPDATE_INTERVAL_SECONDS = 1f;
+    private final ComponentType<ChunkStore, EnergyBlockComponent> componentType;
     private float updateTime;
 
     public EnergyBlockStateSystem(
