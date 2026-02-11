@@ -106,7 +106,7 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticContaine
 
     public boolean canPushTo(LogisticContainerComponent<TContainer> target) {
         return this.getFaceConfigTowards(target) == BlockFaceConfigType.OUTPUT &&
-                target.hasOutputFaceTowards(this);
+                target.hasInputFaceTowards(this);
     }
 
     public boolean canOutputTo(LogisticContainerComponent<TContainer> target) {
@@ -114,8 +114,9 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticContaine
     }
 
     public boolean isConnectedTo(LogisticContainerComponent<TContainer> neighbor) {
-        return neighbor.getFaceConfigTowards(this) != BlockFaceConfigType.NONE &&
-                this.getFaceConfigTowards(neighbor) != BlockFaceConfigType.NONE;
+        return this.hasOutputFaceTowards(neighbor) && neighbor.hasInputFaceTowards(this) ||
+                this.hasInputFaceTowards(neighbor) && neighbor.hasOutputFaceTowards(this);
+
     }
 
     public boolean needsRenderReload() {

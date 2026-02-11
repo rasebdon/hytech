@@ -32,7 +32,6 @@ public class PipeRenderModule {
             @Nonnull ComponentType<ChunkStore, ? extends LogisticPipeComponent<TContainer>> pipeType) {
         chunkStoreRegistry.registerSystem(new PipeRenderTickingSystem<>(pipeType));
         chunkStoreRegistry.registerSystem(new PipeRenderRefSystem<>(pipeType));
-
     }
 
     private static <TContainer> void redrawPipe(LogisticPipeComponent<TContainer> pipeComponent,
