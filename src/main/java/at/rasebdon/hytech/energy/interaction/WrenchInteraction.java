@@ -16,9 +16,11 @@ import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHandler;
+import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.SimpleInteraction;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
 
 import javax.annotation.Nonnull;
@@ -26,9 +28,17 @@ import javax.annotation.Nullable;
 
 public class WrenchInteraction extends SimpleInteraction {
     public static final BuilderCodec<WrenchInteraction> CODEC = BuilderCodec.builder(
-            WrenchInteraction.class, WrenchInteraction::new
+            WrenchInteraction.class, WrenchInteraction::new, SimpleInteraction.CODEC
     ).build();
+
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+
+    public WrenchInteraction(@Nonnull String id) {
+        super(id);
+    }
+
+    public WrenchInteraction() {
+    }
 
     @Nonnull
     @Override
@@ -42,7 +52,7 @@ public class WrenchInteraction extends SimpleInteraction {
     }
 
     private static void doBlockInteraction(
-            @Nonnull InteractionContext context,
+            @Nonnull InteractionSyncData clientState,
             @Nonnull World world,
             @Nonnull Player player,
             @Nonnull Vector3i targetBlock) {
@@ -50,15 +60,6 @@ public class WrenchInteraction extends SimpleInteraction {
         var containerComponent = getContainer(world, targetBlock);
 
         if (containerComponent != null) {
-            var clientState = context.getClientState();
-            assert clientState != null;
-
-            // Map the clicked world face to the local face based on block rotation
-            LOGGER.atInfo().log(context.getState().blockFace.toString());
-            LOGGER.atInfo().log(context.getClientState().blockFace.toString());
-            LOGGER.atInfo().log(context.getServerState().blockFace.toString());
-
-
             BlockFace worldFace = clientState.blockFace;
             Vector3i worldDir = BlockFaceUtil.getVectorFromFace(worldFace);
 
@@ -75,9 +76,18 @@ public class WrenchInteraction extends SimpleInteraction {
 
     @Override
     protected void simulateTick0(boolean firstRun, float time, @NonNull InteractionType type, @NonNull InteractionContext context, @NonNull CooldownHandler cooldownHandler) {
-        LOGGER.atInfo().log("SIMULATE");
-
         super.simulateTick0(firstRun, time, type, context, cooldownHandler);
+        if (!Interaction.failed(context.getState().state)) {
+            InteractionSyncData clientState = context.getClientState();
+
+            assert clientState != null;
+
+            if (!firstRun) {
+                context.getState().state = context.getClientState().state;
+            } else {
+                clientState.blockFace = BlockFace.None;
+            }
+        }
     }
 
     private static void cycleFace(LogisticContainerComponent<?> containerComponent, BlockFace localFace, Player player) {
@@ -95,18 +105,20 @@ public class WrenchInteraction extends SimpleInteraction {
 
     @Override
     protected void tick0(boolean firstRun, float time, @NonNull InteractionType type, @NonNull InteractionContext context, @NonNull CooldownHandler cooldownHandler) {
-        if (!firstRun) {
-            return;
-        }
+        var clientState = context.getClientState();
+        assert clientState != null;
 
-        wrenchInteraction(type, context, cooldownHandler);
-        super.tick0(true, time, type, context, cooldownHandler);
+        if (!firstRun) {
+            context.getState().state = clientState.state;
+        } else {
+            wrenchInteraction(context, clientState);
+            super.tick0(firstRun, time, type, context, cooldownHandler);
+        }
     }
 
     protected void wrenchInteraction(
-            @Nonnull InteractionType interactionType,
             @Nonnull InteractionContext interactionContext,
-            @Nonnull CooldownHandler cooldownHandler) {
+            @Nonnull InteractionSyncData clientState) {
         var playerRef = interactionContext.getEntity();
         var entityStore = playerRef.getStore();
         var player = entityStore.getComponent(playerRef, Player.getComponentType());
@@ -116,18 +128,13 @@ public class WrenchInteraction extends SimpleInteraction {
 
         var targetBlock = interactionContext.getTargetBlock();
         if (targetBlock != null) {
-            var clientState = interactionContext.getClientState();
-            assert clientState != null;
-
-            LOGGER.atInfo().log(clientState.state.name());
-
             if (clientState.blockFace == BlockFace.None) {
                 interactionContext.getState().state = InteractionState.Failed;
                 return;
             }
 
             doBlockInteraction(
-                    interactionContext,
+                    clientState,
                     world,
                     player,
                     new Vector3i(targetBlock.x, targetBlock.y, targetBlock.z));
@@ -151,5 +158,17 @@ public class WrenchInteraction extends SimpleInteraction {
         if (entityProxy == null) return;
 
         cycleFace(entityProxy.getLogisticContainerComponent(), entityProxy.getBlockFace(), player);
+    }
+
+    @Override
+    protected @NotNull com.hypixel.hytale.protocol.Interaction generatePacket() {
+        return new SimpleBlockInteraction();
+    }
+
+    @Override
+    protected void configurePacket(com.hypixel.hytale.protocol.Interaction packet) {
+        super.configurePacket(packet);
+        SimpleBlockInteraction p = (SimpleBlockInteraction) packet;
+        p.useLatestTarget = false;
     }
 }
