@@ -40,13 +40,15 @@ public class EnergyGenerationSystem extends EntityTickingSystem<ChunkStore> {
         var blockPosition = HytechUtil.getBlockTransform(blockRef, store);
         assert blockPosition != null;
 
-        long amount = calculateOutput(gen, store, blockPosition.worldPos().clone(), dt);
-        if (amount > 0) {
-            container.addEnergy(amount);
+        long currentRate = calculateCurrentRate(gen, store, blockPosition.worldPos().clone(), dt);
+        gen.setCurrentRate(currentRate);
+
+        if (currentRate > 0) {
+            container.addEnergy(currentRate);
         }
     }
 
-    private long calculateOutput(
+    private long calculateCurrentRate(
             EnergyGeneratorComponent gen,
             Store<ChunkStore> store,
             Vector3i pos,

@@ -1,4 +1,4 @@
-package at.rasebdon.hytech.energy.interaction;
+package at.rasebdon.hytech.energy.interaction.ui;
 
 import au.ellie.hyui.builders.PageBuilder;
 import com.hypixel.hytale.codec.builder.BuilderCodec;

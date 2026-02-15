@@ -1,4 +1,4 @@
-package at.rasebdon.hytech.energy.interaction;
+package at.rasebdon.hytech.energy.interaction.ui;
 
 import at.rasebdon.hytech.core.util.HytechUtil;
 import at.rasebdon.hytech.energy.EnergyModule;
@@ -11,6 +11,7 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.InteractionType;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHandler;
@@ -18,6 +19,7 @@ import com.hypixel.hytale.server.core.modules.interaction.interaction.config.cli
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.core.util.MessageUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -69,64 +71,88 @@ public class BatteryPageInteraction extends SimpleBlockInteraction {
                 return;
             }
 
-            var blockType = HytechUtil.getBlockType(world, blockPos);
-            assert blockType != null;
-
-            var blockItem = blockType.getItem();
-            assert blockItem != null;
-
-            var blockName = blockItem.getTranslationProperties().getName();
+            var blockName = getBlockName(world, blockPos);
 
             var entityStore = world.getEntityStore().getStore();
             var playerRef = entityStore.getComponent(context.getEntity(), PlayerRef.getComponentType());
             if (playerRef != null && containerComponent.isAvailable()) {
-                PageBuilder.detachedPage()
+                var energyContainer = containerComponent.getContainer();
+                var pageBuilder = PageBuilder.detachedPage()
                         .loadHtml("Energy/Storage/BatteryPage.html")
                         .withLifetime(CustomPageLifetime.CanDismiss)
                         .withRefreshRate(1000)
-                        .onRefresh(this.onPageRefresh(containerComponent.getContainer(), blockName))
+                        .onRefresh(this.onPageRefresh(energyContainer, blockName))
                         .addEventListener("exit-button", CustomUIEventBindingType.Activating,
-                                (_, ctx) -> ctx.getPage().ifPresent(HyUIPage::close))
-                        .open(playerRef, entityStore);
+                                (_, ctx) -> ctx.getPage().ifPresent(HyUIPage::close));
+                initPageBuilder(pageBuilder, energyContainer, blockName);
+                pageBuilder.open(playerRef, entityStore);
             }
         });
     }
 
-    private Function<HyUIPage, PageRefreshResult> onPageRefresh(IEnergyContainer container, String blockName) {
+    private String getBlockName(@NotNull World world, @NotNull Vector3i blockPos) {
+        var blockType = HytechUtil.getBlockType(world, blockPos);
+        assert blockType != null;
+
+        var blockItem = blockType.getItem();
+        assert blockItem != null;
+
+        var translationKey = blockItem.getTranslationProperties().getName();
+        assert translationKey != null;
+
+        return MessageUtil.toAnsiString(Message.translation(translationKey)).toString();
+    }
+
+    private void setEnergyDeltaText(LabelBuilder labelBuilder, IEnergyContainer energyContainer) {
+        var energyDelta = energyContainer.getEnergyDelta();
+        var energyDeltaStyle = new HyUIStyle();
+        energyDeltaStyle.setAlignment(Alignment.Center);
+        String energyDeltaSymbol;
+
+        if (energyDelta < 0) {
+            energyDeltaStyle.setTextColor("#fc2e23");
+            energyDeltaSymbol = "-";
+        } else if (energyDelta > 0) {
+            energyDeltaStyle.setTextColor("#23fc31");
+            energyDeltaSymbol = "+";
+        } else {
+            energyDeltaSymbol = "";
+        }
+
+        labelBuilder.withStyle(energyDeltaStyle);
+        labelBuilder.withText(energyDeltaSymbol + energyDelta + " RF/t");
+    }
+
+    private void setEnergyText(LabelBuilder labelBuilder, IEnergyContainer container) {
+        labelBuilder.withText(container.getEnergy() + " / " + container.getTotalCapacity() + " RF");
+    }
+
+    private Function<HyUIPage, PageRefreshResult> onPageRefresh(IEnergyContainer energyContainer, String blockName) {
         return (HyUIPage page) -> {
             page.getById("base-container", ContainerBuilder.class)
                     .ifPresent(containerBuilder ->
                             containerBuilder.withTitleText(blockName));
-
             page.getById("energy-label", LabelBuilder.class)
-                    .ifPresent(label -> label.withText(container.getEnergy() + " / " + container.getTotalCapacity() + " RF"));
-
-            var energyDelta = container.getEnergyDelta();
-            var energyDeltaStyle = new HyUIStyle();
-            energyDeltaStyle.setAlignment(Alignment.Center);
-            String energyDeltaSymbol;
-
-            if (energyDelta < 0) {
-                energyDeltaStyle.setTextColor("#fc2e23");
-                energyDeltaSymbol = "-";
-            } else if (energyDelta > 0) {
-                energyDeltaStyle.setTextColor("#23fc31");
-                energyDeltaSymbol = "+";
-            } else {
-                energyDeltaSymbol = "";
-            }
-
+                    .ifPresent(label -> setEnergyText(label, energyContainer));
             page.getById("energy-change-label", LabelBuilder.class)
-                    .ifPresent(label -> {
-                        label.withStyle(energyDeltaStyle);
-                        label.withText(energyDeltaSymbol + energyDelta + " RF/t");
-                    });
-
+                    .ifPresent(label -> setEnergyDeltaText(label, energyContainer));
 
             page.getById("energy-bar", ProgressBarBuilder.class)
-                    .ifPresent(bar -> bar.withValue(container.getFillRatio()));
+                    .ifPresent(bar -> bar.withValue(energyContainer.getFillRatio()));
 
             return PageRefreshResult.UPDATE;
         };
+    }
+
+    private void initPageBuilder(PageBuilder pageBuilder, IEnergyContainer energyContainer, String blockName) {
+        pageBuilder.getById("base-container", ContainerBuilder.class)
+                .ifPresent(containerBuilder ->
+                        containerBuilder.withTitleText(blockName));
+        pageBuilder.getById("energy-label", LabelBuilder.class)
+                .ifPresent(label -> setEnergyText(label, energyContainer));
+        pageBuilder.getById("energy-change-label", LabelBuilder.class)
+                .ifPresent(label -> setEnergyDeltaText(label, energyContainer));
+        pageBuilder.getById("energy-bar", ProgressBarBuilder.class)
+                .ifPresent(bar -> bar.withValue(energyContainer.getFillRatio()));
     }
 }

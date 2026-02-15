@@ -24,6 +24,7 @@ public class EnergyGeneratorComponent implements Component<ChunkStore> {
 
     private GeneratorType generatorType;
     private long baseRate;
+    private long currentRate;
 
     public EnergyGeneratorComponent() {
         this(GeneratorType.SOLAR, 10L);
@@ -32,6 +33,7 @@ public class EnergyGeneratorComponent implements Component<ChunkStore> {
     public EnergyGeneratorComponent(GeneratorType kind, long baseRate) {
         this.generatorType = kind;
         this.baseRate = baseRate;
+        this.currentRate = 0;
     }
 
     public GeneratorType getGeneratorType() {
@@ -40,6 +42,14 @@ public class EnergyGeneratorComponent implements Component<ChunkStore> {
 
     public long getBaseRate() {
         return baseRate;
+    }
+
+    public long getCurrentRate() {
+        return currentRate;
+    }
+
+    public void setCurrentRate(long currentRate) {
+        this.currentRate = currentRate;
     }
 
     @Override
