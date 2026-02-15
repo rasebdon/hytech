@@ -81,14 +81,14 @@ public class EnergyBlockComponent extends LogisticBlockComponent<IEnergyContaine
     }
 
     public EnergyBlockComponent() {
-        this(0L, 0L, 0L,
-                new BlockFaceConfig(), 0, false, new HashMap<>());
+        this(0L, 0L, 0L, new BlockFaceConfig(),
+                0, false, new HashMap<>());
     }
 
     @Nonnull
     public Component<ChunkStore> clone() {
         return new EnergyBlockComponent(this.energy, this.totalCapacity,
-                this.transferSpeed, this.currentBlockFaceConfig.clone(),
+                this.transferSpeed, this.blockFaceConfig.clone(),
                 this.transferPriority, this.isExtracting, this.energyLevelStates);
     }
 
@@ -134,7 +134,7 @@ public class EnergyBlockComponent extends LogisticBlockComponent<IEnergyContaine
     }
 
     public String toString() {
-        var sides = Arrays.stream(this.currentBlockFaceConfig.toArray())
+        var sides = Arrays.stream(this.blockFaceConfig.getCurrentConfigTypesArray())
                 .map(Enum::name)
                 .collect(Collectors.joining(", "));
         return String.format("Energy: %d/%d RF (Prio: %d) | Sides: [%s]",

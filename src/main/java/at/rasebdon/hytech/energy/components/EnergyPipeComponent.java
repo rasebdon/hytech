@@ -84,7 +84,7 @@ public class EnergyPipeComponent extends LogisticPipeComponent<IEnergyContainer>
     @Nonnull
     public Component<ChunkStore> clone() {
         return new EnergyPipeComponent(this.savedEnergy, this.pipeCapacity,
-                this.pipeTransferSpeed, this.currentBlockFaceConfig.clone(), this.connectionModelAssetNames);
+                this.pipeTransferSpeed, this.blockFaceConfig.clone(), this.connectionModelAssetNames);
     }
 
     @Override
@@ -151,7 +151,7 @@ public class EnergyPipeComponent extends LogisticPipeComponent<IEnergyContainer>
 
 
     public String toString() {
-        var sides = Arrays.stream(this.currentBlockFaceConfig.toArray())
+        var sides = Arrays.stream(this.blockFaceConfig.getCurrentConfigTypesArray())
                 .map(Enum::name)
                 .collect(Collectors.joining(", "));
 

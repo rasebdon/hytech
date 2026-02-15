@@ -54,7 +54,7 @@
           "TransferPriority": 0,
           "TotalCapacity": 500,
           "IsExtracting": true,
-          "BlockFaceConfigOverride": {
+          "blockFaceConfigDefinitions": {
             "None": [
               "OUTPUT"
             ],

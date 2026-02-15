@@ -3,11 +3,9 @@ package at.rasebdon.hytech.core.components;
 import at.rasebdon.hytech.core.events.LogisticChangeType;
 import at.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
 import at.rasebdon.hytech.core.transport.BlockFaceConfig;
-import at.rasebdon.hytech.core.transport.BlockFaceConfigOverride;
 import at.rasebdon.hytech.core.transport.BlockFaceConfigType;
 import at.rasebdon.hytech.core.transport.LogisticNeighborMap;
 import at.rasebdon.hytech.core.util.EventBusUtil;
-import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Component;
@@ -22,35 +20,22 @@ public abstract class LogisticContainerComponent<TContainer> implements IContain
     @SuppressWarnings("rawtypes")
     public static final BuilderCodec<LogisticContainerComponent> CODEC =
             BuilderCodec.abstractBuilder(LogisticContainerComponent.class)
-                    .append(new KeyedCodec<>("BlockFaceConfigOverride", BlockFaceConfigOverride.CODEC),
-                            (c, v) -> {
-                                c.staticBlockFaceConfigOverride = v;
-                                if (v != null) {
-                                    v.applyTo(c.currentBlockFaceConfig);
-                                }
-                            },
-                            (c) -> c.staticBlockFaceConfigOverride)
-                    .documentation("Side configuration for Input/Output sides").add()
-                    .append(new KeyedCodec<>("BlockFaceConfigBitmap", Codec.INTEGER),
-                            (c, v) -> c.currentBlockFaceConfig = new BlockFaceConfig(v),
-                            (c) -> c.currentBlockFaceConfig.getBitmap())
-                    .documentation("Side configuration for Input/Output sides").add()
+                    .append(new KeyedCodec<>("BlockFaceConfig", BlockFaceConfig.CODEC),
+                            (c, v) -> c.blockFaceConfig = v,
+                            (c) -> c.blockFaceConfig)
+                    .documentation("Side configuration for Logistic Container Block").add()
                     .build();
+
     protected final LogisticNeighborMap<TContainer> neighbors;
-    protected BlockFaceConfig currentBlockFaceConfig;
-    protected BlockFaceConfigOverride staticBlockFaceConfigOverride; // TODO : Is somehow null after codec sync
+    protected BlockFaceConfig blockFaceConfig;
 
     protected LogisticContainerComponent(BlockFaceConfig blockFaceConfig) {
         this();
-        this.currentBlockFaceConfig = blockFaceConfig.clone();
-
-        if (staticBlockFaceConfigOverride != null) {
-            staticBlockFaceConfigOverride.applyTo(this.currentBlockFaceConfig);
-        }
+        this.blockFaceConfig = blockFaceConfig.clone();
     }
 
     protected LogisticContainerComponent() {
-        this.currentBlockFaceConfig = new BlockFaceConfig();
+        this.blockFaceConfig = new BlockFaceConfig();
         this.neighbors = new LogisticNeighborMap<>();
     }
 
@@ -100,25 +85,20 @@ public abstract class LogisticContainerComponent<TContainer> implements IContain
     }
 
     public BlockFaceConfigType getFaceConfigTowards(BlockFace face) {
-        return this.currentBlockFaceConfig.getFaceConfigType(face);
+        return this.blockFaceConfig.get(face);
     }
 
     public boolean hasInputFaceTowards(LogisticContainerComponent<TContainer> neighbor) {
-        return this.currentBlockFaceConfig.isInput(getNeighborFace(neighbor));
+        return this.blockFaceConfig.isInput(getNeighborFace(neighbor));
     }
 
     public boolean hasOutputFaceTowards(LogisticContainerComponent<TContainer> neighbor) {
-        return this.currentBlockFaceConfig.isOutput(getNeighborFace(neighbor));
+        return this.blockFaceConfig.isOutput(getNeighborFace(neighbor));
     }
 
     public void cycleBlockFaceConfig(BlockFace face) {
-        var current = currentBlockFaceConfig.getFaceConfigType(face);
-
-        var next = staticBlockFaceConfigOverride == null
-                ? current.next()
-                : staticBlockFaceConfigOverride.nextAllowed(face, current);
-
-        currentBlockFaceConfig.setFaceConfigType(face, next);
+        var next = blockFaceConfig.nextAllowed(face);
+        blockFaceConfig.set(face, next);
 
         this.reloadContainer();
         this.reloadNeighborContainer(face);
