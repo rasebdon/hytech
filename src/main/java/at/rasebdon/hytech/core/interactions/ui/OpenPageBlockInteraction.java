@@ -79,4 +79,24 @@ public abstract class OpenPageBlockInteraction extends SimpleBlockInteraction {
 
         return MessageUtil.toAnsiString(Message.translation(translationKey)).toString();
     }
+
+    protected String getPrefix(long value) {
+        if (value < 0) {
+            return "-";
+        } else if (value > 0) {
+            return "+";
+        } else {
+            return "";
+        }
+    }
+
+    protected String getValueColor(long value) {
+        if (value < 0) {
+            return "#fc2e23";
+        } else if (value > 0) {
+            return "#23fc31";
+        } else {
+            return "#ffffff";
+        }
+    }
 }
