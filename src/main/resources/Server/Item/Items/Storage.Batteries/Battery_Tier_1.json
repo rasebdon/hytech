@@ -50,7 +50,7 @@
       "Use": {
         "Interactions": [
           {
-            "Type": "BatteryPage"
+            "Type": "OpenBatteryPage"
           }
         ]
       }

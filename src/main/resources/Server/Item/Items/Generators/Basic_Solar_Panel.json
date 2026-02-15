@@ -90,7 +90,7 @@
       "Use": {
         "Interactions": [
           {
-            "Type": "SolarPanelPage"
+            "Type": "OpenGeneratorPage"
           }
         ]
       }

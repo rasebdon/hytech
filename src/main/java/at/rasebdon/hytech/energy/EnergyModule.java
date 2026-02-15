@@ -6,8 +6,8 @@ import at.rasebdon.hytech.energy.components.EnergyGeneratorComponent;
 import at.rasebdon.hytech.energy.components.EnergyPipeComponent;
 import at.rasebdon.hytech.energy.interaction.ReadEnergyContainerBlockInteraction;
 import at.rasebdon.hytech.energy.interaction.WrenchInteraction;
-import at.rasebdon.hytech.energy.interaction.ui.BatteryPageInteraction;
-import at.rasebdon.hytech.energy.interaction.ui.SolarPanelPageInteraction;
+import at.rasebdon.hytech.energy.interaction.ui.OpenBatteryPageInteraction;
+import at.rasebdon.hytech.energy.interaction.ui.OpenGeneratorPageInteraction;
 import at.rasebdon.hytech.energy.networks.EnergyNetworkSystem;
 import at.rasebdon.hytech.energy.systems.EnergyContainerRegistrationSystem;
 import at.rasebdon.hytech.energy.systems.EnergyGenerationSystem;
@@ -32,6 +32,7 @@ public class EnergyModule {
 
     private final ComponentType<ChunkStore, EnergyBlockComponent> blockEnergyContainerComponentType;
     private final ComponentType<ChunkStore, EnergyPipeComponent> energyPipeComponentType;
+    private final ComponentType<ChunkStore, EnergyGeneratorComponent> energyGeneratorComponentType;
 
     private EnergyModule(@Nonnull ComponentRegistryProxy<ChunkStore> chunkStoreRegistry, @Nonnull IEventRegistry eventRegistry) {
         blockEnergyContainerComponentType = chunkStoreRegistry.registerComponent(
@@ -53,9 +54,9 @@ public class EnergyModule {
         chunkStoreRegistry.registerSystem(new EnergyNetworkSaveSystem(energyNetworkSystem));
         chunkStoreRegistry.registerSystem(new EnergyBlockStateSystem(blockEnergyContainerComponentType));
 
-        ComponentType<ChunkStore, EnergyGeneratorComponent> energyGeneratorType = chunkStoreRegistry.registerComponent(
+        energyGeneratorComponentType = chunkStoreRegistry.registerComponent(
                 EnergyGeneratorComponent.class, "hytech:energy:generator", EnergyGeneratorComponent.CODEC);
-        chunkStoreRegistry.registerSystem(new EnergyGenerationSystem(energyGeneratorType, blockEnergyContainerComponentType));
+        chunkStoreRegistry.registerSystem(new EnergyGenerationSystem(energyGeneratorComponentType, blockEnergyContainerComponentType));
 
         Interaction.CODEC.register(
                 "ReadEnergyContainer",
@@ -66,13 +67,13 @@ public class EnergyModule {
                 WrenchInteraction.class,
                 WrenchInteraction.CODEC);
         Interaction.CODEC.register(
-                "SolarPanelPage",
-                SolarPanelPageInteraction.class,
-                SolarPanelPageInteraction.CODEC);
+                "OpenGeneratorPage",
+                OpenGeneratorPageInteraction.class,
+                OpenGeneratorPageInteraction.CODEC);
         Interaction.CODEC.register(
-                "BatteryPage",
-                BatteryPageInteraction.class,
-                BatteryPageInteraction.CODEC);
+                "OpenBatteryPage",
+                OpenBatteryPageInteraction.class,
+                OpenBatteryPageInteraction.CODEC);
 
         LOGGER.atInfo().log("Energy Module Systems Registered");
     }
@@ -100,5 +101,9 @@ public class EnergyModule {
 
     public ComponentType<ChunkStore, EnergyPipeComponent> getEnergyPipeComponentType() {
         return energyPipeComponentType;
+    }
+
+    public ComponentType<ChunkStore, EnergyGeneratorComponent> getEnergyGeneratorComponentType() {
+        return energyGeneratorComponentType;
     }
 }
