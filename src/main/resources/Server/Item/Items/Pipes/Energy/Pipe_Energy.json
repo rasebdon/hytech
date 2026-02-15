@@ -76,7 +76,6 @@
     ]
   },
   "ItemSoundSetId": "ISS_Blocks_Stone",
-  "Icon": "Icons/ItemsGenerated/Pipe.png",
   "IconProperties": {
     "Scale": 0.58823,
     "Rotation": [
@@ -88,5 +87,6 @@
       0,
       -13.5
     ]
-  }
+  },
+  "Icon": "Icons/ItemsGenerated/Pipe_Energy.png"
 }

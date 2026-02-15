@@ -1,6 +1,6 @@
 {
   "TranslationProperties": {
-    "Name": "server.items.Basic_Solar_Panel.name"
+    "Name": "server.items.Solar_Panel_Tier_1.name"
   },
   "ItemLevel": 600,
   "Categories": [
@@ -30,10 +30,10 @@
     "Material": "Solid",
     "DrawType": "Model",
     "Opacity": "Transparent",
-    "CustomModel": "Blocks/Generators/Solar/Basic_Solar_Panel.blockymodel",
+    "CustomModel": "Blocks/Generators/Solar/Solar_Panel_Tier_1.blockymodel",
     "CustomModelTexture": [
       {
-        "Texture": "BlockTextures/Generators/Solar/Basic_Solar_Panel.png",
+        "Texture": "BlockTextures/Generators/Solar/Solar_Panel_Tier_1.png",
         "Weight": 1
       }
     ],
@@ -97,5 +97,5 @@
     },
     "BlockSoundSetId": "Metal"
   },
-  "Icon": "Icons/ItemsGenerated/Basic_Solar_Panel.png"
+  "Icon": "Icons/ItemsGenerated/Solar_Panel_Tier_1.png"
 }
