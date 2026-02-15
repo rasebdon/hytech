@@ -7,6 +7,7 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -51,18 +52,30 @@ public class HytechUtil {
         return blockRef.getStore().getComponent(blockRef, type);
     }
 
+    @Nullable
+    public static BlockType getBlockType(@Nonnull World world, @Nonnull Vector3i pos) {
+        var blockRef = HytechUtil.getBlockEntityRef(world, pos);
+        if (blockRef == null) return null;
+
+        var store = world.getChunkStore().getStore();
+        var blockInfo = store.getComponent(blockRef, BlockModule.BlockStateInfo.getComponentType());
+
+        if (blockInfo == null) return null;
+
+        var blockPosition = HytechUtil.getLocalBlockPosition(blockInfo);
+        var chunk = store.getComponent(blockInfo.getChunkRef(), WorldChunk.getComponentType());
+        if (chunk == null) return null;
+
+        return chunk.getBlockType(blockPosition);
+    }
+
+
+
     public static void sendPlayerMessage(@Nonnull Ref<EntityStore> playerRef, @Nonnull String text) {
         var player = playerRef.getStore().getComponent(playerRef, Player.getComponentType());
         if (player != null) {
             player.sendMessage(Message.raw(text));
         }
-    }
-
-    @Nullable
-    public static Vector3i getLocalBlockPosition(@Nonnull Ref<ChunkStore> blockRef, @Nonnull Store<ChunkStore> store) {
-        var info = store.getComponent(blockRef, BlockModule.BlockStateInfo.getComponentType());
-        if (info == null) return null;
-        return getLocalBlockPosition(info);
     }
 
     public static Vector3i getLocalBlockPosition(@Nonnull BlockModule.BlockStateInfo blockStateInfo) {

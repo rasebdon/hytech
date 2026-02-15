@@ -53,8 +53,8 @@ public class EnergyGenerationSystem extends EntityTickingSystem<ChunkStore> {
             float dt
     ) {
         return switch (gen.getGeneratorType()) {
-            case SOLAR -> generateSolar(gen, store, dt);
-            case WIND -> generateWind(gen, pos, dt);
+            case SOLAR -> generateSolar(gen, store);
+            case WIND -> generateWind(gen, pos);
             case FUEL_SOLID -> generateFuel(gen, store, true, dt);
             case FUEL_LIQUID -> generateFuel(gen, store, false, dt);
         };
@@ -62,22 +62,20 @@ public class EnergyGenerationSystem extends EntityTickingSystem<ChunkStore> {
 
     private long generateSolar(
             EnergyGeneratorComponent gen,
-            Store<ChunkStore> store,
-            float dt
+            Store<ChunkStore> store
     ) {
 
         var time = store.getExternalData().getWorld().getEntityStore().getStore()
-                .getResource(WorldTimeResource.getResourceType()); // 0.0 - 1.0
+                .getResource(WorldTimeResource.getResourceType());
         var efficiency = time.getSunlightFactor();
 
-        var energy = gen.getBaseRate() * efficiency * dt;
-        return Math.max(0L, (long) energy);
+        var energy = Math.round(gen.getBaseRate() * efficiency);
+        return Math.max(0L, energy);
     }
 
     private long generateWind(
             EnergyGeneratorComponent gen,
-            Vector3i pos,
-            float dt
+            Vector3i pos
     ) {
         int height = pos.y;
 
@@ -93,7 +91,7 @@ public class EnergyGenerationSystem extends EntityTickingSystem<ChunkStore> {
                 (height - minHeight) / (float) (maxHeight - minHeight)
         );
 
-        float energy = gen.getBaseRate() * heightFactor * dt;
+        float energy = gen.getBaseRate() * heightFactor;
         return Math.max(0L, (long) energy);
     }
 

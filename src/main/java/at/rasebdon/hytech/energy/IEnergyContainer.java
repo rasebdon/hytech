@@ -7,6 +7,8 @@ public interface IEnergyContainer {
 
     long getTransferSpeed();
 
+    long getEnergyDelta();
+
     /* ---------------- Derived values ---------------- */
 
     default long getRemainingCapacity() {
@@ -31,4 +33,6 @@ public interface IEnergyContainer {
     void addEnergy(long amount);
 
     void reduceEnergy(long amount);
+
+    void updateEnergyDelta();
 }

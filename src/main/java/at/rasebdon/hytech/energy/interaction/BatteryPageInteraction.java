@@ -10,6 +10,7 @@ import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.InteractionType;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
+import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHandler;
@@ -68,55 +69,64 @@ public class BatteryPageInteraction extends SimpleBlockInteraction {
                 return;
             }
 
+            var blockType = HytechUtil.getBlockType(world, blockPos);
+            assert blockType != null;
+
+            var blockItem = blockType.getItem();
+            assert blockItem != null;
+
+            var blockName = blockItem.getTranslationProperties().getName();
+
             var entityStore = world.getEntityStore().getStore();
             var playerRef = entityStore.getComponent(context.getEntity(), PlayerRef.getComponentType());
             if (playerRef != null && containerComponent.isAvailable()) {
-                createBatteryPage()
+                PageBuilder.detachedPage()
+                        .loadHtml("Energy/Storage/BatteryPage.html")
                         .withLifetime(CustomPageLifetime.CanDismiss)
                         .withRefreshRate(1000)
-                        .onRefresh(this.onPageRefresh(containerComponent.getContainer()))
+                        .onRefresh(this.onPageRefresh(containerComponent.getContainer(), blockName))
+                        .addEventListener("exit-button", CustomUIEventBindingType.Activating,
+                                (_, ctx) -> ctx.getPage().ifPresent(HyUIPage::close))
                         .open(playerRef, entityStore);
             }
         });
     }
 
-    private Function<HyUIPage, PageRefreshResult> onPageRefresh(IEnergyContainer container) {
+    private Function<HyUIPage, PageRefreshResult> onPageRefresh(IEnergyContainer container, String blockName) {
         return (HyUIPage page) -> {
-            page.getById("energylabel", LabelBuilder.class)
+            page.getById("base-container", ContainerBuilder.class)
+                    .ifPresent(containerBuilder ->
+                            containerBuilder.withTitleText(blockName));
+
+            page.getById("energy-label", LabelBuilder.class)
                     .ifPresent(label -> label.withText(container.getEnergy() + " / " + container.getTotalCapacity() + " RF"));
-            page.getById("energybar", ProgressBarBuilder.class)
+
+            var energyDelta = container.getEnergyDelta();
+            var energyDeltaStyle = new HyUIStyle();
+            energyDeltaStyle.setAlignment(Alignment.Center);
+            String energyDeltaSymbol;
+
+            if (energyDelta < 0) {
+                energyDeltaStyle.setTextColor("#fc2e23");
+                energyDeltaSymbol = "-";
+            } else if (energyDelta > 0) {
+                energyDeltaStyle.setTextColor("#23fc31");
+                energyDeltaSymbol = "+";
+            } else {
+                energyDeltaSymbol = "";
+            }
+
+            page.getById("energy-change-label", LabelBuilder.class)
+                    .ifPresent(label -> {
+                        label.withStyle(energyDeltaStyle);
+                        label.withText(energyDeltaSymbol + energyDelta + " RF/t");
+                    });
+
+
+            page.getById("energy-bar", ProgressBarBuilder.class)
                     .ifPresent(bar -> bar.withValue(container.getFillRatio()));
 
             return PageRefreshResult.UPDATE;
         };
-    }
-
-    private PageBuilder createBatteryPage() {
-        return PageBuilder.detachedPage()
-                .addElement(
-                        ContainerBuilder.container()
-                                .withLayoutMode("Top")
-                                .addTitleChild(
-                                        LabelBuilder.label()
-                                                .withText("Battery")
-                                )
-                                .addContentChild(
-                                        ProgressBarBuilder.progressBar()
-                                                .withId("energybar")
-                                                .withValue(0.5f)
-                                                .withAlignment("Horizontal")
-                                                .withAnchor(new HyUIAnchor().setWidth(200).setHeight(10))
-                                )
-                                .addContentChild(
-                                        GroupBuilder.group()
-                                                .withLayoutMode("Middle")
-                                                .addChild(
-                                                        LabelBuilder.label()
-                                                                .withId("energylabel")
-                                                                .withText("-/- RF")
-
-                                                )
-                                )
-                );
     }
 }

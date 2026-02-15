@@ -15,8 +15,8 @@ import java.util.Comparator;
 import java.util.List;
 
 public abstract class LogisticTransferSystem<TContainer> extends TickingSystem<ChunkStore> {
-    private final List<LogisticBlockComponent<TContainer>> containerComponents;
-    private final List<LogisticNetwork<TContainer>> networks;
+    protected final List<LogisticBlockComponent<TContainer>> containerComponents;
+    protected final List<LogisticNetwork<TContainer>> networks;
 
     protected LogisticTransferSystem(
             IEventRegistry eventRegistry,

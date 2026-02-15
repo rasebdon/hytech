@@ -10,6 +10,7 @@ import java.util.Set;
 public class EnergyNetwork extends LogisticNetwork<IEnergyContainer> implements IEnergyContainer {
 
     private long energy;
+    private long lastTickEnergy;
     private long totalCapacity;
     private long transferSpeed;
 
@@ -141,6 +142,11 @@ public class EnergyNetwork extends LogisticNetwork<IEnergyContainer> implements 
     }
 
     @Override
+    public long getEnergyDelta() {
+        return this.energy - this.lastTickEnergy;
+    }
+
+    @Override
     public void addEnergy(long amount) {
         if (amount <= 0) return;
         energy = Math.min(totalCapacity, energy + amount);
@@ -150,6 +156,11 @@ public class EnergyNetwork extends LogisticNetwork<IEnergyContainer> implements 
     public void reduceEnergy(long amount) {
         if (amount <= 0) return;
         energy = Math.max(0, energy - amount);
+    }
+
+    @Override
+    public void updateEnergyDelta() {
+        this.lastTickEnergy = this.energy;
     }
 }
 

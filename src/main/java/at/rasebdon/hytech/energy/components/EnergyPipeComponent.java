@@ -108,6 +108,11 @@ public class EnergyPipeComponent extends LogisticPipeComponent<IEnergyContainer>
     }
 
     @Override
+    public long getEnergyDelta() {
+        return this.getNetworkContainer().getEnergyDelta();
+    }
+
+    @Override
     public void addEnergy(long amount) {
         getNetworkContainer().addEnergy(amount);
     }
@@ -115,6 +120,10 @@ public class EnergyPipeComponent extends LogisticPipeComponent<IEnergyContainer>
     @Override
     public void reduceEnergy(long amount) {
         getNetworkContainer().reduceEnergy(amount);
+    }
+
+    @Override
+    public void updateEnergyDelta() {
     }
 
     private IEnergyContainer getNetworkContainer() {

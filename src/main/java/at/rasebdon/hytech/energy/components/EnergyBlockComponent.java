@@ -56,6 +56,8 @@ public class EnergyBlockComponent extends LogisticBlockComponent<IEnergyContaine
     protected long totalCapacity;
     protected long transferSpeed;
 
+    private long lastTickEnergy;
+
     public EnergyBlockComponent(
             long energy,
             long totalCapacity,
@@ -73,6 +75,7 @@ public class EnergyBlockComponent extends LogisticBlockComponent<IEnergyContaine
 
         this.totalCapacity = totalCapacity;
         this.energy = Math.min(energy, totalCapacity);
+        this.lastTickEnergy = this.energy;
         this.transferSpeed = transferSpeed;
         this.energyLevelStates = energyLevelStates;
     }
@@ -106,14 +109,28 @@ public class EnergyBlockComponent extends LogisticBlockComponent<IEnergyContaine
         return this.transferSpeed;
     }
 
+    @Override
+    public long getEnergyDelta() {
+        return this.energy - this.lastTickEnergy;
+    }
+
     public void addEnergy(long amount) {
         if (amount <= 0) return;
+
+        this.lastTickEnergy = energy;
         this.energy = Math.min(this.totalCapacity, this.energy + amount);
     }
 
     public void reduceEnergy(long amount) {
         if (amount <= 0) return;
+
+        this.lastTickEnergy = energy;
         this.energy = Math.max(0, this.energy - amount);
+    }
+
+    @Override
+    public void updateEnergyDelta() {
+        this.lastTickEnergy = this.energy;
     }
 
     public String toString() {

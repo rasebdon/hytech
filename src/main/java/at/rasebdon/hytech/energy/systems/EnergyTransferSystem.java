@@ -5,11 +5,27 @@ import at.rasebdon.hytech.core.systems.LogisticTransferSystem;
 import at.rasebdon.hytech.energy.IEnergyContainer;
 import at.rasebdon.hytech.energy.events.EnergyContainerChangedEvent;
 import at.rasebdon.hytech.energy.events.EnergyNetworkChangedEvent;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.event.IEventRegistry;
+import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
+import org.jetbrains.annotations.NotNull;
 
 public class EnergyTransferSystem extends LogisticTransferSystem<IEnergyContainer> {
     public EnergyTransferSystem(IEventRegistry eventRegistry) {
         super(eventRegistry, EnergyContainerChangedEvent.class, EnergyNetworkChangedEvent.class);
+    }
+
+    @Override
+    public void tick(float dt, int index, @NotNull Store<ChunkStore> store) {
+        for (var container : containerComponents) {
+            container.getContainer().updateEnergyDelta();
+        }
+
+        for (var network : networks) {
+            network.getContainer().updateEnergyDelta();
+        }
+
+        super.tick(dt, index, store);
     }
 
     @Override
