@@ -50,9 +50,9 @@
           "GeneratorType": "SOLAR"
         },
         "hytech:energy:container": {
-          "MaxTransfer": 25,
+          "MaxTransfer": 50,
           "TransferPriority": 0,
-          "TotalCapacity": 500,
+          "TotalCapacity": 50,
           "IsExtracting": true,
           "BlockFaceConfig": {
             "None": [
