@@ -27,8 +27,4 @@ public enum BlockFaceConfigType {
     public boolean isOutput() {
         return (bits & 0b10) != 0;
     }
-
-    public BlockFaceConfigType next() {
-        return values()[(ordinal() + 1) % values().length];
-    }
 }

@@ -5,6 +5,7 @@ import at.rasebdon.hytech.core.components.LogisticContainerComponent;
 import at.rasebdon.hytech.core.events.LogisticChangeType;
 import at.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
 import at.rasebdon.hytech.core.transport.BlockFaceConfig;
+import at.rasebdon.hytech.core.transport.BlockFaceConfigState;
 import at.rasebdon.hytech.core.util.Validation;
 import at.rasebdon.hytech.energy.IEnergyContainer;
 import at.rasebdon.hytech.energy.events.EnergyContainerChangedEvent;
@@ -134,8 +135,8 @@ public class EnergyBlockComponent extends LogisticBlockComponent<IEnergyContaine
     }
 
     public String toString() {
-        var sides = Arrays.stream(this.blockFaceConfig.getCurrentConfigTypesArray())
-                .map(Enum::name)
+        var sides = Arrays.stream(this.blockFaceConfig.getCurrentStates())
+                .map(BlockFaceConfigState::toString)
                 .collect(Collectors.joining(", "));
         return String.format("Energy: %d/%d RF (Prio: %d) | Sides: [%s]",
                 energy, totalCapacity, transferPriority, sides);

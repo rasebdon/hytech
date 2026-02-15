@@ -6,6 +6,7 @@ import at.rasebdon.hytech.core.events.LogisticChangeType;
 import at.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
 import at.rasebdon.hytech.core.systems.PipeRenderHelper;
 import at.rasebdon.hytech.core.transport.BlockFaceConfig;
+import at.rasebdon.hytech.core.transport.BlockFaceConfigState;
 import at.rasebdon.hytech.core.transport.BlockFaceConfigType;
 import at.rasebdon.hytech.core.util.Validation;
 import at.rasebdon.hytech.energy.IEnergyContainer;
@@ -151,8 +152,8 @@ public class EnergyPipeComponent extends LogisticPipeComponent<IEnergyContainer>
 
 
     public String toString() {
-        var sides = Arrays.stream(this.blockFaceConfig.getCurrentConfigTypesArray())
-                .map(Enum::name)
+        var sides = Arrays.stream(this.blockFaceConfig.getCurrentStates())
+                .map(BlockFaceConfigState::toString)
                 .collect(Collectors.joining(", "));
 
         if (isAvailable()) {

@@ -85,7 +85,7 @@ public abstract class LogisticContainerComponent<TContainer> implements IContain
     }
 
     public BlockFaceConfigType getFaceConfigTowards(BlockFace face) {
-        return this.blockFaceConfig.get(face);
+        return this.blockFaceConfig.getType(face);
     }
 
     public boolean hasInputFaceTowards(LogisticContainerComponent<TContainer> neighbor) {
@@ -97,8 +97,7 @@ public abstract class LogisticContainerComponent<TContainer> implements IContain
     }
 
     public void cycleBlockFaceConfig(BlockFace face) {
-        var next = blockFaceConfig.nextAllowed(face);
-        blockFaceConfig.set(face, next);
+        blockFaceConfig.cycleFace(face);
 
         this.reloadContainer();
         this.reloadNeighborContainer(face);
