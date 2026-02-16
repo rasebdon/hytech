@@ -13,6 +13,9 @@ public abstract class LogisticNetworkSystem<TContainer> {
 
     protected static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
+    /**
+     * All currently active networks.
+     */
     protected final Set<LogisticNetwork<TContainer>> networks = new HashSet<>();
 
     public Set<LogisticNetwork<TContainer>> getNetworks() {
@@ -20,164 +23,163 @@ public abstract class LogisticNetworkSystem<TContainer> {
     }
 
     public void onContainerChanged(LogisticContainerChangedEvent<TContainer> event) {
+
         if (!(event.getComponent() instanceof LogisticPipeComponent<TContainer> pipe)) {
             return;
         }
 
         if (event.isAdded()) {
-            onPipeAdded(pipe);
+            handlePipeAdded(pipe);
         } else if (event.isRemoved()) {
-            onPipeRemoved(pipe);
+            handlePipeRemoved(pipe);
         } else if (event.isChanged()) {
-            onPipeChanged(pipe);
+            handlePipeChanged(pipe);
         }
     }
 
-    private void onPipeAdded(LogisticPipeComponent<TContainer> pipe) {
+    private void handlePipeAdded(LogisticPipeComponent<TContainer> pipe) {
         LOGGER.atInfo().log("Pipe added");
-
-        Set<LogisticNetwork<TContainer>> neighbors = findNeighborNetworks(pipe);
-
-        if (neighbors.isEmpty()) {
-            createStandaloneNetwork(pipe);
-            return;
-        }
-
-        if (neighbors.size() == 1) {
-            attachPipeToNetwork(pipe, neighbors.iterator().next());
-            return;
-        }
-
-        mergeNetworks(pipe, neighbors);
+        rebuildFromPipe(pipe);
     }
 
-    private void onPipeRemoved(LogisticPipeComponent<TContainer> pipe) {
+    private void handlePipeRemoved(LogisticPipeComponent<TContainer> pipe) {
         LOGGER.atInfo().log("Pipe removed");
 
-        LogisticNetwork<TContainer> network = pipe.getNetwork();
-        if (network == null) {
+        LogisticNetwork<TContainer> old = pipe.getNetwork();
+        if (old == null) {
             return;
         }
 
-        detachPipeFromNetwork(pipe, network);
-        rebuildNetwork(network);
+        // Remove pipe from its network
+        detachPipe(pipe, old);
+
+        // Rebuild remaining structure
+        rebuildFromPipes(old.getPipes());
     }
 
-    private void onPipeChanged(LogisticPipeComponent<TContainer> pipe) {
+    private void handlePipeChanged(LogisticPipeComponent<TContainer> pipe) {
         LOGGER.atInfo().log("Pipe changed");
+        rebuildFromPipe(pipe);
+    }
 
-        LogisticNetwork<TContainer> network = pipe.getNetwork();
-        if (network == null) {
-            // Treat as new if it somehow lost its network
-            onPipeAdded(pipe);
+    /**
+     * Rebuilds all networks connected to the given pipe.
+     */
+    private void rebuildFromPipe(LogisticPipeComponent<TContainer> pipe) {
+
+        Set<LogisticPipeComponent<TContainer>> reachable =
+                collectReachablePipes(pipe);
+
+        rebuildFromPipes(reachable);
+    }
+
+    /**
+     * Rebuilds networks from a given pipe set.
+     */
+    private void rebuildFromPipes(Set<LogisticPipeComponent<TContainer>> pipes) {
+
+        if (pipes.isEmpty()) {
             return;
         }
 
-        rebuildNetwork(network);
-    }
+        // Remove any old networks containing these pipes
+        removeOldNetworks(pipes);
 
-    private void createStandaloneNetwork(LogisticPipeComponent<TContainer> pipe) {
-        LOGGER.atInfo().log("Creating new standalone network");
-
-        LogisticNetwork<TContainer> network = createNetwork(Set.of(pipe));
-        networks.add(network);
-
-        dispatch(network, LogisticChangeType.ADDED);
-    }
-
-    private void attachPipeToNetwork(
-            LogisticPipeComponent<TContainer> pipe,
-            LogisticNetwork<TContainer> network
-    ) {
-        LOGGER.atInfo().log("Attaching pipe to existing network");
-
-        network.addPipe(pipe);
-        dispatch(network, LogisticChangeType.CHANGED);
-    }
-
-    private void detachPipeFromNetwork(
-            LogisticPipeComponent<TContainer> pipe,
-            LogisticNetwork<TContainer> network
-    ) {
-        LOGGER.atInfo().log("Detaching pipe from network");
-
-        network.removePipe(pipe);
-    }
-
-    private void mergeNetworks(
-            LogisticPipeComponent<TContainer> newPipe,
-            Set<LogisticNetwork<TContainer>> networksToMerge
-    ) {
-        LOGGER.atInfo().log("Merging %d networks", networksToMerge.size());
-
-        Iterator<LogisticNetwork<TContainer>> it = networksToMerge.iterator();
-        LogisticNetwork<TContainer> primary = it.next();
-
-        // Absorb all other networks
-        while (it.hasNext()) {
-            LogisticNetwork<TContainer> other = it.next();
-
-            for (var pipe : new HashSet<>(other.getPipes())) {
-                primary.addPipe(pipe);
-            }
-
-            networks.remove(other);
-            dispatch(other, LogisticChangeType.REMOVED);
-        }
-
-        primary.addPipe(newPipe);
-        dispatch(primary, LogisticChangeType.CHANGED);
-    }
-
-    private void rebuildNetwork(LogisticNetwork<TContainer> network) {
-        LOGGER.atInfo().log("Rebuilding network");
-
+        // Find connected components
         List<Set<LogisticPipeComponent<TContainer>>> components =
-                NetworkGraphUtil.findConnectedComponents(network.getPipes());
+                NetworkGraphUtil.findConnectedComponents(pipes);
 
-        if (components.isEmpty()) {
-            LOGGER.atInfo().log("Network became empty, removing");
-            networks.remove(network);
-            dispatch(network, LogisticChangeType.REMOVED);
-            return;
+        // Create new networks deterministically
+        for (Set<LogisticPipeComponent<TContainer>> component : components) {
+
+            LogisticNetwork<TContainer> network =
+                    createNetwork(component);
+
+            assignNetwork(component, network);
+
+            networks.add(network);
+            dispatch(network, LogisticChangeType.ADDED);
         }
 
-        if (components.size() == 1) {
-            network.setPipes(components.getFirst());
-            dispatch(network, LogisticChangeType.CHANGED);
-            return;
-        }
-
-        LOGGER.atInfo().log("Network split into %d subnetworks", components.size());
-
-        Iterator<Set<LogisticPipeComponent<TContainer>>> it = components.iterator();
-
-        // Reuse existing network for first component
-        network.setPipes(it.next());
-        dispatch(network, LogisticChangeType.CHANGED);
-
-        // Create new networks for remaining components
-        while (it.hasNext()) {
-            LogisticNetwork<TContainer> sub = createNetwork(it.next());
-            networks.add(sub);
-            dispatch(sub, LogisticChangeType.ADDED);
-        }
+        validate();
     }
 
-    private Set<LogisticNetwork<TContainer>> findNeighborNetworks(
-            LogisticPipeComponent<TContainer> pipe
+    private Set<LogisticPipeComponent<TContainer>> collectReachablePipes(
+            LogisticPipeComponent<TContainer> start
     ) {
-        Set<LogisticNetwork<TContainer>> result = new HashSet<>();
+        Set<LogisticPipeComponent<TContainer>> visited = new HashSet<>();
+        Deque<LogisticPipeComponent<TContainer>> stack = new ArrayDeque<>();
+        stack.push(start);
 
-        for (var neighbor : pipe.getNeighbors()) {
-            if (neighbor instanceof LogisticPipeComponent<TContainer> neighborPipe) {
-                LogisticNetwork<TContainer> network = neighborPipe.getNetwork();
-                if (network != null) {
-                    result.add(network);
+        while (!stack.isEmpty()) {
+            var pipe = stack.pop();
+            if (!visited.add(pipe)) continue;
+
+            for (var neighbor : pipe.getNeighbors()) {
+                if (neighbor instanceof LogisticPipeComponent<TContainer> neighborPipe) {
+                    if (pipe.isConnectedTo(neighborPipe)) {
+                        stack.push(neighborPipe);
+                    }
                 }
             }
         }
-        return result;
+
+        return visited;
+    }
+
+    private void removeOldNetworks(Set<LogisticPipeComponent<TContainer>> pipes) {
+
+        Set<LogisticNetwork<TContainer>> affected = new HashSet<>();
+
+        for (var pipe : pipes) {
+            if (pipe.getNetwork() != null) {
+                affected.add(pipe.getNetwork());
+            }
+        }
+
+        for (var network : affected) {
+
+            for (var pipe : new HashSet<>(network.getPipes())) {
+                pipe.assignNetwork(null);
+            }
+
+            networks.remove(network);
+            dispatch(network, LogisticChangeType.REMOVED);
+        }
+    }
+
+    private void assignNetwork(
+            Set<LogisticPipeComponent<TContainer>> pipes,
+            LogisticNetwork<TContainer> network
+    ) {
+        for (var pipe : pipes) {
+            pipe.assignNetwork(network);
+        }
+    }
+
+    private void detachPipe(
+            LogisticPipeComponent<TContainer> pipe,
+            LogisticNetwork<TContainer> network
+    ) {
+        network.removePipe(pipe);
+        pipe.assignNetwork(null);
+    }
+
+    /**
+     * Debug invariant check.
+     * Ensures no pipe is assigned to multiple networks or desynced.
+     */
+    private void validate() {
+
+        for (var network : networks) {
+            for (var pipe : network.getPipes()) {
+                if (pipe.getNetwork() != network) {
+                    throw new IllegalStateException(
+                            "Pipe/network desync detected"
+                    );
+                }
+            }
+        }
     }
 
     protected void dispatch(

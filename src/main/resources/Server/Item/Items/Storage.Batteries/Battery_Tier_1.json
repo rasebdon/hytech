@@ -61,7 +61,7 @@
     "BlockEntity": {
       "Components": {
         "hytech:energy:container": {
-          "MaxTransfer": 100,
+          "MaxTransfer": 2500,
           "TransferPriority": 25,
           "TotalCapacity": 100000,
           "IsExtracting": false,
