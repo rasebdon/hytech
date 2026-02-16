@@ -103,5 +103,6 @@ public abstract class LogisticNetwork<TContainer> implements IContainerHolder<TC
     }
 
     public abstract void pullFromTargets();
+
     public abstract void pushToTargets();
 }

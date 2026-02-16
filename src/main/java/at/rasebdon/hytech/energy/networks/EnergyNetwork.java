@@ -2,37 +2,37 @@ package at.rasebdon.hytech.energy.networks;
 
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import at.rasebdon.hytech.core.networks.LogisticNetwork;
-import at.rasebdon.hytech.energy.IEnergyContainer;
+import at.rasebdon.hytech.energy.EnergyContainer;
 import at.rasebdon.hytech.energy.components.EnergyPipeComponent;
 
 import java.util.Set;
 
-public class EnergyNetwork extends LogisticNetwork<IEnergyContainer> implements IEnergyContainer {
+public class EnergyNetwork extends LogisticNetwork<EnergyContainer> implements EnergyContainer {
 
     private long energy;
     private long lastTickEnergy;
     private long totalCapacity;
     private long transferSpeed;
 
-    public EnergyNetwork(Set<LogisticPipeComponent<IEnergyContainer>> initialPipes) {
+    public EnergyNetwork(Set<LogisticPipeComponent<EnergyContainer>> initialPipes) {
         super(initialPipes);
         recalculateStats();
     }
 
     @Override
-    protected void setPipes(Set<LogisticPipeComponent<IEnergyContainer>> newPipes) {
+    protected void setPipes(Set<LogisticPipeComponent<EnergyContainer>> newPipes) {
         super.setPipes(newPipes);
         recalculateStats();
     }
 
     @Override
-    protected void addPipe(LogisticPipeComponent<IEnergyContainer> pipe) {
+    protected void addPipe(LogisticPipeComponent<EnergyContainer> pipe) {
         super.addPipe(pipe);
         recalculateStats();
     }
 
     @Override
-    protected void removePipe(LogisticPipeComponent<IEnergyContainer> pipe) {
+    protected void removePipe(LogisticPipeComponent<EnergyContainer> pipe) {
         super.removePipe(pipe);
         recalculateStats();
     }
@@ -90,8 +90,8 @@ public class EnergyNetwork extends LogisticNetwork<IEnergyContainer> implements 
     }
 
     private void transferEnergy(
-            IEnergyContainer from,
-            IEnergyContainer to,
+            EnergyContainer from,
+            EnergyContainer to,
             long requested
     ) {
         if (from == null || to == null) return;
@@ -117,7 +117,7 @@ public class EnergyNetwork extends LogisticNetwork<IEnergyContainer> implements 
     }
 
     @Override
-    public IEnergyContainer getContainer() {
+    public EnergyContainer getContainer() {
         return this;
     }
 

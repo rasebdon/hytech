@@ -7,7 +7,7 @@ import at.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
 import at.rasebdon.hytech.core.transport.BlockFaceConfig;
 import at.rasebdon.hytech.core.transport.BlockFaceConfigState;
 import at.rasebdon.hytech.core.util.Validation;
-import at.rasebdon.hytech.energy.IEnergyContainer;
+import at.rasebdon.hytech.energy.EnergyContainer;
 import at.rasebdon.hytech.energy.events.EnergyContainerChangedEvent;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class EnergyBlockComponent extends LogisticBlockComponent<IEnergyContainer> implements IEnergyContainer {
+public class EnergyBlockComponent extends LogisticBlockComponent<EnergyContainer> implements EnergyContainer {
 
     public static final MapCodec<Integer, Map<String, Integer>> INTEGER_MAP_CODEC = new MapCodec<>(Codec.INTEGER, HashMap::new);
 
@@ -94,7 +94,7 @@ public class EnergyBlockComponent extends LogisticBlockComponent<IEnergyContaine
     }
 
     @Override
-    protected LogisticContainerChangedEvent<IEnergyContainer> createContainerChangedEvent(LogisticChangeType type, LogisticContainerComponent<IEnergyContainer> component) {
+    protected LogisticContainerChangedEvent<EnergyContainer> createContainerChangedEvent(LogisticChangeType type, LogisticContainerComponent<EnergyContainer> component) {
         return new EnergyContainerChangedEvent(type, component);
     }
 
@@ -162,7 +162,7 @@ public class EnergyBlockComponent extends LogisticBlockComponent<IEnergyContaine
     }
 
     @Override
-    public IEnergyContainer getContainer() {
+    public EnergyContainer getContainer() {
         return this;
     }
 

@@ -32,7 +32,7 @@ public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
         var generatorComponent = HytechUtil.getComponentAtBlock(
                 world,
                 blockPos,
-                EnergyModule.get().getEnergyGeneratorComponentType());
+                EnergyModule.get().getGeneratorComponentType());
         assert generatorComponent != null;
 
         var template = new TemplateProcessor()

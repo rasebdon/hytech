@@ -1,6 +1,9 @@
 package at.rasebdon.hytech.energy;
 
-import at.rasebdon.hytech.core.systems.PipeRenderModule;
+import at.rasebdon.hytech.core.AbstractLogisticModule;
+import at.rasebdon.hytech.core.networks.LogisticNetworkSystem;
+import at.rasebdon.hytech.core.systems.LogisticContainerRegistrationSystem;
+import at.rasebdon.hytech.core.systems.LogisticTransferSystem;
 import at.rasebdon.hytech.energy.components.EnergyBlockComponent;
 import at.rasebdon.hytech.energy.components.EnergyGeneratorComponent;
 import at.rasebdon.hytech.energy.components.EnergyPipeComponent;
@@ -13,50 +16,62 @@ import at.rasebdon.hytech.energy.systems.EnergyContainerRegistrationSystem;
 import at.rasebdon.hytech.energy.systems.EnergyGenerationSystem;
 import at.rasebdon.hytech.energy.systems.EnergyNetworkSaveSystem;
 import at.rasebdon.hytech.energy.systems.EnergyTransferSystem;
-import at.rasebdon.hytech.energy.systems.visual.EnergyBlockStateSystem;
 import com.hypixel.hytale.component.ComponentRegistryProxy;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.event.IEventRegistry;
-import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+public final class EnergyModule extends AbstractLogisticModule<
+        EnergyBlockComponent,
+        EnergyPipeComponent,
+        EnergyContainer
+        > {
 
-public class EnergyModule {
-    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
-
-    @Nullable
     private static EnergyModule INSTANCE;
 
-    private final ComponentType<ChunkStore, EnergyBlockComponent> blockEnergyContainerComponentType;
-    private final ComponentType<ChunkStore, EnergyPipeComponent> energyPipeComponentType;
-    private final ComponentType<ChunkStore, EnergyGeneratorComponent> energyGeneratorComponentType;
+    private ComponentType<ChunkStore, EnergyGeneratorComponent> generatorComponentType;
 
-    private EnergyModule(@Nonnull ComponentRegistryProxy<ChunkStore> chunkStoreRegistry, @Nonnull IEventRegistry eventRegistry) {
-        blockEnergyContainerComponentType = chunkStoreRegistry.registerComponent(
+    private EnergyModule(
+            ComponentRegistryProxy<ChunkStore> registry,
+            IEventRegistry eventRegistry
+    ) {
+        super(
+                registry,
+                eventRegistry,
                 EnergyBlockComponent.class,
                 "hytech:energy:container",
-                EnergyBlockComponent.CODEC);
-        energyPipeComponentType = chunkStoreRegistry.registerComponent(
+                EnergyBlockComponent.CODEC,
                 EnergyPipeComponent.class,
                 "hytech:energy:pipe",
-                EnergyPipeComponent.CODEC);
+                EnergyPipeComponent.CODEC
+        );
+    }
 
-        var energyNetworkSystem = new EnergyNetworkSystem();
+    public static void init(ComponentRegistryProxy<ChunkStore> registry, IEventRegistry eventRegistry) {
+        if (INSTANCE != null) throw new IllegalStateException("Already initialized");
+        INSTANCE = new EnergyModule(registry, eventRegistry);
+    }
 
-        PipeRenderModule.registerPipe(chunkStoreRegistry, energyPipeComponentType);
+    public static EnergyModule get() {
+        if (INSTANCE == null) throw new IllegalStateException("Not initialized");
+        return INSTANCE;
+    }
 
-        chunkStoreRegistry.registerSystem(new EnergyTransferSystem(eventRegistry));
-        chunkStoreRegistry.registerSystem(new EnergyContainerRegistrationSystem(
-                blockEnergyContainerComponentType, energyPipeComponentType, eventRegistry, energyNetworkSystem));
-        chunkStoreRegistry.registerSystem(new EnergyNetworkSaveSystem(energyNetworkSystem));
-        chunkStoreRegistry.registerSystem(new EnergyBlockStateSystem(blockEnergyContainerComponentType));
+    @Override
+    protected void registerAdditionalSystems(ComponentRegistryProxy<ChunkStore> registry, IEventRegistry eventRegistry) {
+        generatorComponentType = registry.registerComponent(
+                EnergyGeneratorComponent.class,
+                "hytech:energy:generator",
+                EnergyGeneratorComponent.CODEC
+        );
 
-        energyGeneratorComponentType = chunkStoreRegistry.registerComponent(
-                EnergyGeneratorComponent.class, "hytech:energy:generator", EnergyGeneratorComponent.CODEC);
-        chunkStoreRegistry.registerSystem(new EnergyGenerationSystem(energyGeneratorComponentType, blockEnergyContainerComponentType));
+        registry.registerSystem(
+                new EnergyGenerationSystem(generatorComponentType, getBlockComponentType())
+        );
+        registry.registerSystem(
+                new EnergyNetworkSaveSystem(getNetworkSystem())
+        );
 
         Interaction.CODEC.register(
                 "ReadEnergyContainer",
@@ -74,36 +89,39 @@ public class EnergyModule {
                 "OpenBatteryPage",
                 OpenBatteryPageInteraction.class,
                 OpenBatteryPageInteraction.CODEC);
-
-        LOGGER.atInfo().log("Energy Module Systems Registered");
     }
 
-    public static void init(@Nonnull ComponentRegistryProxy<ChunkStore> chunkStoreRegistry, @Nonnull IEventRegistry eventRegistry) {
-        if (INSTANCE != null) {
-            throw new IllegalStateException("Energy Module already initialized.");
-        } else {
-            INSTANCE = new EnergyModule(chunkStoreRegistry, eventRegistry);
-        }
+    @Override
+    protected String getModuleName() {
+        return "Energy Module";
     }
 
-    @Nonnull
-    public static EnergyModule get() {
-        if (INSTANCE == null) {
-            throw new IllegalStateException("Energy Module not initialized.");
-        } else {
-            return INSTANCE;
-        }
+    @Override
+    protected LogisticNetworkSystem<EnergyContainer> createNetworkSystem() {
+        return new EnergyNetworkSystem();
     }
 
-    public ComponentType<ChunkStore, EnergyBlockComponent> getBlockEnergyContainerComponentType() {
-        return this.blockEnergyContainerComponentType;
+    @Override
+    protected LogisticTransferSystem<EnergyContainer> createTransferSystem(IEventRegistry eventRegistry) {
+        return new EnergyTransferSystem(eventRegistry);
     }
 
-    public ComponentType<ChunkStore, EnergyPipeComponent> getEnergyPipeComponentType() {
-        return energyPipeComponentType;
+    @Override
+    protected LogisticContainerRegistrationSystem<EnergyContainer> createContainerRegistrationSystem(
+            ComponentType<ChunkStore, EnergyBlockComponent> blockType,
+            ComponentType<ChunkStore, EnergyPipeComponent> pipeType,
+            IEventRegistry eventRegistry,
+            LogisticNetworkSystem<EnergyContainer> networkSystem
+    ) {
+        return new EnergyContainerRegistrationSystem(
+                blockType,
+                pipeType,
+                eventRegistry,
+                networkSystem
+        );
     }
 
-    public ComponentType<ChunkStore, EnergyGeneratorComponent> getEnergyGeneratorComponentType() {
-        return energyGeneratorComponentType;
+    public ComponentType<ChunkStore, EnergyGeneratorComponent> getGeneratorComponentType() {
+        return generatorComponentType;
     }
 }

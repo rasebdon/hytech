@@ -28,12 +28,12 @@ public class OpenBatteryPageInteraction extends OpenPageBlockInteraction {
 
     @Override
     protected PageBuilder getPageBuilder(@NotNull InteractionContext context,
-                        @NotNull World world,
-                        @NotNull Vector3i blockPos) {
+                                         @NotNull World world,
+                                         @NotNull Vector3i blockPos) {
         var containerComponent = HytechUtil.getComponentAtBlock(
                 world,
                 blockPos,
-                EnergyModule.get().getBlockEnergyContainerComponentType());
+                EnergyModule.get().getBlockComponentType());
         assert containerComponent != null;
 
         if (!containerComponent.isAvailable()) return null;

@@ -23,7 +23,7 @@ public class HytechCoreModule {
                 "hytech:core:logistic_entity_proxy",
                 LogisticEntityProxyComponent.CODEC);
 
-        LOGGER.atInfo().log("Hytech Core Module Systems Registered");
+        LOGGER.atInfo().log("Hytech Core Module initialized");
     }
 
     public static void init(@Nonnull ComponentRegistryProxy<EntityStore> entityStoreComponentRegistry) {

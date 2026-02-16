@@ -4,12 +4,11 @@ import at.rasebdon.hytech.core.components.LogisticContainerComponent;
 import at.rasebdon.hytech.core.components.LogisticEntityProxyComponent;
 import at.rasebdon.hytech.core.util.BlockFaceUtil;
 import at.rasebdon.hytech.core.util.HytechUtil;
+import at.rasebdon.hytech.energy.EnergyContainer;
 import at.rasebdon.hytech.energy.EnergyModule;
-import at.rasebdon.hytech.energy.IEnergyContainer;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.*;
 import com.hypixel.hytale.server.core.Message;
@@ -30,26 +29,6 @@ public class WrenchInteraction extends SimpleInteraction {
     public static final BuilderCodec<WrenchInteraction> CODEC = BuilderCodec.builder(
             WrenchInteraction.class, WrenchInteraction::new, SimpleInteraction.CODEC
     ).build();
-
-    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
-
-    public WrenchInteraction(@Nonnull String id) {
-        super(id);
-    }
-
-    public WrenchInteraction() {
-    }
-
-    @Nonnull
-    @Override
-    public WaitForDataFrom getWaitForDataFrom() {
-        return WaitForDataFrom.Client;
-    }
-
-    @Override
-    public boolean needsRemoteSync() {
-        return true;
-    }
 
     private static void doBlockInteraction(
             @Nonnull InteractionSyncData clientState,
@@ -74,6 +53,30 @@ public class WrenchInteraction extends SimpleInteraction {
         }
     }
 
+    private static void cycleFace(LogisticContainerComponent<?> containerComponent, BlockFace localFace, Player player) {
+        containerComponent.cycleBlockFaceConfig(localFace);
+        player.sendMessage(Message.raw("Side " + localFace.name() + " changed to: " + containerComponent.getFaceConfigTowards(localFace).name()));
+    }
+
+    @Nullable
+    private static LogisticContainerComponent<EnergyContainer> getContainer(World world, Vector3i targetBlock) {
+        var blockContainer = HytechUtil.getComponentAtBlock(world, targetBlock,
+                EnergyModule.get().getBlockComponentType());
+        return blockContainer != null ? blockContainer :
+                HytechUtil.getComponentAtBlock(world, targetBlock, EnergyModule.get().getPipeComponentType());
+    }
+
+    @Nonnull
+    @Override
+    public WaitForDataFrom getWaitForDataFrom() {
+        return WaitForDataFrom.Client;
+    }
+
+    @Override
+    public boolean needsRemoteSync() {
+        return true;
+    }
+
     @Override
     protected void simulateTick0(boolean firstRun, float time, @NonNull InteractionType type, @NonNull InteractionContext context, @NonNull CooldownHandler cooldownHandler) {
         super.simulateTick0(firstRun, time, type, context, cooldownHandler);
@@ -88,19 +91,6 @@ public class WrenchInteraction extends SimpleInteraction {
                 clientState.blockFace = BlockFace.None;
             }
         }
-    }
-
-    private static void cycleFace(LogisticContainerComponent<?> containerComponent, BlockFace localFace, Player player) {
-        containerComponent.cycleBlockFaceConfig(localFace);
-        player.sendMessage(Message.raw("Side " + localFace.name() + " changed to: " + containerComponent.getFaceConfigTowards(localFace).name()));
-    }
-
-    @Nullable
-    private static LogisticContainerComponent<IEnergyContainer> getContainer(World world, Vector3i targetBlock) {
-        var blockContainer = HytechUtil.getComponentAtBlock(world, targetBlock,
-                EnergyModule.get().getBlockEnergyContainerComponentType());
-        return blockContainer != null ? blockContainer :
-                HytechUtil.getComponentAtBlock(world, targetBlock, EnergyModule.get().getEnergyPipeComponentType());
     }
 
     @Override

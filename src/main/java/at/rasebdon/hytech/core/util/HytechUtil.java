@@ -70,7 +70,6 @@ public class HytechUtil {
     }
 
 
-
     public static void sendPlayerMessage(@Nonnull Ref<EntityStore> playerRef, @Nonnull String text) {
         var player = playerRef.getStore().getComponent(playerRef, Player.getComponentType());
         if (player != null) {

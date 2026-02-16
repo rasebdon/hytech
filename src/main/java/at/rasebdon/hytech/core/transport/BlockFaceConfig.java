@@ -12,8 +12,8 @@ import java.util.List;
 
 public class BlockFaceConfig implements Cloneable {
 
-    private static final int BLOCK_SIDES = BlockFace.VALUES.length;
     public static final BuilderCodec<BlockFaceConfig> CODEC;
+    private static final int BLOCK_SIDES = BlockFace.VALUES.length;
     private static final int TYPE_BITS = 2;
     private static final int INDEX_BITS = 2;
     private static final int BITS_PER_SIDE = TYPE_BITS + INDEX_BITS;

@@ -2,7 +2,7 @@ package at.rasebdon.hytech.energy.systems;
 
 import at.rasebdon.hytech.core.components.LogisticBlockComponent;
 import at.rasebdon.hytech.core.systems.LogisticTransferSystem;
-import at.rasebdon.hytech.energy.IEnergyContainer;
+import at.rasebdon.hytech.energy.EnergyContainer;
 import at.rasebdon.hytech.energy.events.EnergyContainerChangedEvent;
 import at.rasebdon.hytech.energy.events.EnergyNetworkChangedEvent;
 import com.hypixel.hytale.component.Store;
@@ -10,7 +10,7 @@ import com.hypixel.hytale.event.IEventRegistry;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import org.jetbrains.annotations.NotNull;
 
-public class EnergyTransferSystem extends LogisticTransferSystem<IEnergyContainer> {
+public class EnergyTransferSystem extends LogisticTransferSystem<EnergyContainer> {
     public EnergyTransferSystem(IEventRegistry eventRegistry) {
         super(eventRegistry, EnergyContainerChangedEvent.class, EnergyNetworkChangedEvent.class);
     }
@@ -29,7 +29,7 @@ public class EnergyTransferSystem extends LogisticTransferSystem<IEnergyContaine
     }
 
     @Override
-    public void transfer(LogisticBlockComponent<IEnergyContainer> sourceComponent) {
+    public void transfer(LogisticBlockComponent<EnergyContainer> sourceComponent) {
         if (!sourceComponent.isAvailable() || !sourceComponent.isExtracting()) return;
 
         var sourceContainer = sourceComponent.getContainer();

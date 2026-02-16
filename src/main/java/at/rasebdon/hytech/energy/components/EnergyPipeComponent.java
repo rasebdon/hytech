@@ -9,7 +9,7 @@ import at.rasebdon.hytech.core.transport.BlockFaceConfig;
 import at.rasebdon.hytech.core.transport.BlockFaceConfigState;
 import at.rasebdon.hytech.core.transport.BlockFaceConfigType;
 import at.rasebdon.hytech.core.util.Validation;
-import at.rasebdon.hytech.energy.IEnergyContainer;
+import at.rasebdon.hytech.energy.EnergyContainer;
 import at.rasebdon.hytech.energy.events.EnergyContainerChangedEvent;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class EnergyPipeComponent extends LogisticPipeComponent<IEnergyContainer> implements IEnergyContainer {
+public class EnergyPipeComponent extends LogisticPipeComponent<EnergyContainer> implements EnergyContainer {
 
     public static final BuilderCodec<EnergyPipeComponent> CODEC =
             BuilderCodec.builder(EnergyPipeComponent.class, EnergyPipeComponent::new, LogisticPipeComponent.CODEC)
@@ -77,7 +77,7 @@ public class EnergyPipeComponent extends LogisticPipeComponent<IEnergyContainer>
     }
 
     @Override
-    public IEnergyContainer getContainer() {
+    public EnergyContainer getContainer() {
         return getNetworkContainer();
     }
 
@@ -89,7 +89,7 @@ public class EnergyPipeComponent extends LogisticPipeComponent<IEnergyContainer>
     }
 
     @Override
-    protected LogisticContainerChangedEvent<IEnergyContainer> createContainerChangedEvent(LogisticChangeType type, LogisticContainerComponent<IEnergyContainer> component) {
+    protected LogisticContainerChangedEvent<EnergyContainer> createContainerChangedEvent(LogisticChangeType type, LogisticContainerComponent<EnergyContainer> component) {
         return new EnergyContainerChangedEvent(type, component);
     }
 
@@ -127,7 +127,7 @@ public class EnergyPipeComponent extends LogisticPipeComponent<IEnergyContainer>
     public void updateEnergyDelta() {
     }
 
-    private IEnergyContainer getNetworkContainer() {
+    private EnergyContainer getNetworkContainer() {
         if (network == null) {
             throw new IllegalStateException("EnergyPipe has no network");
         }
