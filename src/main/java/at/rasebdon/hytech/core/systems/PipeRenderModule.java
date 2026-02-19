@@ -1,6 +1,6 @@
 package at.rasebdon.hytech.core.systems;
 
-import at.rasebdon.hytech.core.components.LogisticContainerComponent;
+import at.rasebdon.hytech.core.components.LogisticComponent;
 import at.rasebdon.hytech.core.components.LogisticEntityProxyComponent;
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import at.rasebdon.hytech.core.util.HytechUtil;
@@ -102,7 +102,7 @@ public class PipeRenderModule {
             Vector3d worldPosition,
             Vector3f rotation,
             BlockFace face,
-            LogisticContainerComponent<?> containerComponent
+            LogisticComponent<?> containerComponent
     ) {
         Holder<EntityStore> holder = store.getRegistry().newHolder();
 

@@ -13,10 +13,10 @@ public class LogisticEntityProxyComponent implements Component<EntityStore> {
             BuilderCodec.builder(LogisticEntityProxyComponent.class, LogisticEntityProxyComponent::new)
                     .build();
 
-    private final LogisticContainerComponent<?> logisticContainerComponent;
+    private final LogisticComponent<?> logisticContainerComponent;
     private final BlockFace blockFace;
 
-    public LogisticEntityProxyComponent(LogisticContainerComponent<?> logisticContainerComponent,
+    public LogisticEntityProxyComponent(LogisticComponent<?> logisticContainerComponent,
                                         BlockFace blockFace) {
         this.logisticContainerComponent = logisticContainerComponent;
         this.blockFace = blockFace;
@@ -35,7 +35,7 @@ public class LogisticEntityProxyComponent implements Component<EntityStore> {
         return blockFace;
     }
 
-    public LogisticContainerComponent<?> getLogisticContainerComponent() {
+    public LogisticComponent<?> getLogisticContainerComponent() {
         return logisticContainerComponent;
     }
 

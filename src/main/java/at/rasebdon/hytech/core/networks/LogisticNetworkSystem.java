@@ -116,8 +116,9 @@ public abstract class LogisticNetworkSystem<TContainer> {
             if (!visited.add(pipe)) continue;
 
             for (var neighbor : pipe.getNeighbors()) {
-                if (neighbor instanceof LogisticPipeComponent<TContainer> neighborPipe) {
-                    if (pipe.isConnectedTo(neighborPipe)) {
+                var neighborLogistic = neighbor.getLogisticContainer();
+                if (neighborLogistic instanceof LogisticPipeComponent<TContainer> neighborPipe) {
+                    if (pipe.isConnectedTo(neighbor)) {
                         stack.push(neighborPipe);
                     }
                 }

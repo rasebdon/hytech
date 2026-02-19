@@ -1,7 +1,7 @@
 package at.rasebdon.hytech.core.systems;
 
 import at.rasebdon.hytech.core.components.LogisticBlockComponent;
-import at.rasebdon.hytech.core.components.LogisticContainerComponent;
+import at.rasebdon.hytech.core.components.LogisticComponent;
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import at.rasebdon.hytech.core.events.LogisticChangeType;
 import at.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
@@ -72,7 +72,7 @@ public abstract class LogisticContainerRegistrationSystem<TContainer>
     }
 
     protected void rebuildNeighborMaps(
-            LogisticContainerComponent<TContainer> container,
+            LogisticComponent<TContainer> container,
             Ref<ChunkStore> ref,
             Store<ChunkStore> store
     ) {
@@ -105,7 +105,7 @@ public abstract class LogisticContainerRegistrationSystem<TContainer>
     }
 
     protected void removeFromNeighbors(
-            LogisticContainerComponent<TContainer> containerComponent,
+            LogisticComponent<TContainer> containerComponent,
             Ref<ChunkStore> ref,
             Store<ChunkStore> store
     ) {
@@ -127,7 +127,7 @@ public abstract class LogisticContainerRegistrationSystem<TContainer>
         }
     }
 
-    private @Nullable LogisticContainerComponent<TContainer> getContainer(
+    private @Nullable LogisticComponent<TContainer> getContainer(
             Store<ChunkStore> store, Ref<ChunkStore> ref
     ) {
         var container = store.getComponent(ref, containerType);

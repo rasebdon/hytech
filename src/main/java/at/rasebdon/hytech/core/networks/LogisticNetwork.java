@@ -1,7 +1,6 @@
 package at.rasebdon.hytech.core.networks;
 
 import at.rasebdon.hytech.core.components.IContainerHolder;
-import at.rasebdon.hytech.core.components.LogisticContainerComponent;
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import com.hypixel.hytale.logger.HytaleLogger;
 
@@ -15,8 +14,8 @@ public abstract class LogisticNetwork<TContainer> implements IContainerHolder<TC
     protected static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
     protected final Set<LogisticPipeComponent<TContainer>> pipes = new HashSet<>();
-    protected final List<LogisticContainerComponent<TContainer>> pullTargets = new ArrayList<>();
-    protected final List<LogisticContainerComponent<TContainer>> pushTargets = new ArrayList<>();
+    protected final List<TContainer> pullTargets = new ArrayList<>();
+    protected final List<TContainer> pushTargets = new ArrayList<>();
 
     protected LogisticNetwork(Set<LogisticPipeComponent<TContainer>> initialPipes) {
         setPipes(initialPipes);
@@ -81,16 +80,16 @@ public abstract class LogisticNetwork<TContainer> implements IContainerHolder<TC
         for (var pipe : pipes) {
             for (var target : pipe.getNeighbors()) {
 
-                if (target instanceof LogisticPipeComponent<?>) {
+                if (target.getLogisticContainer() instanceof LogisticPipeComponent<?>) {
                     continue;
                 }
 
                 if (pipe.canPullFrom(target)) {
-                    pullTargets.add(target);
+                    pullTargets.add(target.getContainer());
                 }
 
                 if (pipe.canOutputTo(target)) {
-                    pushTargets.add(target);
+                    pushTargets.add(target.getContainer());
                 }
             }
         }

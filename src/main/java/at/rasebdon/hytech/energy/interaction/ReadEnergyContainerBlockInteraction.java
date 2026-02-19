@@ -1,9 +1,9 @@
 package at.rasebdon.hytech.energy.interaction;
 
-import at.rasebdon.hytech.core.components.LogisticContainerComponent;
+import at.rasebdon.hytech.core.components.LogisticComponent;
 import at.rasebdon.hytech.core.util.HytechUtil;
-import at.rasebdon.hytech.energy.EnergyContainer;
 import at.rasebdon.hytech.energy.EnergyModule;
+import at.rasebdon.hytech.energy.HytechEnergyContainer;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -52,7 +52,7 @@ public class ReadEnergyContainerBlockInteraction extends SimpleBlockInteraction 
         }
     }
 
-    private static void sendEnergyMessageToPlayer(Ref<EntityStore> playerRef, LogisticContainerComponent<EnergyContainer> component) {
+    private static void sendEnergyMessageToPlayer(Ref<EntityStore> playerRef, LogisticComponent<HytechEnergyContainer> component) {
         HytechUtil.sendPlayerMessage(playerRef, component.toString());
     }
 

@@ -1,13 +1,13 @@
 package at.rasebdon.hytech.energy.components;
 
 import at.rasebdon.hytech.core.components.LogisticBlockComponent;
-import at.rasebdon.hytech.core.components.LogisticContainerComponent;
+import at.rasebdon.hytech.core.components.LogisticComponent;
 import at.rasebdon.hytech.core.events.LogisticChangeType;
 import at.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
 import at.rasebdon.hytech.core.transport.BlockFaceConfig;
 import at.rasebdon.hytech.core.transport.BlockFaceConfigState;
 import at.rasebdon.hytech.core.util.Validation;
-import at.rasebdon.hytech.energy.EnergyContainer;
+import at.rasebdon.hytech.energy.HytechEnergyContainer;
 import at.rasebdon.hytech.energy.events.EnergyContainerChangedEvent;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class EnergyBlockComponent extends LogisticBlockComponent<EnergyContainer> implements EnergyContainer {
+public class EnergyBlockComponent extends LogisticBlockComponent<HytechEnergyContainer> implements HytechEnergyContainer {
 
     public static final MapCodec<Integer, Map<String, Integer>> INTEGER_MAP_CODEC = new MapCodec<>(Codec.INTEGER, HashMap::new);
 
@@ -94,7 +94,7 @@ public class EnergyBlockComponent extends LogisticBlockComponent<EnergyContainer
     }
 
     @Override
-    protected LogisticContainerChangedEvent<EnergyContainer> createContainerChangedEvent(LogisticChangeType type, LogisticContainerComponent<EnergyContainer> component) {
+    protected LogisticContainerChangedEvent<HytechEnergyContainer> createContainerChangedEvent(LogisticChangeType type, LogisticComponent<HytechEnergyContainer> component) {
         return new EnergyContainerChangedEvent(type, component);
     }
 
@@ -162,7 +162,7 @@ public class EnergyBlockComponent extends LogisticBlockComponent<EnergyContainer
     }
 
     @Override
-    public EnergyContainer getContainer() {
+    public HytechEnergyContainer getContainer() {
         return this;
     }
 

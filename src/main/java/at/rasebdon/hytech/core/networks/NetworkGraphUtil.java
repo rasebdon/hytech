@@ -51,7 +51,7 @@ public final class NetworkGraphUtil {
             graph.putIfAbsent(pipe, new HashSet<>());
 
             for (var neighbor : pipe.getNeighbors()) {
-                if (neighbor instanceof LogisticPipeComponent<TContainer> neighborPipe) {
+                if (neighbor.getLogisticContainer() instanceof LogisticPipeComponent<TContainer> neighborPipe) {
                     graph.get(pipe).add(neighborPipe);
                     graph.computeIfAbsent(neighborPipe, _ -> new HashSet<>()).add(pipe);
                 }

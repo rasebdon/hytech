@@ -1,6 +1,5 @@
 package at.rasebdon.hytech.items;
 
-
 import at.rasebdon.hytech.core.AbstractLogisticModule;
 import at.rasebdon.hytech.core.networks.LogisticNetworkSystem;
 import at.rasebdon.hytech.core.systems.LogisticContainerRegistrationSystem;
@@ -18,7 +17,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 public final class ItemModule extends AbstractLogisticModule<
         ItemBlockComponent,
         ItemPipeComponent,
-        ItemContainer
+        HytechItemContainer
         > {
 
     private static ItemModule INSTANCE;
@@ -55,21 +54,21 @@ public final class ItemModule extends AbstractLogisticModule<
     }
 
     @Override
-    protected LogisticNetworkSystem<ItemContainer> createNetworkSystem() {
+    protected LogisticNetworkSystem<HytechItemContainer> createNetworkSystem() {
         return new ItemNetworkSystem();
     }
 
     @Override
-    protected LogisticTransferSystem<ItemContainer> createTransferSystem(IEventRegistry eventRegistry) {
+    protected LogisticTransferSystem<HytechItemContainer> createTransferSystem(IEventRegistry eventRegistry) {
         return new ItemTransferSystem(eventRegistry);
     }
 
     @Override
-    protected LogisticContainerRegistrationSystem<ItemContainer> createContainerRegistrationSystem(
+    protected LogisticContainerRegistrationSystem<HytechItemContainer> createContainerRegistrationSystem(
             ComponentType<ChunkStore, ItemBlockComponent> blockType,
             ComponentType<ChunkStore, ItemPipeComponent> pipeType,
             IEventRegistry eventRegistry,
-            LogisticNetworkSystem<ItemContainer> networkSystem
+            LogisticNetworkSystem<HytechItemContainer> networkSystem
     ) {
         return new ItemContainerRegistrationSystem(
                 blockType,

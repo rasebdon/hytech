@@ -25,7 +25,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 public final class EnergyModule extends AbstractLogisticModule<
         EnergyBlockComponent,
         EnergyPipeComponent,
-        EnergyContainer
+        HytechEnergyContainer
         > {
 
     private static EnergyModule INSTANCE;
@@ -97,21 +97,21 @@ public final class EnergyModule extends AbstractLogisticModule<
     }
 
     @Override
-    protected LogisticNetworkSystem<EnergyContainer> createNetworkSystem() {
+    protected LogisticNetworkSystem<HytechEnergyContainer> createNetworkSystem() {
         return new EnergyNetworkSystem();
     }
 
     @Override
-    protected LogisticTransferSystem<EnergyContainer> createTransferSystem(IEventRegistry eventRegistry) {
+    protected LogisticTransferSystem<HytechEnergyContainer> createTransferSystem(IEventRegistry eventRegistry) {
         return new EnergyTransferSystem(eventRegistry);
     }
 
     @Override
-    protected LogisticContainerRegistrationSystem<EnergyContainer> createContainerRegistrationSystem(
+    protected LogisticContainerRegistrationSystem<HytechEnergyContainer> createContainerRegistrationSystem(
             ComponentType<ChunkStore, EnergyBlockComponent> blockType,
             ComponentType<ChunkStore, EnergyPipeComponent> pipeType,
             IEventRegistry eventRegistry,
-            LogisticNetworkSystem<EnergyContainer> networkSystem
+            LogisticNetworkSystem<HytechEnergyContainer> networkSystem
     ) {
         return new EnergyContainerRegistrationSystem(
                 blockType,

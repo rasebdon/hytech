@@ -6,10 +6,10 @@ import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.validation.Validators;
 
-public abstract class LogisticBlockComponent<TContainer> extends LogisticContainerComponent<TContainer> {
+public abstract class LogisticBlockComponent<TContainer> extends LogisticComponent<TContainer> {
     @SuppressWarnings("rawtypes")
     public static final BuilderCodec<LogisticBlockComponent> CODEC =
-            BuilderCodec.abstractBuilder(LogisticBlockComponent.class, LogisticContainerComponent.CODEC)
+            BuilderCodec.abstractBuilder(LogisticBlockComponent.class, LogisticComponent.CODEC)
                     .append(new KeyedCodec<>("TransferPriority", Codec.INTEGER),
                             (c, v) -> c.transferPriority = v,
                             (c) -> c.transferPriority)

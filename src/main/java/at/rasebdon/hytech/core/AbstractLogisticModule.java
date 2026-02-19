@@ -1,6 +1,6 @@
 package at.rasebdon.hytech.core;
 
-import at.rasebdon.hytech.core.components.LogisticContainerComponent;
+import at.rasebdon.hytech.core.components.LogisticComponent;
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import at.rasebdon.hytech.core.networks.LogisticNetworkSystem;
 import at.rasebdon.hytech.core.systems.LogisticContainerRegistrationSystem;
@@ -16,7 +16,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import javax.annotation.Nonnull;
 
 public abstract class AbstractLogisticModule<
-        TBlockComponent extends LogisticContainerComponent<TContainer>,
+        TBlockComponent extends LogisticComponent<TContainer>,
         TPipeComponent extends LogisticPipeComponent<TContainer>,
         TContainer
         > {

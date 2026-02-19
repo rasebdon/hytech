@@ -1,9 +1,9 @@
 package at.rasebdon.hytech.core.events;
 
-import at.rasebdon.hytech.core.components.LogisticContainerComponent;
+import at.rasebdon.hytech.core.components.LogisticComponent;
 
-public abstract class LogisticContainerChangedEvent<TContainer> extends LogisticChangedEvent<LogisticContainerComponent<TContainer>> {
-    protected LogisticContainerChangedEvent(LogisticChangeType changeType, LogisticContainerComponent<TContainer> component) {
+public abstract class LogisticContainerChangedEvent<TContainer> extends LogisticChangedEvent<LogisticComponent<TContainer>> {
+    protected LogisticContainerChangedEvent(LogisticChangeType changeType, LogisticComponent<TContainer> component) {
         super(component, changeType);
     }
 }

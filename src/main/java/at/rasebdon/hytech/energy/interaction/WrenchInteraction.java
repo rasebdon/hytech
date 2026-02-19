@@ -1,11 +1,11 @@
 package at.rasebdon.hytech.energy.interaction;
 
-import at.rasebdon.hytech.core.components.LogisticContainerComponent;
+import at.rasebdon.hytech.core.components.LogisticComponent;
 import at.rasebdon.hytech.core.components.LogisticEntityProxyComponent;
 import at.rasebdon.hytech.core.util.BlockFaceUtil;
 import at.rasebdon.hytech.core.util.HytechUtil;
-import at.rasebdon.hytech.energy.EnergyContainer;
 import at.rasebdon.hytech.energy.EnergyModule;
+import at.rasebdon.hytech.energy.HytechEnergyContainer;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -53,13 +53,13 @@ public class WrenchInteraction extends SimpleInteraction {
         }
     }
 
-    private static void cycleFace(LogisticContainerComponent<?> containerComponent, BlockFace localFace, Player player) {
+    private static void cycleFace(LogisticComponent<?> containerComponent, BlockFace localFace, Player player) {
         containerComponent.cycleBlockFaceConfig(localFace);
         player.sendMessage(Message.raw("Side " + localFace.name() + " changed to: " + containerComponent.getFaceConfigTowards(localFace).name()));
     }
 
     @Nullable
-    private static LogisticContainerComponent<EnergyContainer> getContainer(World world, Vector3i targetBlock) {
+    private static LogisticComponent<HytechEnergyContainer> getContainer(World world, Vector3i targetBlock) {
         var blockContainer = HytechUtil.getComponentAtBlock(world, targetBlock,
                 EnergyModule.get().getBlockComponentType());
         return blockContainer != null ? blockContainer :

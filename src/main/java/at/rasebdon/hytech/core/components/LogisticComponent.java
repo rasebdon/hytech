@@ -4,6 +4,7 @@ import at.rasebdon.hytech.core.events.LogisticChangeType;
 import at.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
 import at.rasebdon.hytech.core.transport.BlockFaceConfig;
 import at.rasebdon.hytech.core.transport.BlockFaceConfigType;
+import at.rasebdon.hytech.core.transport.LogisticNeighbor;
 import at.rasebdon.hytech.core.transport.LogisticNeighborMap;
 import at.rasebdon.hytech.core.util.EventBusUtil;
 import com.hypixel.hytale.codec.KeyedCodec;
@@ -16,10 +17,10 @@ import javax.annotation.Nullable;
 import java.util.Set;
 
 
-public abstract class LogisticContainerComponent<TContainer> implements IContainerHolder<TContainer>, Component<ChunkStore> {
+public abstract class LogisticComponent<TContainer> implements IContainerHolder<TContainer>, Component<ChunkStore> {
     @SuppressWarnings("rawtypes")
-    public static final BuilderCodec<LogisticContainerComponent> CODEC =
-            BuilderCodec.abstractBuilder(LogisticContainerComponent.class)
+    public static final BuilderCodec<LogisticComponent> CODEC =
+            BuilderCodec.abstractBuilder(LogisticComponent.class)
                     .append(new KeyedCodec<>("BlockFaceConfig", BlockFaceConfig.CODEC),
                             (c, v) -> c.blockFaceConfig = v,
                             (c) -> c.blockFaceConfig)
@@ -29,31 +30,54 @@ public abstract class LogisticContainerComponent<TContainer> implements IContain
     protected final LogisticNeighborMap<TContainer> neighbors;
     protected BlockFaceConfig blockFaceConfig;
 
-    protected LogisticContainerComponent(BlockFaceConfig blockFaceConfig) {
+    protected LogisticComponent(BlockFaceConfig blockFaceConfig) {
         this();
         this.blockFaceConfig = blockFaceConfig.clone();
     }
 
-    protected LogisticContainerComponent() {
+    protected LogisticComponent() {
         this.blockFaceConfig = new BlockFaceConfig();
         this.neighbors = new LogisticNeighborMap<>();
     }
 
     @Nullable
-    public LogisticContainerComponent<TContainer> getNeighborContainer(BlockFace face) {
+    public TContainer getNeighborContainer(BlockFace face) {
+        var neighbor = neighbors.getByFace(face);
+        if (neighbor != null) {
+            return neighbor.getContainer();
+        }
+        return null;
+    }
+
+    @Nullable
+    public LogisticNeighbor<TContainer> getNeighbor(BlockFace face) {
         return neighbors.getByFace(face);
     }
 
     @Nullable
-    public BlockFace getNeighborFace(LogisticContainerComponent<TContainer> neighbor) {
-        return neighbors.getByNeighbor(neighbor);
+    public LogisticComponent<TContainer> getNeighborLogisticContainer(BlockFace face) {
+        var neighbor = neighbors.getByFace(face);
+        if (neighbor != null) {
+            return neighbor.getLogisticContainer();
+        }
+        return null;
     }
 
-    public Set<LogisticContainerComponent<TContainer>> getNeighbors() {
+    @Nullable
+    public BlockFace getNeighborFace(LogisticNeighbor<TContainer> neighbor) {
+        return getNeighborFace(neighbor.getContainer());
+    }
+
+    @Nullable
+    public BlockFace getNeighborFace(TContainer neighbor) {
+        return neighbors.getByContainer(neighbor);
+    }
+
+    public Set<LogisticNeighbor<TContainer>> getNeighbors() {
         return neighbors.getAllNeighbors();
     }
 
-    public void addNeighbor(BlockFace localFace, BlockFace neighborFace, LogisticContainerComponent<TContainer> neighbor) {
+    public void addNeighbor(BlockFace localFace, BlockFace neighborFace, LogisticComponent<TContainer> neighbor) {
         this.neighbors.put(localFace, neighbor);
         neighbor.neighbors.put(neighborFace, this);
 
@@ -61,9 +85,9 @@ public abstract class LogisticContainerComponent<TContainer> implements IContain
         neighbor.reloadContainer();
     }
 
-    public void removeNeighbor(LogisticContainerComponent<TContainer> neighbor) {
-        this.neighbors.removeByNeighbor(neighbor);
-        neighbor.neighbors.removeByNeighbor(this);
+    public void removeNeighbor(LogisticComponent<TContainer> neighbor) {
+        this.neighbors.remove(neighbor);
+        neighbor.neighbors.remove(this);
 
         this.reloadContainer();
         neighbor.reloadContainer();
@@ -72,15 +96,19 @@ public abstract class LogisticContainerComponent<TContainer> implements IContain
     public void clearNeighbors() {
         var allNeighbors = this.neighbors.getAllNeighbors();
         for (var neighbor : allNeighbors) {
-            this.neighbors.removeByNeighbor(neighbor);
-            neighbor.neighbors.removeByNeighbor(this);
-            neighbor.reloadContainer();
+            this.neighbors.remove(neighbor);
+
+            var neighborLogistic = neighbor.getLogisticContainer();
+            if (neighborLogistic != null) {
+                neighborLogistic.neighbors.remove(this);
+                neighborLogistic.reloadContainer();
+            }
         }
 
         this.reloadContainer();
     }
 
-    public BlockFaceConfigType getFaceConfigTowards(LogisticContainerComponent<TContainer> neighbor) {
+    public BlockFaceConfigType getFaceConfigTowards(TContainer neighbor) {
         return this.getFaceConfigTowards(getNeighborFace(neighbor));
     }
 
@@ -88,11 +116,11 @@ public abstract class LogisticContainerComponent<TContainer> implements IContain
         return this.blockFaceConfig.getType(face);
     }
 
-    public boolean hasInputFaceTowards(LogisticContainerComponent<TContainer> neighbor) {
+    public boolean hasInputFaceTowards(TContainer neighbor) {
         return this.blockFaceConfig.isInput(getNeighborFace(neighbor));
     }
 
-    public boolean hasOutputFaceTowards(LogisticContainerComponent<TContainer> neighbor) {
+    public boolean hasOutputFaceTowards(TContainer neighbor) {
         return this.blockFaceConfig.isOutput(getNeighborFace(neighbor));
     }
 
@@ -108,7 +136,7 @@ public abstract class LogisticContainerComponent<TContainer> implements IContain
     }
 
     private void reloadNeighborContainer(BlockFace face) {
-        var neighbor = getNeighborContainer(face);
+        var neighbor = getNeighborLogisticContainer(face);
         if (neighbor != null) {
             neighbor.reloadContainer();
         }
@@ -118,7 +146,7 @@ public abstract class LogisticContainerComponent<TContainer> implements IContain
     public abstract Component<ChunkStore> clone();
 
     protected abstract LogisticContainerChangedEvent<TContainer> createContainerChangedEvent(
-            LogisticChangeType type, LogisticContainerComponent<TContainer> component);
+            LogisticChangeType type, LogisticComponent<TContainer> component);
 
     public void dispatchChangeEvent(LogisticChangeType logisticChangeType) {
         EventBusUtil.dispatchIfListening(

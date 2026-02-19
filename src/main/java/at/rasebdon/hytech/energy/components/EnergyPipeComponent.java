@@ -1,6 +1,6 @@
 package at.rasebdon.hytech.energy.components;
 
-import at.rasebdon.hytech.core.components.LogisticContainerComponent;
+import at.rasebdon.hytech.core.components.LogisticComponent;
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import at.rasebdon.hytech.core.events.LogisticChangeType;
 import at.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
@@ -9,7 +9,7 @@ import at.rasebdon.hytech.core.transport.BlockFaceConfig;
 import at.rasebdon.hytech.core.transport.BlockFaceConfigState;
 import at.rasebdon.hytech.core.transport.BlockFaceConfigType;
 import at.rasebdon.hytech.core.util.Validation;
-import at.rasebdon.hytech.energy.EnergyContainer;
+import at.rasebdon.hytech.energy.HytechEnergyContainer;
 import at.rasebdon.hytech.energy.events.EnergyContainerChangedEvent;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class EnergyPipeComponent extends LogisticPipeComponent<EnergyContainer> implements EnergyContainer {
+public class EnergyPipeComponent extends LogisticPipeComponent<HytechEnergyContainer> implements HytechEnergyContainer {
 
     public static final BuilderCodec<EnergyPipeComponent> CODEC =
             BuilderCodec.builder(EnergyPipeComponent.class, EnergyPipeComponent::new, LogisticPipeComponent.CODEC)
@@ -77,7 +77,7 @@ public class EnergyPipeComponent extends LogisticPipeComponent<EnergyContainer> 
     }
 
     @Override
-    public EnergyContainer getContainer() {
+    public HytechEnergyContainer getContainer() {
         return getNetworkContainer();
     }
 
@@ -89,7 +89,7 @@ public class EnergyPipeComponent extends LogisticPipeComponent<EnergyContainer> 
     }
 
     @Override
-    protected LogisticContainerChangedEvent<EnergyContainer> createContainerChangedEvent(LogisticChangeType type, LogisticContainerComponent<EnergyContainer> component) {
+    protected LogisticContainerChangedEvent<HytechEnergyContainer> createContainerChangedEvent(LogisticChangeType type, LogisticComponent<HytechEnergyContainer> component) {
         return new EnergyContainerChangedEvent(type, component);
     }
 
@@ -127,7 +127,7 @@ public class EnergyPipeComponent extends LogisticPipeComponent<EnergyContainer> 
     public void updateEnergyDelta() {
     }
 
-    private EnergyContainer getNetworkContainer() {
+    private HytechEnergyContainer getNetworkContainer() {
         if (network == null) {
             throw new IllegalStateException("EnergyPipe has no network");
         }

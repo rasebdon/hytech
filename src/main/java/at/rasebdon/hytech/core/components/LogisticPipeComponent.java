@@ -3,6 +3,7 @@ package at.rasebdon.hytech.core.components;
 import at.rasebdon.hytech.core.networks.LogisticNetwork;
 import at.rasebdon.hytech.core.transport.BlockFaceConfig;
 import at.rasebdon.hytech.core.transport.BlockFaceConfigType;
+import at.rasebdon.hytech.core.transport.LogisticNeighbor;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
@@ -17,11 +18,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public abstract class LogisticPipeComponent<TContainer> extends LogisticContainerComponent<TContainer> {
+public abstract class LogisticPipeComponent<TContainer> extends LogisticComponent<TContainer> {
 
     @SuppressWarnings("rawtypes")
     public static final BuilderCodec<LogisticPipeComponent> CODEC =
-            BuilderCodec.abstractBuilder(LogisticPipeComponent.class, LogisticContainerComponent.CODEC)
+            BuilderCodec.abstractBuilder(LogisticPipeComponent.class, LogisticComponent.CODEC)
                     .append(new KeyedCodec<>("NormalConnectionModelAsset", Codec.STRING),
                             (c, v) -> c.setConnectionModelAssetName(BlockFaceConfigType.BOTH, v),
                             c -> c.getModelAssetName(BlockFaceConfigType.BOTH)).add()
@@ -72,11 +73,11 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticContaine
 
     @Nullable
     public ModelAsset getConnectionModelAsset(BlockFace face) {
-        var neighbor = this.getNeighborContainer(face);
+        var neighbor = this.getNeighbor(face);
 
         if (neighbor == null) return null;
 
-        if (neighbor instanceof LogisticPipeComponent<TContainer>) {
+        if (neighbor.getLogisticContainer() instanceof LogisticPipeComponent<TContainer>) {
             return ModelAsset.getAssetMap().getAsset(connectionModelAssetNames.get(BlockFaceConfigType.BOTH));
         }
 
@@ -99,24 +100,32 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticContaine
         return this.modelRefs;
     }
 
-    public boolean canPullFrom(LogisticContainerComponent<TContainer> target) {
-        return this.getFaceConfigTowards(target) == BlockFaceConfigType.INPUT &&
-                target.hasOutputFaceTowards(this);
+    public boolean canPullFrom(LogisticNeighbor<TContainer> target) {
+        return hasInputTowards(target)
+                && target.allowsOutputTowards(this.getContainer());
     }
 
-    public boolean canPushTo(LogisticContainerComponent<TContainer> target) {
-        return this.getFaceConfigTowards(target) == BlockFaceConfigType.OUTPUT &&
-                target.hasInputFaceTowards(this);
+    public boolean canPushTo(LogisticNeighbor<TContainer> target) {
+        return hasOutputTowards(target)
+                && target.allowsInputTowards(this.getContainer());
     }
 
-    public boolean canOutputTo(LogisticContainerComponent<TContainer> target) {
-        return this.hasOutputFaceTowards(target) && target.hasInputFaceTowards(this);
+    public boolean canOutputTo(LogisticNeighbor<TContainer> target) {
+        return hasOutputFaceTowards(target.getContainer())
+                && target.allowsInputTowards(this.getContainer());
     }
 
-    public boolean isConnectedTo(LogisticContainerComponent<TContainer> neighbor) {
-        return this.hasOutputFaceTowards(neighbor) && neighbor.hasInputFaceTowards(this) ||
-                this.hasInputFaceTowards(neighbor) && neighbor.hasOutputFaceTowards(this);
+    public boolean isConnectedTo(LogisticNeighbor<TContainer> neighbor) {
+        return (hasOutputTowards(neighbor) && neighbor.allowsInputTowards(this.getContainer()))
+                || (hasInputTowards(neighbor) && neighbor.allowsOutputTowards(this.getContainer()));
+    }
 
+    private boolean hasInputTowards(LogisticNeighbor<TContainer> target) {
+        return getFaceConfigTowards(target.getContainer()) == BlockFaceConfigType.INPUT;
+    }
+
+    private boolean hasOutputTowards(LogisticNeighbor<TContainer> target) {
+        return getFaceConfigTowards(target.getContainer()) == BlockFaceConfigType.OUTPUT;
     }
 
     public boolean needsRenderReload() {

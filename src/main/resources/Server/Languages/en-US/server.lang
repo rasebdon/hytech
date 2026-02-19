@@ -2,3 +2,5 @@ items.Example_Generator.name=Example Generator
 items.Example_Battery.name=Example Battery
 items.Battery_Tier_1.name=Battery Tier 1
 items.Solar_Panel_Tier_1.name=Solar Panel Tier 1
+items.Pipe_Energy.name=Energy Pipe
+items.Pipe_Items.name=Item Pipe

@@ -1,0 +1,92 @@
+{
+  "TranslationProperties": {
+    "Name": "server.items.Pipe_Items.name"
+  },
+  "ItemLevel": 15,
+  "MaxStack": 100,
+  "Categories": [
+    "Technic.General"
+  ],
+  "PlayerAnimationsId": "Item",
+  "Interactions": {
+    "Primary": "Block_Primary",
+    "Secondary": "Block_Secondary"
+  },
+  "Set": "Rock_Stone_Brick",
+  "Recipe": {
+    "Input": [
+      {
+        "ResourceTypeId": "Rock_Stone_Brick",
+        "Quantity": 1
+      }
+    ],
+    "BenchRequirement": [
+      {
+        "Id": "Builders",
+        "Type": "StructuralCrafting",
+        "Categories": [
+          "Beam"
+        ]
+      }
+    ],
+    "OutputQuantity": 2,
+    "TimeSeconds": 0
+  },
+  "BlockType": {
+    "Material": "Solid",
+    "DrawType": "Model",
+    "Opacity": "Transparent",
+    "CustomModel": "Blocks/Pipes/Items/Pipe_Items_Center.blockymodel",
+    "CustomModelTexture": [
+      {
+        "Texture": "BlockTextures/Pipes/Items/Pipe_Items.png",
+        "Weight": 1
+      }
+    ],
+    "Group": "Stone",
+    "HitboxType": "Pipe",
+    "Gathering": {
+      "Breaking": {
+        "GatherType": "Rocks"
+      }
+    },
+    "BlockEntity": {
+      "Components": {
+        "hytech:energy:pipe": {
+          "TransferPriority": 10,
+          "PipeCapacity": 1000,
+          "PipeTransferSpeed": 250,
+          "NormalConnectionModelAsset": "Pipe_Items_Normal",
+          "PushConnectionModelAsset": "Pipe_Items_Push",
+          "PullConnectionModelAsset": "Pipe_Items_Pull"
+        }
+      }
+    },
+    "VariantRotation": "None",
+    "BlockParticleSetId": "Stone",
+    "ParticleColor": "#737055",
+    "BlockSoundSetId": "Stone"
+  },
+  "Tags": {
+    "Type": [
+      "Rock"
+    ],
+    "Family": [
+      "Stone"
+    ]
+  },
+  "ItemSoundSetId": "ISS_Blocks_Stone",
+  "IconProperties": {
+    "Scale": 0.58823,
+    "Rotation": [
+      22.5,
+      45,
+      22.5
+    ],
+    "Translation": [
+      0,
+      -13.5
+    ]
+  },
+  "Icon": "Icons/ItemsGenerated/Pipe_Items.png"
+}

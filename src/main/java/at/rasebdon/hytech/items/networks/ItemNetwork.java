@@ -2,32 +2,36 @@ package at.rasebdon.hytech.items.networks;
 
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import at.rasebdon.hytech.core.networks.LogisticNetwork;
-import at.rasebdon.hytech.items.ItemContainer;
+import at.rasebdon.hytech.items.HytechItemContainer;
+import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 
 import java.util.Set;
 
-public class ItemNetwork extends LogisticNetwork<ItemContainer> implements ItemContainer {
-    protected ItemNetwork(Set<LogisticPipeComponent<ItemContainer>> initialPipes) {
+public class ItemNetwork extends LogisticNetwork<HytechItemContainer> implements HytechItemContainer {
+    protected ItemNetwork(Set<LogisticPipeComponent<HytechItemContainer>> initialPipes) {
         super(initialPipes);
     }
 
     @Override
     public void pullFromTargets() {
-
     }
 
     @Override
     public void pushToTargets() {
-
     }
 
     @Override
-    public ItemContainer getContainer() {
+    public HytechItemContainer getContainer() {
         return null;
     }
 
     @Override
     public boolean isAvailable() {
         return false;
+    }
+
+    @Override
+    public ItemContainer getItemContainer() {
+        return null;
     }
 }

@@ -1,6 +1,6 @@
 package at.rasebdon.hytech.energy;
 
-public interface EnergyContainer {
+public interface HytechEnergyContainer {
     long getEnergy();
 
     long getTotalCapacity();

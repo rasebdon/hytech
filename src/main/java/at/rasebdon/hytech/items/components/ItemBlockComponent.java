@@ -1,17 +1,18 @@
 package at.rasebdon.hytech.items.components;
 
 import at.rasebdon.hytech.core.components.LogisticBlockComponent;
-import at.rasebdon.hytech.core.components.LogisticContainerComponent;
+import at.rasebdon.hytech.core.components.LogisticComponent;
 import at.rasebdon.hytech.core.events.LogisticChangeType;
 import at.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
 import at.rasebdon.hytech.core.transport.BlockFaceConfig;
-import at.rasebdon.hytech.items.ItemContainer;
+import at.rasebdon.hytech.items.HytechItemContainer;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Component;
+import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import org.jetbrains.annotations.Nullable;
 
-public class ItemBlockComponent extends LogisticBlockComponent<ItemContainer> implements ItemContainer {
+public class ItemBlockComponent extends LogisticBlockComponent<HytechItemContainer> implements HytechItemContainer {
     public static final BuilderCodec<ItemBlockComponent> CODEC =
             BuilderCodec.builder(ItemBlockComponent.class, ItemBlockComponent::new, LogisticBlockComponent.CODEC)
                     .build();
@@ -30,17 +31,22 @@ public class ItemBlockComponent extends LogisticBlockComponent<ItemContainer> im
     }
 
     @Override
-    protected LogisticContainerChangedEvent<ItemContainer> createContainerChangedEvent(LogisticChangeType type, LogisticContainerComponent<ItemContainer> component) {
+    protected LogisticContainerChangedEvent<HytechItemContainer> createContainerChangedEvent(LogisticChangeType type, LogisticComponent<HytechItemContainer> component) {
         return null;
     }
 
     @Override
-    public ItemContainer getContainer() {
+    public HytechItemContainer getContainer() {
         return null;
     }
 
     @Override
     public boolean isAvailable() {
         return false;
+    }
+
+    @Override
+    public ItemContainer getItemContainer() {
+        return null;
     }
 }

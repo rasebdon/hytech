@@ -2,37 +2,37 @@ package at.rasebdon.hytech.energy.networks;
 
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import at.rasebdon.hytech.core.networks.LogisticNetwork;
-import at.rasebdon.hytech.energy.EnergyContainer;
+import at.rasebdon.hytech.energy.HytechEnergyContainer;
 import at.rasebdon.hytech.energy.components.EnergyPipeComponent;
 
 import java.util.Set;
 
-public class EnergyNetwork extends LogisticNetwork<EnergyContainer> implements EnergyContainer {
+public class EnergyNetwork extends LogisticNetwork<HytechEnergyContainer> implements HytechEnergyContainer {
 
     private long energy;
     private long lastTickEnergy;
     private long totalCapacity;
     private long transferSpeed;
 
-    public EnergyNetwork(Set<LogisticPipeComponent<EnergyContainer>> initialPipes) {
+    public EnergyNetwork(Set<LogisticPipeComponent<HytechEnergyContainer>> initialPipes) {
         super(initialPipes);
         recalculateStats();
     }
 
     @Override
-    protected void setPipes(Set<LogisticPipeComponent<EnergyContainer>> newPipes) {
+    protected void setPipes(Set<LogisticPipeComponent<HytechEnergyContainer>> newPipes) {
         super.setPipes(newPipes);
         recalculateStats();
     }
 
     @Override
-    protected void addPipe(LogisticPipeComponent<EnergyContainer> pipe) {
+    protected void addPipe(LogisticPipeComponent<HytechEnergyContainer> pipe) {
         super.addPipe(pipe);
         recalculateStats();
     }
 
     @Override
-    protected void removePipe(LogisticPipeComponent<EnergyContainer> pipe) {
+    protected void removePipe(LogisticPipeComponent<HytechEnergyContainer> pipe) {
         super.removePipe(pipe);
         recalculateStats();
     }
@@ -66,9 +66,7 @@ public class EnergyNetwork extends LogisticNetwork<EnergyContainer> implements E
         for (var target : pullTargets) {
             if (isFull()) break;
 
-            if (target.isAvailable()) {
-                transferEnergy(target.getContainer(), this, transferSpeed);
-            }
+            transferEnergy(target, this, transferSpeed);
         }
     }
 
@@ -83,15 +81,13 @@ public class EnergyNetwork extends LogisticNetwork<EnergyContainer> implements E
         for (var target : pushTargets) {
             if (isEmpty()) break;
 
-            if (target.isAvailable()) {
-                transferEnergy(this, target.getContainer(), perTarget);
-            }
+            transferEnergy(this, target, perTarget);
         }
     }
 
     private void transferEnergy(
-            EnergyContainer from,
-            EnergyContainer to,
+            HytechEnergyContainer from,
+            HytechEnergyContainer to,
             long requested
     ) {
         if (from == null || to == null) return;
@@ -117,7 +113,7 @@ public class EnergyNetwork extends LogisticNetwork<EnergyContainer> implements E
     }
 
     @Override
-    public EnergyContainer getContainer() {
+    public HytechEnergyContainer getContainer() {
         return this;
     }
 
