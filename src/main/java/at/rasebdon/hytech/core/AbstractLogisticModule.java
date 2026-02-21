@@ -3,7 +3,7 @@ package at.rasebdon.hytech.core;
 import at.rasebdon.hytech.core.components.LogisticComponent;
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import at.rasebdon.hytech.core.networks.LogisticNetworkSystem;
-import at.rasebdon.hytech.core.systems.LogisticContainerRegistrationSystem;
+import at.rasebdon.hytech.core.systems.LogisticComponentRegistrationSystem;
 import at.rasebdon.hytech.core.systems.LogisticTransferSystem;
 import at.rasebdon.hytech.core.systems.PipeRenderModule;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
@@ -18,6 +18,7 @@ import javax.annotation.Nonnull;
 public abstract class AbstractLogisticModule<
         TBlockComponent extends LogisticComponent<TContainer>,
         TPipeComponent extends LogisticPipeComponent<TContainer>,
+        TRegistrationSystem extends LogisticComponentRegistrationSystem<TContainer>,
         TContainer
         > {
 
@@ -27,6 +28,7 @@ public abstract class AbstractLogisticModule<
     protected final ComponentType<ChunkStore, TPipeComponent> pipeComponentType;
 
     protected final LogisticNetworkSystem<TContainer> networkSystem;
+    protected final TRegistrationSystem registrationSystem;
 
     protected AbstractLogisticModule(
             @Nonnull ComponentRegistryProxy<ChunkStore> registry,
@@ -56,16 +58,17 @@ public abstract class AbstractLogisticModule<
         networkSystem = createNetworkSystem();
 
         // Register pipe rendering
-        PipeRenderModule.registerPipe(registry, pipeComponentType);
+        PipeRenderModule.registerPipe(pipeComponentType);
 
         // Register core systems
         registry.registerSystem(createTransferSystem(eventRegistry));
-        registry.registerSystem(createContainerRegistrationSystem(
+        registrationSystem = createContainerRegistrationSystem(
                 blockComponentType,
                 pipeComponentType,
                 eventRegistry,
                 networkSystem
-        ));
+        );
+        registry.registerSystem(registrationSystem);
 
         // Allow subclasses to register additional systems
         registerAdditionalSystems(registry, eventRegistry);
@@ -79,7 +82,7 @@ public abstract class AbstractLogisticModule<
 
     protected abstract LogisticTransferSystem<TContainer> createTransferSystem(IEventRegistry eventRegistry);
 
-    protected abstract LogisticContainerRegistrationSystem<TContainer> createContainerRegistrationSystem(
+    protected abstract TRegistrationSystem createContainerRegistrationSystem(
             ComponentType<ChunkStore, TBlockComponent> blockType,
             ComponentType<ChunkStore, TPipeComponent> pipeType,
             IEventRegistry eventRegistry,
@@ -90,7 +93,6 @@ public abstract class AbstractLogisticModule<
             ComponentRegistryProxy<ChunkStore> registry,
             IEventRegistry eventRegistry
     ) {
-        // optional override
     }
 
     public ComponentType<ChunkStore, TBlockComponent> getBlockComponentType() {

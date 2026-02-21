@@ -2,7 +2,7 @@ package at.rasebdon.hytech.core.networks;
 
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import at.rasebdon.hytech.core.events.LogisticChangeType;
-import at.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
+import at.rasebdon.hytech.core.events.LogisticComponentChangedEvent;
 import at.rasebdon.hytech.core.events.LogisticNetworkChangedEvent;
 import at.rasebdon.hytech.core.util.EventBusUtil;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -22,7 +22,7 @@ public abstract class LogisticNetworkSystem<TContainer> {
         return Collections.unmodifiableSet(networks);
     }
 
-    public void onContainerChanged(LogisticContainerChangedEvent<TContainer> event) {
+    public void onContainerChanged(LogisticComponentChangedEvent<TContainer> event) {
 
         if (!(event.getComponent() instanceof LogisticPipeComponent<TContainer> pipe)) {
             return;

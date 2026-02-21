@@ -19,8 +19,12 @@ public final class HytechPlugin extends JavaPlugin {
 
     @Override
     protected void setup() {
-        HytechCoreModule.init(this.getEntityStoreRegistry());
-        EnergyModule.init(this.getChunkStoreRegistry(), this.getEventRegistry());
-        ItemModule.init(this.getChunkStoreRegistry(), this.getEventRegistry());
+        var entityStoreRegistry = this.getEntityStoreRegistry();
+        var chunkStoreRegistry = this.getChunkStoreRegistry();
+        var eventRegistry = this.getEventRegistry();
+
+        HytechCoreModule.init(entityStoreRegistry, chunkStoreRegistry);
+        EnergyModule.init(chunkStoreRegistry, eventRegistry);
+        ItemModule.init(chunkStoreRegistry, eventRegistry);
     }
 }

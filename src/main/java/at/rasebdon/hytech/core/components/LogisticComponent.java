@@ -1,7 +1,7 @@
 package at.rasebdon.hytech.core.components;
 
 import at.rasebdon.hytech.core.events.LogisticChangeType;
-import at.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
+import at.rasebdon.hytech.core.events.LogisticComponentChangedEvent;
 import at.rasebdon.hytech.core.transport.BlockFaceConfig;
 import at.rasebdon.hytech.core.transport.BlockFaceConfigType;
 import at.rasebdon.hytech.core.transport.LogisticNeighbor;
@@ -17,7 +17,7 @@ import javax.annotation.Nullable;
 import java.util.Set;
 
 
-public abstract class LogisticComponent<TContainer> implements IContainerHolder<TContainer>, Component<ChunkStore> {
+public abstract class LogisticComponent<TContainer> implements ContainerHolder<TContainer>, Component<ChunkStore> {
     @SuppressWarnings("rawtypes")
     public static final BuilderCodec<LogisticComponent> CODEC =
             BuilderCodec.abstractBuilder(LogisticComponent.class)
@@ -145,7 +145,7 @@ public abstract class LogisticComponent<TContainer> implements IContainerHolder<
     @Nullable
     public abstract Component<ChunkStore> clone();
 
-    protected abstract LogisticContainerChangedEvent<TContainer> createContainerChangedEvent(
+    protected abstract LogisticComponentChangedEvent<TContainer> createContainerChangedEvent(
             LogisticChangeType type, LogisticComponent<TContainer> component);
 
     public void dispatchChangeEvent(LogisticChangeType logisticChangeType) {

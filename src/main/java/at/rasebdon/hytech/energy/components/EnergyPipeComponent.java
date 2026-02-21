@@ -3,7 +3,7 @@ package at.rasebdon.hytech.energy.components;
 import at.rasebdon.hytech.core.components.LogisticComponent;
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import at.rasebdon.hytech.core.events.LogisticChangeType;
-import at.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
+import at.rasebdon.hytech.core.events.LogisticComponentChangedEvent;
 import at.rasebdon.hytech.core.systems.PipeRenderHelper;
 import at.rasebdon.hytech.core.transport.BlockFaceConfig;
 import at.rasebdon.hytech.core.transport.BlockFaceConfigState;
@@ -89,7 +89,7 @@ public class EnergyPipeComponent extends LogisticPipeComponent<HytechEnergyConta
     }
 
     @Override
-    protected LogisticContainerChangedEvent<HytechEnergyContainer> createContainerChangedEvent(LogisticChangeType type, LogisticComponent<HytechEnergyContainer> component) {
+    protected LogisticComponentChangedEvent<HytechEnergyContainer> createContainerChangedEvent(LogisticChangeType type, LogisticComponent<HytechEnergyContainer> component) {
         return new EnergyContainerChangedEvent(type, component);
     }
 

@@ -30,7 +30,7 @@ public class OpenBatteryPageInteraction extends OpenPageBlockInteraction {
     protected PageBuilder getPageBuilder(@NotNull InteractionContext context,
                                          @NotNull World world,
                                          @NotNull Vector3i blockPos) {
-        var containerComponent = HytechUtil.getComponentAtBlock(
+        var containerComponent = HytechUtil.getBlockComponent(
                 world,
                 blockPos,
                 EnergyModule.get().getBlockComponentType());

@@ -60,10 +60,10 @@ public class WrenchInteraction extends SimpleInteraction {
 
     @Nullable
     private static LogisticComponent<HytechEnergyContainer> getContainer(World world, Vector3i targetBlock) {
-        var blockContainer = HytechUtil.getComponentAtBlock(world, targetBlock,
+        var blockContainer = HytechUtil.getBlockComponent(world, targetBlock,
                 EnergyModule.get().getBlockComponentType());
         return blockContainer != null ? blockContainer :
-                HytechUtil.getComponentAtBlock(world, targetBlock, EnergyModule.get().getPipeComponentType());
+                HytechUtil.getBlockComponent(world, targetBlock, EnergyModule.get().getPipeComponentType());
     }
 
     @Nonnull

@@ -1,7 +1,7 @@
 package at.rasebdon.hytech.core.systems;
 
 import at.rasebdon.hytech.core.components.LogisticBlockComponent;
-import at.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
+import at.rasebdon.hytech.core.events.LogisticComponentChangedEvent;
 import at.rasebdon.hytech.core.events.LogisticNetworkChangedEvent;
 import at.rasebdon.hytech.core.networks.LogisticNetwork;
 import com.hypixel.hytale.component.Store;
@@ -20,7 +20,7 @@ public abstract class LogisticTransferSystem<TContainer> extends TickingSystem<C
 
     protected LogisticTransferSystem(
             IEventRegistry eventRegistry,
-            Class<? extends LogisticContainerChangedEvent<TContainer>> containerChangedEventClass,
+            Class<? extends LogisticComponentChangedEvent<TContainer>> containerChangedEventClass,
             Class<? extends LogisticNetworkChangedEvent<TContainer>> networkChangedEventClass) {
         eventRegistry.register(containerChangedEventClass, this::handleLogisticContainerChanged);
         eventRegistry.register(networkChangedEventClass, this::handleLogisticNetworkChanged);
@@ -29,7 +29,7 @@ public abstract class LogisticTransferSystem<TContainer> extends TickingSystem<C
         this.containerComponents = new ArrayList<>();
     }
 
-    private void handleLogisticContainerChanged(LogisticContainerChangedEvent<TContainer> event) {
+    private void handleLogisticContainerChanged(LogisticComponentChangedEvent<TContainer> event) {
         if (event.getComponent() instanceof LogisticBlockComponent<TContainer> blockComponent) {
             if (event.isAdded()) {
                 addLogisticBlock(blockComponent);

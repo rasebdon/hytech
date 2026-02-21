@@ -3,7 +3,7 @@ package at.rasebdon.hytech.energy.components;
 import at.rasebdon.hytech.core.components.LogisticBlockComponent;
 import at.rasebdon.hytech.core.components.LogisticComponent;
 import at.rasebdon.hytech.core.events.LogisticChangeType;
-import at.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
+import at.rasebdon.hytech.core.events.LogisticComponentChangedEvent;
 import at.rasebdon.hytech.core.transport.BlockFaceConfig;
 import at.rasebdon.hytech.core.transport.BlockFaceConfigState;
 import at.rasebdon.hytech.core.util.Validation;
@@ -94,7 +94,7 @@ public class EnergyBlockComponent extends LogisticBlockComponent<HytechEnergyCon
     }
 
     @Override
-    protected LogisticContainerChangedEvent<HytechEnergyContainer> createContainerChangedEvent(LogisticChangeType type, LogisticComponent<HytechEnergyContainer> component) {
+    protected LogisticComponentChangedEvent<HytechEnergyContainer> createContainerChangedEvent(LogisticChangeType type, LogisticComponent<HytechEnergyContainer> component) {
         return new EnergyContainerChangedEvent(type, component);
     }
 

@@ -23,15 +23,27 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class PipeRenderModule {
 
+    public static PipeRenderTickingSystem pipeRenderTickingSystem;
+    public static PipeRenderRefSystem pipeRenderRefSystem;
+
+    public static void init(@Nonnull ComponentRegistryProxy<ChunkStore> chunkStoreRegistry) {
+        pipeRenderTickingSystem = new PipeRenderTickingSystem();
+        chunkStoreRegistry.registerSystem(pipeRenderTickingSystem);
+
+        pipeRenderRefSystem = new PipeRenderRefSystem();
+        chunkStoreRegistry.registerSystem(new PipeRenderRefSystem());
+    }
+
     public static <TContainer> void registerPipe(
-            @Nonnull ComponentRegistryProxy<ChunkStore> chunkStoreRegistry,
             @Nonnull ComponentType<ChunkStore, ? extends LogisticPipeComponent<TContainer>> pipeType) {
-        chunkStoreRegistry.registerSystem(new PipeRenderTickingSystem<>(pipeType));
-        chunkStoreRegistry.registerSystem(new PipeRenderRefSystem<>(pipeType));
+        pipeRenderTickingSystem.registerPipeType(pipeType);
+        pipeRenderRefSystem.registerPipeType(pipeType);
     }
 
     private static <TContainer> void redrawPipe(LogisticPipeComponent<TContainer> pipeComponent,
@@ -125,25 +137,30 @@ public class PipeRenderModule {
         return store.addEntity(holder, AddReason.SPAWN);
     }
 
-    public static class PipeRenderTickingSystem<TContainer> extends TickingSystem<ChunkStore> {
+    public static class PipeRenderTickingSystem extends TickingSystem<ChunkStore> {
 
-        private final ComponentType<ChunkStore, ? extends LogisticPipeComponent<TContainer>> pipeType;
+        private final Set<ComponentType<ChunkStore, ? extends LogisticPipeComponent<?>>> supportedTypes = new HashSet<>();
 
-        public PipeRenderTickingSystem(ComponentType<ChunkStore, ? extends LogisticPipeComponent<TContainer>> pipeType) {
-            this.pipeType = pipeType;
+        public void registerPipeType(ComponentType<ChunkStore, ? extends LogisticPipeComponent<?>> type) {
+            supportedTypes.add(type);
         }
 
         @Override
         public void tick(float dt, int systemIndex, @NotNull Store<ChunkStore> chunkStore) {
-            chunkStore.forEachChunk(
-                    pipeType,
-                    this::redrawPipeConnectionsChunk
-            );
-
+            for (var pipeType : supportedTypes) {
+                chunkStore.forEachChunk(
+                        pipeType,
+                        (archetypeChunk, cmdBuffer) -> {
+                            this.redrawPipeConnectionsChunk(pipeType, archetypeChunk, cmdBuffer);
+                        }
+                );
+            }
         }
 
-        private void redrawPipeConnectionsChunk(ArchetypeChunk<ChunkStore> chunkStoreArchetypeChunk,
-                                                CommandBuffer<ChunkStore> commandBuffer) {
+        private void redrawPipeConnectionsChunk(
+                ComponentType<ChunkStore, ? extends LogisticPipeComponent<?>> pipeType,
+                ArchetypeChunk<ChunkStore> chunkStoreArchetypeChunk,
+                CommandBuffer<ChunkStore> commandBuffer) {
             for (int i = 0; i < chunkStoreArchetypeChunk.size(); i++) {
                 var pipeComponent = chunkStoreArchetypeChunk.getComponent(i, pipeType);
 
@@ -154,12 +171,18 @@ public class PipeRenderModule {
         }
     }
 
-    public static class PipeRenderRefSystem<TContainer> extends RefSystem<ChunkStore> {
+    public static class PipeRenderRefSystem extends RefSystem<ChunkStore> {
 
-        private final ComponentType<ChunkStore, ? extends LogisticPipeComponent<TContainer>> pipeType;
+        private final Set<ComponentType<ChunkStore, ? extends LogisticPipeComponent<?>>> supportedTypes = new HashSet<>();
+        private Query<ChunkStore> query;
 
-        public PipeRenderRefSystem(ComponentType<ChunkStore, ? extends LogisticPipeComponent<TContainer>> pipeType) {
-            this.pipeType = pipeType;
+        public PipeRenderRefSystem() {
+            this.query = Query.and();
+        }
+
+        public void registerPipeType(ComponentType<ChunkStore, ? extends LogisticPipeComponent<?>> type) {
+            supportedTypes.add(type);
+            this.query = Query.or(this.query, type);
         }
 
         @Override
@@ -175,19 +198,21 @@ public class PipeRenderModule {
                                    @NotNull RemoveReason removeReason,
                                    @NotNull Store<ChunkStore> store,
                                    @NotNull CommandBuffer<ChunkStore> commandBuffer) {
-            var pipeComponent = store.getComponent(ref, pipeType);
+            for (var pipeType : supportedTypes) {
+                var pipeComponent = store.getComponent(ref, pipeType);
 
-            if (pipeComponent != null) {
-                var world = store.getExternalData().getWorld();
-                var entityStore = world.getEntityStore().getStore();
+                if (pipeComponent != null) {
+                    var world = store.getExternalData().getWorld();
+                    var entityStore = world.getEntityStore().getStore();
 
-                world.execute(() -> removePipeConnectionModels(pipeComponent.getModelRefs(), entityStore));
+                    world.execute(() -> removePipeConnectionModels(pipeComponent.getModelRefs(), entityStore));
+                }
             }
         }
 
         @Override
         public @Nullable Query<ChunkStore> getQuery() {
-            return pipeType;
+            return this.query;
         }
     }
 }

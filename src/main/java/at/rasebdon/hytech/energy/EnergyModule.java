@@ -2,7 +2,6 @@ package at.rasebdon.hytech.energy;
 
 import at.rasebdon.hytech.core.AbstractLogisticModule;
 import at.rasebdon.hytech.core.networks.LogisticNetworkSystem;
-import at.rasebdon.hytech.core.systems.LogisticContainerRegistrationSystem;
 import at.rasebdon.hytech.core.systems.LogisticTransferSystem;
 import at.rasebdon.hytech.energy.components.EnergyBlockComponent;
 import at.rasebdon.hytech.energy.components.EnergyGeneratorComponent;
@@ -12,7 +11,7 @@ import at.rasebdon.hytech.energy.interaction.WrenchInteraction;
 import at.rasebdon.hytech.energy.interaction.ui.OpenBatteryPageInteraction;
 import at.rasebdon.hytech.energy.interaction.ui.OpenGeneratorPageInteraction;
 import at.rasebdon.hytech.energy.networks.EnergyNetworkSystem;
-import at.rasebdon.hytech.energy.systems.EnergyContainerRegistrationSystem;
+import at.rasebdon.hytech.energy.systems.EnergyComponentRegistrationSystem;
 import at.rasebdon.hytech.energy.systems.EnergyGenerationSystem;
 import at.rasebdon.hytech.energy.systems.EnergyNetworkSaveSystem;
 import at.rasebdon.hytech.energy.systems.EnergyTransferSystem;
@@ -25,6 +24,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 public final class EnergyModule extends AbstractLogisticModule<
         EnergyBlockComponent,
         EnergyPipeComponent,
+        EnergyComponentRegistrationSystem,
         HytechEnergyContainer
         > {
 
@@ -107,13 +107,13 @@ public final class EnergyModule extends AbstractLogisticModule<
     }
 
     @Override
-    protected LogisticContainerRegistrationSystem<HytechEnergyContainer> createContainerRegistrationSystem(
+    protected EnergyComponentRegistrationSystem createContainerRegistrationSystem(
             ComponentType<ChunkStore, EnergyBlockComponent> blockType,
             ComponentType<ChunkStore, EnergyPipeComponent> pipeType,
             IEventRegistry eventRegistry,
             LogisticNetworkSystem<HytechEnergyContainer> networkSystem
     ) {
-        return new EnergyContainerRegistrationSystem(
+        return new EnergyComponentRegistrationSystem(
                 blockType,
                 pipeType,
                 eventRegistry,

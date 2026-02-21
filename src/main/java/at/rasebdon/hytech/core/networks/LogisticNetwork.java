@@ -1,6 +1,6 @@
 package at.rasebdon.hytech.core.networks;
 
-import at.rasebdon.hytech.core.components.IContainerHolder;
+import at.rasebdon.hytech.core.components.ContainerHolder;
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import com.hypixel.hytale.logger.HytaleLogger;
 
@@ -9,7 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public abstract class LogisticNetwork<TContainer> implements IContainerHolder<TContainer> {
+public abstract class LogisticNetwork<TContainer> implements ContainerHolder<TContainer> {
 
     protected static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 

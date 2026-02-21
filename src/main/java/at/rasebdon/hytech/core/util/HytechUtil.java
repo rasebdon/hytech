@@ -11,7 +11,6 @@ import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.chunk.BlockComponentChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -26,30 +25,18 @@ public class HytechUtil {
      */
     @Nullable
     public static Ref<ChunkStore> getBlockEntityRef(@Nonnull World world, @Nonnull Vector3i pos) {
-        var chunk = world.getChunkIfInMemory(ChunkUtil.indexChunkFromBlock(pos.x, pos.z));
-        if (chunk == null) return null;
-
-        var chunkRef = chunk.getReference();
-        var blockComponentChunk = world.getChunkStore().getStore().getComponent(chunkRef, BlockComponentChunk.getComponentType());
-        if (blockComponentChunk == null) return null;
-
-        int blockIndex = ChunkUtil.indexBlockInColumn(pos.x, pos.y, pos.z);
-        return blockComponentChunk.getEntityReference(blockIndex);
+        return BlockModule.getBlockEntity(world, pos.x, pos.y, pos.z);
     }
 
     /**
      * Helper to get a component directly from a block position.
      */
     @Nullable
-    public static <T extends Component<ChunkStore>> T getComponentAtBlock(
+    public static <T extends Component<ChunkStore>> T getBlockComponent(
             @Nonnull World world,
             @Nonnull Vector3i pos,
             @Nonnull ComponentType<ChunkStore, T> type) {
-
-        Ref<ChunkStore> blockRef = getBlockEntityRef(world, pos);
-        if (blockRef == null) return null;
-
-        return blockRef.getStore().getComponent(blockRef, type);
+        return BlockModule.getComponent(type, world, pos.x, pos.y, pos.z);
     }
 
     @Nullable

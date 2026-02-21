@@ -2,12 +2,12 @@ package at.rasebdon.hytech.items;
 
 import at.rasebdon.hytech.core.AbstractLogisticModule;
 import at.rasebdon.hytech.core.networks.LogisticNetworkSystem;
-import at.rasebdon.hytech.core.systems.LogisticContainerRegistrationSystem;
 import at.rasebdon.hytech.core.systems.LogisticTransferSystem;
 import at.rasebdon.hytech.items.components.ItemBlockComponent;
 import at.rasebdon.hytech.items.components.ItemPipeComponent;
 import at.rasebdon.hytech.items.networks.ItemNetworkSystem;
-import at.rasebdon.hytech.items.systems.ItemContainerRegistrationSystem;
+import at.rasebdon.hytech.items.systems.ItemBlockStateRegistrationSystem;
+import at.rasebdon.hytech.items.systems.ItemComponentRegistrationSystem;
 import at.rasebdon.hytech.items.systems.ItemTransferSystem;
 import com.hypixel.hytale.component.ComponentRegistryProxy;
 import com.hypixel.hytale.component.ComponentType;
@@ -17,6 +17,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 public final class ItemModule extends AbstractLogisticModule<
         ItemBlockComponent,
         ItemPipeComponent,
+        ItemComponentRegistrationSystem,
         HytechItemContainer
         > {
 
@@ -36,6 +37,12 @@ public final class ItemModule extends AbstractLogisticModule<
                 "hytech:item:pipe",
                 ItemPipeComponent.CODEC
         );
+    }
+
+    @Override
+    protected void registerAdditionalSystems(ComponentRegistryProxy<ChunkStore> registry, IEventRegistry eventRegistry) {
+        var itemBlockStateRegistrationSystem = new ItemBlockStateRegistrationSystem(registrationSystem);
+        registry.registerSystem(itemBlockStateRegistrationSystem);
     }
 
     public static void init(ComponentRegistryProxy<ChunkStore> registry, IEventRegistry eventRegistry) {
@@ -64,13 +71,13 @@ public final class ItemModule extends AbstractLogisticModule<
     }
 
     @Override
-    protected LogisticContainerRegistrationSystem<HytechItemContainer> createContainerRegistrationSystem(
+    protected ItemComponentRegistrationSystem createContainerRegistrationSystem(
             ComponentType<ChunkStore, ItemBlockComponent> blockType,
             ComponentType<ChunkStore, ItemPipeComponent> pipeType,
             IEventRegistry eventRegistry,
             LogisticNetworkSystem<HytechItemContainer> networkSystem
     ) {
-        return new ItemContainerRegistrationSystem(
+        return new ItemComponentRegistrationSystem(
                 blockType,
                 pipeType,
                 eventRegistry,

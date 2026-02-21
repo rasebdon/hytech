@@ -34,13 +34,13 @@ public class ReadEnergyContainerBlockInteraction extends SimpleBlockInteraction 
             @Nonnull World world,
             @Nonnull Vector3i targetBlock) {
 
-        var energyBlock = HytechUtil.getComponentAtBlock(
+        var energyBlock = HytechUtil.getBlockComponent(
                 world,
                 targetBlock,
                 EnergyModule.get().getBlockComponentType()
         );
 
-        var energyPipe = HytechUtil.getComponentAtBlock(
+        var energyPipe = HytechUtil.getBlockComponent(
                 world,
                 targetBlock,
                 EnergyModule.get().getPipeComponentType()

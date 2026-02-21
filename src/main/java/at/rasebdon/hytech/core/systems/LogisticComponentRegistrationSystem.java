@@ -4,7 +4,7 @@ import at.rasebdon.hytech.core.components.LogisticBlockComponent;
 import at.rasebdon.hytech.core.components.LogisticComponent;
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import at.rasebdon.hytech.core.events.LogisticChangeType;
-import at.rasebdon.hytech.core.events.LogisticContainerChangedEvent;
+import at.rasebdon.hytech.core.events.LogisticComponentChangedEvent;
 import at.rasebdon.hytech.core.networks.LogisticNetworkSystem;
 import at.rasebdon.hytech.core.util.BlockFaceUtil;
 import at.rasebdon.hytech.core.util.HytechUtil;
@@ -17,21 +17,21 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public abstract class LogisticContainerRegistrationSystem<TContainer>
+public abstract class LogisticComponentRegistrationSystem<TContainer>
         extends RefSystem<ChunkStore> {
 
-    private final ComponentType<ChunkStore, ? extends LogisticBlockComponent<TContainer>> containerType;
+    private final ComponentType<ChunkStore, ? extends LogisticBlockComponent<TContainer>> blockType;
     private final ComponentType<ChunkStore, ? extends LogisticPipeComponent<TContainer>> pipeType;
     private final Query<ChunkStore> query;
 
-    protected LogisticContainerRegistrationSystem(
+    protected LogisticComponentRegistrationSystem(
             ComponentType<ChunkStore, ? extends LogisticBlockComponent<TContainer>> containerType,
             ComponentType<ChunkStore, ? extends LogisticPipeComponent<TContainer>> pipeType,
             IEventRegistry eventRegistry,
-            Class<? extends LogisticContainerChangedEvent<TContainer>> containerChangedEventClass,
+            Class<? extends LogisticComponentChangedEvent<TContainer>> containerChangedEventClass,
             LogisticNetworkSystem<TContainer> networkRegistrationSystem
     ) {
-        this.containerType = containerType;
+        this.blockType = containerType;
         this.pipeType = pipeType;
         this.query = Query.or(containerType, pipeType);
 
@@ -127,10 +127,10 @@ public abstract class LogisticContainerRegistrationSystem<TContainer>
         }
     }
 
-    private @Nullable LogisticComponent<TContainer> getContainer(
+    protected @Nullable LogisticComponent<TContainer> getContainer(
             Store<ChunkStore> store, Ref<ChunkStore> ref
     ) {
-        var container = store.getComponent(ref, containerType);
+        var container = store.getComponent(ref, blockType);
         return container != null ? container : store.getComponent(ref, pipeType);
     }
 }

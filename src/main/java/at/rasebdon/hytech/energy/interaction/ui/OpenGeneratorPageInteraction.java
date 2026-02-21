@@ -29,7 +29,7 @@ public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
 
     @Override
     protected PageBuilder getPageBuilder(@NotNull InteractionContext context, @NotNull World world, @NotNull Vector3i blockPos) {
-        var generatorComponent = HytechUtil.getComponentAtBlock(
+        var generatorComponent = HytechUtil.getBlockComponent(
                 world,
                 blockPos,
                 EnergyModule.get().getGeneratorComponentType());
