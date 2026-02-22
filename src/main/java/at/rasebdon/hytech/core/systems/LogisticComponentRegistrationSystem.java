@@ -14,8 +14,9 @@ import com.hypixel.hytale.component.system.RefSystem;
 import com.hypixel.hytale.event.IEventRegistry;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import javax.annotation.Nonnull;
 
 public abstract class LogisticComponentRegistrationSystem<TContainer>
         extends RefSystem<ChunkStore> {
@@ -45,10 +46,10 @@ public abstract class LogisticComponentRegistrationSystem<TContainer>
 
     @Override
     public void onEntityAdded(
-            @NotNull Ref<ChunkStore> ref,
-            @NotNull AddReason reason,
-            @NotNull Store<ChunkStore> store,
-            @NotNull CommandBuffer<ChunkStore> commandBuffer
+            @Nonnull Ref<ChunkStore> ref,
+            @Nonnull AddReason reason,
+            @Nonnull Store<ChunkStore> store,
+            @Nonnull CommandBuffer<ChunkStore> commandBuffer
     ) {
         var containerComponent = getContainer(store, ref);
         if (containerComponent == null) return;
@@ -59,10 +60,10 @@ public abstract class LogisticComponentRegistrationSystem<TContainer>
 
     @Override
     public void onEntityRemove(
-            @NotNull Ref<ChunkStore> ref,
-            @NotNull RemoveReason reason,
-            @NotNull Store<ChunkStore> store,
-            @NotNull CommandBuffer<ChunkStore> commandBuffer
+            @Nonnull Ref<ChunkStore> ref,
+            @Nonnull RemoveReason reason,
+            @Nonnull Store<ChunkStore> store,
+            @Nonnull CommandBuffer<ChunkStore> commandBuffer
     ) {
         var containerComponent = getContainer(store, ref);
         if (containerComponent == null) return;

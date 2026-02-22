@@ -77,6 +77,16 @@ public abstract class LogisticComponent<TContainer> implements ContainerHolder<T
         return neighbors.getAllNeighbors();
     }
 
+    public void addExternalNeighbor(BlockFace face, TContainer container) {
+        neighbors.put(face, container);
+        reloadContainer();
+    }
+
+    public void removeExternalNeighbor(TContainer container) {
+        neighbors.remove(container);
+        reloadContainer();
+    }
+
     public void addNeighbor(BlockFace localFace, BlockFace neighborFace, LogisticComponent<TContainer> neighbor) {
         this.neighbors.put(localFace, neighbor);
         neighbor.neighbors.put(neighborFace, this);

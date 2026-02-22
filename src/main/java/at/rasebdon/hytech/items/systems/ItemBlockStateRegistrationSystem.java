@@ -7,8 +7,9 @@ import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.RefSystem;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public class ItemBlockStateRegistrationSystem extends RefSystem<ChunkStore> {
 
@@ -20,31 +21,36 @@ public class ItemBlockStateRegistrationSystem extends RefSystem<ChunkStore> {
 
     @Override
     public void onEntityAdded(
-            @NotNull Ref<ChunkStore> ref,
-            @NotNull AddReason addReason,
-            @NotNull Store<ChunkStore> store,
-            @NotNull CommandBuffer<ChunkStore> commandBuffer) {
+            @Nonnull Ref<ChunkStore> ref,
+            @Nonnull AddReason addReason,
+            @Nonnull Store<ChunkStore> store,
+            @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
         var blockTransform = HytechUtil.getBlockTransform(ref, store);
         if (blockTransform != null) {
             var world = store.getExternalData().getWorld();
             var itemContainer = ItemUtils.getLegacyItemContainer(world, blockTransform.worldPos());
-            var containerWrapper = new HytechItemContainerWrapper(itemContainer);
 
-            logisticRegistrationSystem.registerLegacyContainer(containerWrapper, ref, store);
+            if (itemContainer != null) {
+                var containerWrapper = new HytechItemContainerWrapper(itemContainer);
+                logisticRegistrationSystem.registerLegacyContainer(containerWrapper, ref, store);
+            }
         }
     }
 
     @Override
     public void onEntityRemove(
-            @NotNull Ref<ChunkStore> ref,
-            @NotNull RemoveReason removeReason,
-            @NotNull Store<ChunkStore> store,
-            @NotNull CommandBuffer<ChunkStore> commandBuffer) {
+            @Nonnull Ref<ChunkStore> ref,
+            @Nonnull RemoveReason removeReason,
+            @Nonnull Store<ChunkStore> store,
+            @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
         var blockTransform = HytechUtil.getBlockTransform(ref, store);
         if (blockTransform != null) {
             var world = store.getExternalData().getWorld();
             var itemContainer = ItemUtils.getLegacyItemContainer(world, blockTransform.worldPos());
-            logisticRegistrationSystem.unregisterLegacyContainer(itemContainer, ref, store);
+
+            if (itemContainer != null) {
+                logisticRegistrationSystem.unregisterLegacyContainer(itemContainer, ref, store);
+            }
         }
     }
 

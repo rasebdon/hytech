@@ -14,101 +14,104 @@ import at.rasebdon.hytech.items.utils.ItemUtils;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.event.IEventRegistry;
 import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.protocol.BlockFace;
 import com.hypixel.hytale.server.core.universe.world.meta.state.ItemContainerBlockState;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
+import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
 
 public class ItemComponentRegistrationSystem
         extends LogisticComponentRegistrationSystem<HytechItemContainer> {
 
-    private final Map<ItemContainerBlockState, HytechItemContainerWrapper> legacyContainers = new HashMap<>();
+    private final Map<ItemContainerBlockState, HytechItemContainerWrapper> wrappers =
+            new HashMap<>();
 
     public ItemComponentRegistrationSystem(
-            ComponentType<ChunkStore, ? extends LogisticBlockComponent<HytechItemContainer>> blockComponentType,
-            ComponentType<ChunkStore, ? extends LogisticPipeComponent<HytechItemContainer>> pipeComponentType,
+            ComponentType<ChunkStore, ? extends LogisticBlockComponent<HytechItemContainer>> blockType,
+            ComponentType<ChunkStore, ? extends LogisticPipeComponent<HytechItemContainer>> pipeType,
             IEventRegistry eventRegistry,
             LogisticNetworkSystem<HytechItemContainer> networkSystem
     ) {
-        super(
-                blockComponentType,
-                pipeComponentType,
-                eventRegistry,
-                ItemContainerChangedEvent.class,
-                networkSystem
-        );
+        super(blockType, pipeType, eventRegistry, ItemContainerChangedEvent.class, networkSystem);
     }
 
-    /* -----------------------------------------------------------
-       Legacy Registration
-       ----------------------------------------------------------- */
-
     public void registerLegacyContainer(
-            HytechItemContainerWrapper wrapper,
-            Ref<ChunkStore> ref,
-            Store<ChunkStore> store
+            @Nonnull HytechItemContainerWrapper wrapper,
+            @Nonnull Ref<ChunkStore> ref,
+            @Nonnull Store<ChunkStore> store
     ) {
-        legacyContainers.put(wrapper.getBlockState(), wrapper);
-        rebuildNeighborsFor(wrapper, ref, store);
+        wrappers.put(wrapper.blockState(), wrapper);
+        attachWrapperToAdjacentComponents(wrapper, ref, store);
     }
 
     public void unregisterLegacyContainer(
-            ItemContainerBlockState state,
-            Ref<ChunkStore> ref,
-            Store<ChunkStore> store
+            @Nonnull ItemContainerBlockState state,
+            @Nonnull Ref<ChunkStore> ref,
+            @Nonnull Store<ChunkStore> store
     ) {
-        var wrapper = legacyContainers.remove(state);
+        var wrapper = wrappers.remove(state);
         if (wrapper != null) {
-            removeNeighborsFor(wrapper, ref, store);
+            detachWrapperFromAdjacentComponents(wrapper, ref, store);
         }
     }
 
-    /* -----------------------------------------------------------
-       Overrides – Also connect wrappers when logistic components spawn
-       ----------------------------------------------------------- */
-
     @Override
     public void onEntityAdded(
-            Ref<ChunkStore> ref,
-            AddReason reason,
-            Store<ChunkStore> store,
-            CommandBuffer<ChunkStore> commandBuffer
+            @Nonnull Ref<ChunkStore> ref,
+            @Nonnull AddReason reason,
+            @Nonnull Store<ChunkStore> store,
+            @Nonnull CommandBuffer<ChunkStore> commandBuffer
     ) {
         super.onEntityAdded(ref, reason, store, commandBuffer);
 
         var component = getContainer(store, ref);
         if (component != null) {
-            rebuildNeighborsFor(component, ref, store);
+            attachAdjacentWrappers(component, ref, store);
         }
     }
 
     @Override
     public void onEntityRemove(
-            Ref<ChunkStore> ref,
-            RemoveReason reason,
-            Store<ChunkStore> store,
-            CommandBuffer<ChunkStore> commandBuffer
+            @Nonnull Ref<ChunkStore> ref,
+            @Nonnull RemoveReason reason,
+            @Nonnull Store<ChunkStore> store,
+            @Nonnull CommandBuffer<ChunkStore> commandBuffer
     ) {
         var component = getContainer(store, ref);
         if (component != null) {
-            removeNeighborsFor(component, ref, store);
+            detachAdjacentWrappers(component, ref, store);
         }
 
         super.onEntityRemove(ref, reason, store, commandBuffer);
     }
 
-    /* -----------------------------------------------------------
-       Unified Neighbor Logic (Works for both wrappers + components)
-       ----------------------------------------------------------- */
+    private void attachWrapperToAdjacentComponents(
+            HytechItemContainerWrapper wrapper,
+            Ref<ChunkStore> ref,
+            Store<ChunkStore> store
+    ) {
+        forEachAdjacentLogisticComponent(ref, store,
+                (face, component) ->
+                        component.addExternalNeighbor(face, wrapper));
+    }
 
-    private void rebuildNeighborsFor(
+    private void detachWrapperFromAdjacentComponents(
+            HytechItemContainerWrapper wrapper,
+            Ref<ChunkStore> ref,
+            Store<ChunkStore> store
+    ) {
+        forEachAdjacentLogisticComponent(ref, store,
+                (_, component) ->
+                        component.removeExternalNeighbor(wrapper));
+    }
+
+    private void attachAdjacentWrappers(
             LogisticComponent<HytechItemContainer> component,
             Ref<ChunkStore> ref,
             Store<ChunkStore> store
     ) {
-        component.clearNeighbors();
-
         var transform = HytechUtil.getBlockTransform(ref, store);
         if (transform == null) return;
 
@@ -117,29 +120,20 @@ public class ItemComponentRegistrationSystem
         for (var worldDir : Vector3i.BLOCK_SIDES) {
 
             var localFace = BlockFaceUtil.getLocalFace(worldDir, transform.rotation());
-            var neighborRef = HytechUtil.getBlockEntityRef(
-                    world,
-                    worldDir.clone().add(transform.worldPos())
-            );
+            var neighborPos = worldDir.clone().add(transform.worldPos());
 
-            if (neighborRef == null) continue;
+            var blockState = ItemUtils.getLegacyItemContainer(world, neighborPos);
+            if (blockState instanceof ItemContainerBlockState itemState) {
 
-            var neighbor = resolveNeighbor(store, neighborRef);
-            if (neighbor == null) continue;
-
-            var neighborTransform = HytechUtil.getBlockTransform(neighborRef, store);
-            if (neighborTransform == null) continue;
-
-            var neighborFace = BlockFaceUtil.getLocalFace(
-                    worldDir.clone().negate(),
-                    neighborTransform.rotation()
-            );
-
-            component.addNeighbor(localFace, neighborFace, neighbor);
+                var wrapper = wrappers.get(itemState);
+                if (wrapper != null) {
+                    component.addExternalNeighbor(localFace, wrapper);
+                }
+            }
         }
     }
 
-    private void removeNeighborsFor(
+    private void detachAdjacentWrappers(
             LogisticComponent<HytechItemContainer> component,
             Ref<ChunkStore> ref,
             Store<ChunkStore> store
@@ -151,6 +145,32 @@ public class ItemComponentRegistrationSystem
 
         for (var worldDir : Vector3i.BLOCK_SIDES) {
 
+            var neighborPos = worldDir.clone().add(transform.worldPos());
+            var blockState = ItemUtils.getLegacyItemContainer(world, neighborPos);
+
+            if (blockState instanceof ItemContainerBlockState itemState) {
+                var wrapper = wrappers.get(itemState);
+                if (wrapper != null) {
+                    component.removeExternalNeighbor(wrapper);
+                }
+            }
+        }
+    }
+
+    private void forEachAdjacentLogisticComponent(
+            Ref<ChunkStore> ref,
+            Store<ChunkStore> store,
+            AdjacentConsumer consumer
+    ) {
+        var transform = HytechUtil.getBlockTransform(ref, store);
+        if (transform == null) return;
+
+        var world = store.getExternalData().getWorld();
+
+        for (var worldDir : Vector3i.BLOCK_SIDES) {
+
+            var localFace = BlockFaceUtil.getLocalFace(worldDir, transform.rotation());
+
             var neighborRef = HytechUtil.getBlockEntityRef(
                     world,
                     worldDir.clone().add(transform.worldPos())
@@ -158,34 +178,15 @@ public class ItemComponentRegistrationSystem
 
             if (neighborRef == null) continue;
 
-            var neighbor = resolveNeighbor(store, neighborRef);
-            if (neighbor != null) {
-                component.removeNeighbor(neighbor);
+            var component = getContainer(store, neighborRef);
+            if (component != null) {
+                consumer.accept(localFace, component);
             }
         }
     }
 
-    /**
-     * Resolves both ECS logistic components AND legacy wrappers.
-     */
-    private LogisticComponent<HytechItemContainer> resolveNeighbor(
-            Store<ChunkStore> store,
-            Ref<ChunkStore> ref
-    ) {
-        // 1️⃣ Try normal ECS component
-        var component = getContainer(store, ref);
-        if (component != null) return component;
-
-        // 2️⃣ Try legacy wrapper via block state
-        var transform = HytechUtil.getBlockTransform(ref, store);
-        if (transform == null) return null;
-
-        var world = store.getExternalData().getWorld();
-        var blockState = ItemUtils.getLegacyItemContainer(world, transform.worldPos());
-        if (blockState instanceof ItemContainerBlockState itemState) {
-            return legacyContainers.get(itemState);
-        }
-
-        return null;
+    @FunctionalInterface
+    private interface AdjacentConsumer {
+        void accept(BlockFace face, LogisticComponent<HytechItemContainer> component);
     }
 }

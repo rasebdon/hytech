@@ -12,6 +12,8 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
+import com.hypixel.hytale.server.core.universe.world.meta.BlockState;
+import com.hypixel.hytale.server.core.universe.world.meta.BlockStateModule;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
@@ -20,23 +22,30 @@ import javax.annotation.Nullable;
 
 public class HytechUtil {
 
-    /**
-     * Retrieves the Entity Reference associated with a specific block position.
-     */
     @Nullable
     public static Ref<ChunkStore> getBlockEntityRef(@Nonnull World world, @Nonnull Vector3i pos) {
         return BlockModule.getBlockEntity(world, pos.x, pos.y, pos.z);
     }
 
-    /**
-     * Helper to get a component directly from a block position.
-     */
     @Nullable
     public static <T extends Component<ChunkStore>> T getBlockComponent(
             @Nonnull World world,
             @Nonnull Vector3i pos,
             @Nonnull ComponentType<ChunkStore, T> type) {
         return BlockModule.getComponent(type, world, pos.x, pos.y, pos.z);
+    }
+
+    @SuppressWarnings("removal")
+    @Nullable
+    public static <T extends BlockState> T getBlockState(
+            @Nonnull World world,
+            @Nonnull Vector3i pos,
+            @Nonnull Class<T> entityClass) {
+        var blockStateModule = BlockStateModule.get();
+        var type = blockStateModule.getComponentType(entityClass);
+        assert type != null;
+
+        return getBlockComponent(world, pos, type);
     }
 
     @Nullable
@@ -74,6 +83,7 @@ public class HytechUtil {
         return new Vector3i(localX, localY, localZ);
     }
 
+    @SuppressWarnings("removal")
     @Nullable
     public static BlockTransform getBlockTransform(@Nonnull Ref<ChunkStore> blockRef, @Nonnull Store<ChunkStore> store) {
         var info = store.getComponent(blockRef, BlockModule.BlockStateInfo.getComponentType());
