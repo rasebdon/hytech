@@ -101,6 +101,9 @@ public abstract class LogisticComponentRegistrationSystem<TContainer>
                     neighborTransform.rotation()
             );
 
+            // TODO : Trigger network system from here so that container or neighbor
+            //  container cannot have empty networks set if they are pipes
+
             container.addNeighbor(localFace, neighborFace, neighborContainer);
         }
     }

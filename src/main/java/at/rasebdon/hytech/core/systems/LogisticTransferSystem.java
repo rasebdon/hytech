@@ -37,7 +37,6 @@ public abstract class LogisticTransferSystem<TContainer> extends TickingSystem<C
                 removeLogisticBlock(blockComponent);
             }
         }
-
     }
 
     private void handleLogisticNetworkChanged(LogisticNetworkChangedEvent<TContainer> event) {
