@@ -1,56 +1,39 @@
 package at.rasebdon.hytech.core.transport;
 
+import at.rasebdon.hytech.core.components.ContainerHolder;
 import at.rasebdon.hytech.core.components.LogisticComponent;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Objects;
-
 public class LogisticNeighbor<TContainer> {
-    private final TContainer container;
+    private final ContainerHolder<TContainer> holder;
 
     @Nullable
     private final LogisticComponent<TContainer> logisticContainerComponent;
 
-    public LogisticNeighbor(TContainer container) {
-        this.container = container;
-        this.logisticContainerComponent = null;
+    public LogisticNeighbor(ContainerHolder<TContainer> holder) {
+        this.holder = holder;
+
+        if (holder instanceof LogisticComponent<TContainer> logisticComponent) {
+            this.logisticContainerComponent = logisticComponent;
+        } else {
+            this.logisticContainerComponent = null;
+        }
     }
 
-    public LogisticNeighbor(LogisticComponent<TContainer> logisticContainerComponent) {
-        this.container = logisticContainerComponent.getContainer();
-        this.logisticContainerComponent = logisticContainerComponent;
-    }
-
-    public TContainer getContainer() {
-        return container;
+    public ContainerHolder<TContainer> getHolder() {
+        return holder;
     }
 
     @Nullable
     public LogisticComponent<TContainer> getLogisticContainer() {
-        return logisticContainerComponent;
+        return this.logisticContainerComponent;
     }
 
-    public boolean allowsInputTowards(TContainer source) {
-        return logisticContainerComponent == null || logisticContainerComponent.hasInputFaceTowards(source);
+    public boolean allowsInputTowards(ContainerHolder<TContainer> holder) {
+        return logisticContainerComponent == null || logisticContainerComponent.hasInputOrBothTowards(holder);
     }
 
-    public boolean allowsOutputTowards(TContainer source) {
-        return logisticContainerComponent == null || logisticContainerComponent.hasOutputFaceTowards(source);
-    }
-
-    public boolean isAvailable() {
-        return logisticContainerComponent == null || logisticContainerComponent.isAvailable();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof LogisticNeighbor<?> other)) return false;
-        return Objects.equals(container, other.container);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(container);
+    public boolean allowsOutputTowards(ContainerHolder<TContainer> holder) {
+        return logisticContainerComponent == null || logisticContainerComponent.hasOutputOrBothTowards(holder);
     }
 }

@@ -41,15 +41,6 @@ public abstract class LogisticComponent<TContainer> implements ContainerHolder<T
     }
 
     @Nullable
-    public TContainer getNeighborContainer(BlockFace face) {
-        var neighbor = neighbors.getByFace(face);
-        if (neighbor != null) {
-            return neighbor.getContainer();
-        }
-        return null;
-    }
-
-    @Nullable
     public LogisticNeighbor<TContainer> getNeighbor(BlockFace face) {
         return neighbors.getByFace(face);
     }
@@ -65,26 +56,26 @@ public abstract class LogisticComponent<TContainer> implements ContainerHolder<T
 
     @Nullable
     public BlockFace getNeighborFace(LogisticNeighbor<TContainer> neighbor) {
-        return getNeighborFace(neighbor.getContainer());
+        return getNeighborFace(neighbor.getHolder());
     }
 
     @Nullable
-    public BlockFace getNeighborFace(TContainer neighbor) {
-        return neighbors.getByContainer(neighbor);
+    public BlockFace getNeighborFace(ContainerHolder<TContainer> holder) {
+        return neighbors.getByContainer(holder);
     }
 
     public Set<LogisticNeighbor<TContainer>> getNeighbors() {
         return neighbors.getAllNeighbors();
     }
 
-    public void addExternalNeighbor(BlockFace face, TContainer container) {
-        neighbors.put(face, container);
-        reloadContainer();
+    public void addExternalNeighbor(BlockFace face, ContainerHolder<TContainer> holder) {
+        this.neighbors.put(face, holder);
+        this.reloadContainer();
     }
 
-    public void removeExternalNeighbor(TContainer container) {
-        neighbors.remove(container);
-        reloadContainer();
+    public void removeExternalNeighbor(ContainerHolder<TContainer> holder) {
+        this.neighbors.remove(holder);
+        this.reloadContainer();
     }
 
     public void addNeighbor(BlockFace localFace, BlockFace neighborFace, LogisticComponent<TContainer> neighbor) {
@@ -118,20 +109,28 @@ public abstract class LogisticComponent<TContainer> implements ContainerHolder<T
         this.reloadContainer();
     }
 
-    public BlockFaceConfigType getFaceConfigTowards(TContainer neighbor) {
-        return this.getFaceConfigTowards(getNeighborFace(neighbor));
+    public BlockFaceConfigType getFaceConfigTowards(ContainerHolder<TContainer> holder) {
+        return this.getFaceConfigTowards(getNeighborFace(holder));
     }
 
     public BlockFaceConfigType getFaceConfigTowards(BlockFace face) {
         return this.blockFaceConfig.getType(face);
     }
 
-    public boolean hasInputFaceTowards(TContainer neighbor) {
-        return this.blockFaceConfig.isInput(getNeighborFace(neighbor));
+    public boolean hasInputOrBothTowards(ContainerHolder<TContainer> holder) {
+        return this.blockFaceConfig.isInputOrBoth(getNeighborFace(holder));
     }
 
-    public boolean hasOutputFaceTowards(TContainer neighbor) {
-        return this.blockFaceConfig.isOutput(getNeighborFace(neighbor));
+    public boolean hasOutputOrBothTowards(ContainerHolder<TContainer> holder) {
+        return this.blockFaceConfig.isOutputOrBoth(getNeighborFace(holder));
+    }
+
+    public boolean hasInputTowards(ContainerHolder<TContainer> target) {
+        return getFaceConfigTowards(target) == BlockFaceConfigType.INPUT;
+    }
+
+    public boolean hasOutputTowards(ContainerHolder<TContainer> target) {
+        return getFaceConfigTowards(target) == BlockFaceConfigType.OUTPUT;
     }
 
     public void cycleBlockFaceConfig(BlockFace face) {

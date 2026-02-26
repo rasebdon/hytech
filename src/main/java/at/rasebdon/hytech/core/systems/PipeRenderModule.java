@@ -37,7 +37,7 @@ public class PipeRenderModule {
         chunkStoreRegistry.registerSystem(pipeRenderTickingSystem);
 
         pipeRenderRefSystem = new PipeRenderRefSystem();
-        chunkStoreRegistry.registerSystem(new PipeRenderRefSystem());
+        chunkStoreRegistry.registerSystem(pipeRenderRefSystem);
     }
 
     public static <TContainer> void registerPipe(

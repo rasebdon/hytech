@@ -14,8 +14,8 @@ public abstract class LogisticNetwork<TContainer> implements ContainerHolder<TCo
     protected static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
     protected final Set<LogisticPipeComponent<TContainer>> pipes = new HashSet<>();
-    protected final List<TContainer> pullTargets = new ArrayList<>();
-    protected final List<TContainer> pushTargets = new ArrayList<>();
+    protected final List<ContainerHolder<TContainer>> pullTargets = new ArrayList<>();
+    protected final List<ContainerHolder<TContainer>> pushTargets = new ArrayList<>();
 
     protected LogisticNetwork(Set<LogisticPipeComponent<TContainer>> initialPipes) {
         setPipes(initialPipes);
@@ -80,16 +80,16 @@ public abstract class LogisticNetwork<TContainer> implements ContainerHolder<TCo
         for (var pipe : pipes) {
             for (var target : pipe.getNeighbors()) {
 
-                if (target.getLogisticContainer() instanceof LogisticPipeComponent<?>) {
+                if (target.getHolder() instanceof LogisticPipeComponent<?>) {
                     continue;
                 }
 
                 if (pipe.canPullFrom(target)) {
-                    pullTargets.add(target.getContainer());
+                    pullTargets.add(target.getHolder());
                 }
 
                 if (pipe.canOutputTo(target)) {
-                    pushTargets.add(target.getContainer());
+                    pushTargets.add(target.getHolder());
                 }
             }
         }

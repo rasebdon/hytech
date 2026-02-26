@@ -1,6 +1,6 @@
 package at.rasebdon.hytech.core.transport;
 
-import at.rasebdon.hytech.core.components.LogisticComponent;
+import at.rasebdon.hytech.core.components.ContainerHolder;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.BlockFace;
 
@@ -14,15 +14,11 @@ public final class LogisticNeighborMap<TContainer> {
     private final EnumMap<BlockFace, LogisticNeighbor<TContainer>> faceToNeighbor =
             new EnumMap<>(BlockFace.class);
 
-    private final Map<TContainer, BlockFace> containerToFace =
+    private final Map<ContainerHolder<TContainer>, BlockFace> holderToFace =
             new HashMap<>();
 
-    public void put(BlockFace face, TContainer container) {
+    public void put(BlockFace face, ContainerHolder<TContainer> container) {
         put(face, new LogisticNeighbor<>(container));
-    }
-
-    public void put(BlockFace face, LogisticComponent<TContainer> component) {
-        put(face, new LogisticNeighbor<>(component));
     }
 
     private void put(BlockFace face, LogisticNeighbor<TContainer> neighbor) {
@@ -31,9 +27,9 @@ public final class LogisticNeighborMap<TContainer> {
             return;
         }
 
-        TContainer container = neighbor.getContainer();
+        var container = neighbor.getHolder();
 
-        if (containerToFace.containsKey(container)) {
+        if (holderToFace.containsKey(container)) {
             LOGGER.atWarning().log("Container already registered on another face");
             return;
         }
@@ -41,7 +37,7 @@ public final class LogisticNeighborMap<TContainer> {
         LOGGER.atInfo().log("%s registered neighbor container", face.name());
 
         faceToNeighbor.put(face, neighbor);
-        containerToFace.put(container, face);
+        holderToFace.put(container, face);
     }
 
     @Nullable
@@ -50,23 +46,19 @@ public final class LogisticNeighborMap<TContainer> {
     }
 
     @Nullable
-    public BlockFace getByContainer(TContainer container) {
-        return containerToFace.get(container);
+    public BlockFace getByContainer(ContainerHolder<TContainer> holder) {
+        return holderToFace.get(holder);
     }
 
-    public void remove(TContainer container) {
-        var face = containerToFace.remove(container);
+    public void remove(ContainerHolder<TContainer> holder) {
+        var face = holderToFace.remove(holder);
         if (face != null) {
             faceToNeighbor.remove(face);
         }
     }
 
     public void remove(LogisticNeighbor<TContainer> neighbor) {
-        remove(neighbor.getContainer());
-    }
-
-    public void remove(LogisticComponent<TContainer> component) {
-        remove(component.getContainer());
+        remove(neighbor.getHolder());
     }
 
     public Set<LogisticNeighbor<TContainer>> getAllNeighbors() {

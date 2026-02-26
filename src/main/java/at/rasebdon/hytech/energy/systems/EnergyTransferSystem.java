@@ -40,7 +40,7 @@ public class EnergyTransferSystem extends LogisticTransferSystem<HytechEnergyCon
 
         var neighborsWithEnergyCapacityLeft = sourceComponent.getNeighbors().stream()
                 .filter(n ->
-                        n.isAvailable() && n.getContainer().getRemainingCapacity() > 0)
+                        n.getHolder().isAvailable() && n.getHolder().getContainer().getRemainingCapacity() > 0)
                 .toList();
 
         long totalTransferred = 0;
@@ -48,12 +48,12 @@ public class EnergyTransferSystem extends LogisticTransferSystem<HytechEnergyCon
         for (var neighbor : neighborsWithEnergyCapacityLeft) {
             if (sourceEnergy <= 0) break;
 
-            if (!sourceComponent.hasOutputFaceTowards(neighbor.getContainer()) ||
-                    !neighbor.allowsInputTowards(sourceComponent.getContainer())) {
+            if (!sourceComponent.hasOutputOrBothTowards(neighbor.getHolder()) ||
+                    !neighbor.allowsInputTowards(sourceComponent)) {
                 continue;
             }
 
-            var targetContainer = neighbor.getContainer();
+            var targetContainer = neighbor.getHolder().getContainer();
             long transferable = Math.min(
                     Math.min(sourceTransferSpeed, targetContainer.getTransferSpeed()),
                     Math.min(sourceEnergy, targetContainer.getRemainingCapacity())

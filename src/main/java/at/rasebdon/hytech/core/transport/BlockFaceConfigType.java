@@ -20,11 +20,11 @@ public enum BlockFaceConfigType {
         return bits;
     }
 
-    public boolean isInput() {
+    public boolean isInputOrBoth() {
         return (bits & 0b01) != 0;
     }
 
-    public boolean isOutput() {
+    public boolean isOutputOrBoth() {
         return (bits & 0b10) != 0;
     }
 }

@@ -66,7 +66,9 @@ public class EnergyNetwork extends LogisticNetwork<HytechEnergyContainer> implem
         for (var target : pullTargets) {
             if (isFull()) break;
 
-            transferEnergy(target, this, transferSpeed);
+            if (target.isAvailable()) {
+                transferEnergy(target.getContainer(), this, transferSpeed);
+            }
         }
     }
 
@@ -81,7 +83,9 @@ public class EnergyNetwork extends LogisticNetwork<HytechEnergyContainer> implem
         for (var target : pushTargets) {
             if (isEmpty()) break;
 
-            transferEnergy(this, target, perTarget);
+            if (target.isAvailable()) {
+                transferEnergy(this, target.getContainer(), perTarget);
+            }
         }
     }
 

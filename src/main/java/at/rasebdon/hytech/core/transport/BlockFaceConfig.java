@@ -92,12 +92,12 @@ public class BlockFaceConfig implements Cloneable {
         return new BlockFaceConfigState(getType(face), getIndex(face));
     }
 
-    public boolean isInput(BlockFace face) {
-        return getType(face).isInput();
+    public boolean isInputOrBoth(BlockFace face) {
+        return getType(face).isInputOrBoth();
     }
 
-    public boolean isOutput(BlockFace face) {
-        return getType(face).isOutput();
+    public boolean isOutputOrBoth(BlockFace face) {
+        return getType(face).isOutputOrBoth();
     }
 
     public boolean isAllowed(BlockFace face, BlockFaceConfigType type, int index) {

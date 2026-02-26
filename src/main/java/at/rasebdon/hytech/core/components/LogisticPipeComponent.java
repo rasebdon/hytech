@@ -101,31 +101,24 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticComponen
     }
 
     public boolean canPullFrom(LogisticNeighbor<TContainer> target) {
-        return hasInputTowards(target)
-                && target.allowsOutputTowards(this.getContainer());
+        return this.hasInputTowards(target.getHolder())
+                && target.allowsOutputTowards(this);
     }
 
     public boolean canPushTo(LogisticNeighbor<TContainer> target) {
-        return hasOutputTowards(target)
-                && target.allowsInputTowards(this.getContainer());
+        return this.hasOutputTowards(target.getHolder())
+                && target.allowsInputTowards(this);
     }
 
     public boolean canOutputTo(LogisticNeighbor<TContainer> target) {
-        return hasOutputFaceTowards(target.getContainer())
-                && target.allowsInputTowards(this.getContainer());
+        return hasOutputOrBothTowards(target.getHolder())
+                && target.allowsInputTowards(this);
     }
 
     public boolean isConnectedTo(LogisticNeighbor<TContainer> neighbor) {
-        return (hasOutputTowards(neighbor) && neighbor.allowsInputTowards(this.getContainer()))
-                || (hasInputTowards(neighbor) && neighbor.allowsOutputTowards(this.getContainer()));
-    }
-
-    private boolean hasInputTowards(LogisticNeighbor<TContainer> target) {
-        return getFaceConfigTowards(target.getContainer()) == BlockFaceConfigType.INPUT;
-    }
-
-    private boolean hasOutputTowards(LogisticNeighbor<TContainer> target) {
-        return getFaceConfigTowards(target.getContainer()) == BlockFaceConfigType.OUTPUT;
+        var neighborHolder = neighbor.getHolder();
+        return (this.hasOutputOrBothTowards(neighborHolder) && neighbor.allowsInputTowards(this))
+                || (this.hasInputOrBothTowards(neighborHolder) && neighbor.allowsOutputTowards(this));
     }
 
     public boolean needsRenderReload() {
