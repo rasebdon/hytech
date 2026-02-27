@@ -4,10 +4,7 @@ import at.rasebdon.hytech.core.components.ContainerHolder;
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import com.hypixel.hytale.logger.HytaleLogger;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public abstract class LogisticNetwork<TContainer> implements ContainerHolder<TContainer> {
 
@@ -44,6 +41,14 @@ public abstract class LogisticNetwork<TContainer> implements ContainerHolder<TCo
         }
 
         rebuildTargets();
+    }
+
+    public List<ContainerHolder<TContainer>> getPullTargets() {
+        return Collections.unmodifiableList(pullTargets);
+    }
+
+    public List<ContainerHolder<TContainer>> getPushTargets() {
+        return Collections.unmodifiableList(pushTargets);
     }
 
     protected void addPipe(LogisticPipeComponent<TContainer> pipe) {
@@ -100,8 +105,4 @@ public abstract class LogisticNetwork<TContainer> implements ContainerHolder<TCo
                 pushTargets.size()
         );
     }
-
-    public abstract void pullFromTargets();
-
-    public abstract void pushToTargets();
 }

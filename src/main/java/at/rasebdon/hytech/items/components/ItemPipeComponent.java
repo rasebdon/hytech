@@ -7,12 +7,13 @@ import at.rasebdon.hytech.core.events.LogisticComponentChangedEvent;
 import at.rasebdon.hytech.core.transport.BlockFaceConfig;
 import at.rasebdon.hytech.core.transport.BlockFaceConfigType;
 import at.rasebdon.hytech.items.HytechItemContainer;
+import at.rasebdon.hytech.items.events.ItemContainerChangedEvent;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
-import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,13 +31,14 @@ public class ItemPipeComponent extends LogisticPipeComponent<HytechItemContainer
     }
 
     @Override
-    public @Nullable Component<ChunkStore> clone() {
-        return null;
+    @Nonnull
+    public Component<ChunkStore> clone() {
+        return new ItemPipeComponent(this.blockFaceConfig.clone(), this.connectionModelAssetNames);
     }
 
     @Override
     protected LogisticComponentChangedEvent<HytechItemContainer> createContainerChangedEvent(LogisticChangeType type, LogisticComponent<HytechItemContainer> component) {
-        return null;
+        return new ItemContainerChangedEvent(type, component);
     }
 
     @Override

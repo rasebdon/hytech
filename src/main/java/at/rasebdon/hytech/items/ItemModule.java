@@ -39,12 +39,6 @@ public final class ItemModule extends AbstractLogisticModule<
         );
     }
 
-    @Override
-    protected void registerAdditionalSystems(ComponentRegistryProxy<ChunkStore> registry, IEventRegistry eventRegistry) {
-        var itemBlockStateRegistrationSystem = new ItemBlockStateRegistrationSystem(registrationSystem);
-        registry.registerSystem(itemBlockStateRegistrationSystem);
-    }
-
     public static void init(ComponentRegistryProxy<ChunkStore> registry, IEventRegistry eventRegistry) {
         if (INSTANCE != null) throw new IllegalStateException("Already initialized");
         INSTANCE = new ItemModule(registry, eventRegistry);
@@ -53,6 +47,12 @@ public final class ItemModule extends AbstractLogisticModule<
     public static ItemModule get() {
         if (INSTANCE == null) throw new IllegalStateException("Not initialized");
         return INSTANCE;
+    }
+
+    @Override
+    protected void registerAdditionalSystems(ComponentRegistryProxy<ChunkStore> registry, IEventRegistry eventRegistry) {
+        var itemBlockStateRegistrationSystem = new ItemBlockStateRegistrationSystem(registrationSystem);
+        registry.registerSystem(itemBlockStateRegistrationSystem);
     }
 
     @Override

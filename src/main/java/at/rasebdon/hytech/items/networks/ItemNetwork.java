@@ -13,14 +13,6 @@ public class ItemNetwork extends LogisticNetwork<HytechItemContainer> implements
     }
 
     @Override
-    public void pullFromTargets() {
-    }
-
-    @Override
-    public void pushToTargets() {
-    }
-
-    @Override
     public HytechItemContainer getContainer() {
         return null;
     }

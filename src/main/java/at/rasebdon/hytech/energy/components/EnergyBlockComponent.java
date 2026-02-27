@@ -117,15 +117,11 @@ public class EnergyBlockComponent extends LogisticBlockComponent<HytechEnergyCon
 
     public void addEnergy(long amount) {
         if (amount <= 0) return;
-
-        this.lastTickEnergy = energy;
         this.energy = Math.min(this.totalCapacity, this.energy + amount);
     }
 
     public void reduceEnergy(long amount) {
         if (amount <= 0) return;
-
-        this.lastTickEnergy = energy;
         this.energy = Math.max(0, this.energy - amount);
     }
 

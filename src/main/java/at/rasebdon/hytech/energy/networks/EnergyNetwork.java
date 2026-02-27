@@ -60,63 +60,6 @@ public class EnergyNetwork extends LogisticNetwork<HytechEnergyContainer> implem
     }
 
     @Override
-    public void pullFromTargets() {
-        if (isFull()) return;
-
-        for (var target : pullTargets) {
-            if (isFull()) break;
-
-            if (target.isAvailable()) {
-                transferEnergy(target.getContainer(), this, transferSpeed);
-            }
-        }
-    }
-
-    @Override
-    public void pushToTargets() {
-        if (isEmpty()) return;
-
-        if (pushTargets.isEmpty()) return;
-
-        long perTarget = Math.max(1, transferSpeed / pushTargets.size());
-
-        for (var target : pushTargets) {
-            if (isEmpty()) break;
-
-            if (target.isAvailable()) {
-                transferEnergy(this, target.getContainer(), perTarget);
-            }
-        }
-    }
-
-    private void transferEnergy(
-            HytechEnergyContainer from,
-            HytechEnergyContainer to,
-            long requested
-    ) {
-        if (from == null || to == null) return;
-
-        long available = from.getEnergy();
-        if (available <= 0) return;
-
-        long remaining = to.getRemainingCapacity();
-        if (remaining <= 0) return;
-
-        long speed = Math.min(from.getTransferSpeed(), to.getTransferSpeed());
-        if (speed <= 0) return;
-
-        long amount = Math.min(
-                Math.min(requested, speed),
-                Math.min(available, remaining)
-        );
-
-        if (amount <= 0) return;
-
-        to.addEnergy(amount);
-        from.reduceEnergy(amount);
-    }
-
-    @Override
     public HytechEnergyContainer getContainer() {
         return this;
     }

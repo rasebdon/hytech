@@ -4,19 +4,15 @@ import at.rasebdon.hytech.core.components.LogisticBlockComponent;
 import at.rasebdon.hytech.core.events.LogisticComponentChangedEvent;
 import at.rasebdon.hytech.core.events.LogisticNetworkChangedEvent;
 import at.rasebdon.hytech.core.networks.LogisticNetwork;
-import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.system.tick.TickingSystem;
 import com.hypixel.hytale.event.IEventRegistry;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
-import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 public abstract class LogisticTransferSystem<TContainer> extends TickingSystem<ChunkStore> {
-    protected final List<LogisticBlockComponent<TContainer>> containerComponents;
-    protected final List<LogisticNetwork<TContainer>> networks;
+    protected final List<LogisticBlockComponent<TContainer>> logisticBlockComponents;
+    protected final Set<LogisticNetwork<TContainer>> logisticNetworks;
 
     protected LogisticTransferSystem(
             IEventRegistry eventRegistry,
@@ -25,8 +21,8 @@ public abstract class LogisticTransferSystem<TContainer> extends TickingSystem<C
         eventRegistry.register(containerChangedEventClass, this::handleLogisticContainerChanged);
         eventRegistry.register(networkChangedEventClass, this::handleLogisticNetworkChanged);
 
-        this.networks = new ArrayList<>();
-        this.containerComponents = new ArrayList<>();
+        this.logisticNetworks = new HashSet<>();
+        this.logisticBlockComponents = new ArrayList<>();
     }
 
     private void handleLogisticContainerChanged(LogisticComponentChangedEvent<TContainer> event) {
@@ -34,42 +30,21 @@ public abstract class LogisticTransferSystem<TContainer> extends TickingSystem<C
             if (event.isAdded()) {
                 addLogisticBlock(blockComponent);
             } else if (event.isRemoved()) {
-                removeLogisticBlock(blockComponent);
+                logisticBlockComponents.remove(blockComponent);
             }
         }
     }
 
     private void handleLogisticNetworkChanged(LogisticNetworkChangedEvent<TContainer> event) {
         if (event.isAdded()) {
-            networks.add(event.getComponent());
+            logisticNetworks.add(event.getComponent());
         } else if (event.isRemoved()) {
-            networks.remove(event.getComponent());
+            logisticNetworks.remove(event.getComponent());
         }
     }
-
-    @Override
-    public void tick(float dt, int index, @NotNull Store<ChunkStore> store) {
-        for (var network : networks) {
-            network.pullFromTargets();
-        }
-
-        for (var container : containerComponents) {
-            transfer(container);
-        }
-
-        for (var network : networks) {
-            network.pushToTargets();
-        }
-    }
-
-    protected abstract void transfer(LogisticBlockComponent<TContainer> source);
 
     private void addLogisticBlock(LogisticBlockComponent<TContainer> block) {
-        containerComponents.add(block);
-        containerComponents.sort(Comparator.comparingInt(LogisticBlockComponent<TContainer>::getTransferPriority));
-    }
-
-    private void removeLogisticBlock(LogisticBlockComponent<TContainer> block) {
-        containerComponents.remove(block);
+        logisticBlockComponents.add(block);
+        logisticBlockComponents.sort(Comparator.comparingInt(LogisticBlockComponent<TContainer>::getTransferPriority));
     }
 }

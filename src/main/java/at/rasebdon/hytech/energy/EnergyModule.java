@@ -15,6 +15,7 @@ import at.rasebdon.hytech.energy.systems.EnergyComponentRegistrationSystem;
 import at.rasebdon.hytech.energy.systems.EnergyGenerationSystem;
 import at.rasebdon.hytech.energy.systems.EnergyNetworkSaveSystem;
 import at.rasebdon.hytech.energy.systems.EnergyTransferSystem;
+import at.rasebdon.hytech.energy.systems.visual.EnergyBlockStateSystem;
 import com.hypixel.hytale.component.ComponentRegistryProxy;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.event.IEventRegistry;
@@ -71,6 +72,9 @@ public final class EnergyModule extends AbstractLogisticModule<
         );
         registry.registerSystem(
                 new EnergyNetworkSaveSystem(getNetworkSystem())
+        );
+        registry.registerSystem(
+                new EnergyBlockStateSystem(blockComponentType)
         );
 
         Interaction.CODEC.register(

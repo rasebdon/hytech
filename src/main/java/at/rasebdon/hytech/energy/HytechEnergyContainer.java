@@ -30,9 +30,12 @@ public interface HytechEnergyContainer {
 
     /* ---------------- Mutations ---------------- */
 
+    /// Returns the remaining energy that could not be added
     void addEnergy(long amount);
 
+    /// Returns the actually reduced energy
     void reduceEnergy(long amount);
 
     void updateEnergyDelta();
 }
+
