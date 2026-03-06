@@ -7,7 +7,6 @@ import at.rasebdon.hytech.energy.components.EnergyBlockComponent;
 import at.rasebdon.hytech.energy.components.EnergyGeneratorComponent;
 import at.rasebdon.hytech.energy.components.EnergyPipeComponent;
 import at.rasebdon.hytech.energy.interaction.ReadEnergyContainerBlockInteraction;
-import at.rasebdon.hytech.energy.interaction.WrenchInteraction;
 import at.rasebdon.hytech.energy.interaction.ui.OpenBatteryPageInteraction;
 import at.rasebdon.hytech.energy.interaction.ui.OpenGeneratorPageInteraction;
 import at.rasebdon.hytech.energy.networks.EnergyNetworkSystem;
@@ -81,10 +80,6 @@ public final class EnergyModule extends AbstractLogisticModule<
                 "ReadEnergyContainer",
                 ReadEnergyContainerBlockInteraction.class,
                 ReadEnergyContainerBlockInteraction.CODEC);
-        Interaction.CODEC.register(
-                "Wrench",
-                WrenchInteraction.class,
-                WrenchInteraction.CODEC);
         Interaction.CODEC.register(
                 "OpenGeneratorPage",
                 OpenGeneratorPageInteraction.class,

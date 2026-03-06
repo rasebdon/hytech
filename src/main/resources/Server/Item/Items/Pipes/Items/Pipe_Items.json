@@ -52,7 +52,7 @@
     },
     "BlockEntity": {
       "Components": {
-        "hytech:energy:pipe": {
+        "hytech:items:pipe": {
           "TransferPriority": 10,
           "PipeCapacity": 1000,
           "PipeTransferSpeed": 250,

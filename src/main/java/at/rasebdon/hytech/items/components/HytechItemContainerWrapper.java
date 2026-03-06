@@ -7,6 +7,7 @@ import com.hypixel.hytale.server.core.universe.world.meta.state.ItemContainerBlo
 
 import javax.annotation.Nonnull;
 
+/// No need to also wrap ProcessingBenchBlockState as it extends ItemContainerBlockState
 public record HytechItemContainerWrapper(ItemContainerBlockState blockState) implements
         ContainerHolder<HytechItemContainer>,
         HytechItemContainer {

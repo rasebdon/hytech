@@ -1,11 +1,10 @@
-package at.rasebdon.hytech.energy.interaction;
+package at.rasebdon.hytech.core.interactions;
 
+import at.rasebdon.hytech.core.HytechCoreModule;
 import at.rasebdon.hytech.core.components.LogisticComponent;
 import at.rasebdon.hytech.core.components.LogisticEntityProxyComponent;
 import at.rasebdon.hytech.core.util.BlockFaceUtil;
 import at.rasebdon.hytech.core.util.HytechUtil;
-import at.rasebdon.hytech.energy.EnergyModule;
-import at.rasebdon.hytech.energy.HytechEnergyContainer;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -59,11 +58,24 @@ public class WrenchInteraction extends SimpleInteraction {
     }
 
     @Nullable
-    private static LogisticComponent<HytechEnergyContainer> getContainer(World world, Vector3i targetBlock) {
-        var blockContainer = HytechUtil.getBlockComponent(world, targetBlock,
-                EnergyModule.get().getBlockComponentType());
-        return blockContainer != null ? blockContainer :
-                HytechUtil.getBlockComponent(world, targetBlock, EnergyModule.get().getPipeComponentType());
+    private static LogisticComponent<?> getContainer(World world, Vector3i targetBlock) {
+        // TODO : Wrench Config for specific block type (especially important for machines)
+
+        for (var blockType : HytechCoreModule.get().blockComponents) {
+            var blockContainer = HytechUtil.getBlockComponent(world, targetBlock, blockType);
+            if (blockContainer != null) {
+                return blockContainer;
+            }
+        }
+
+        for (var pipeType : HytechCoreModule.get().pipeComponents) {
+            var pipeContainer = HytechUtil.getBlockComponent(world, targetBlock, pipeType);
+            if (pipeContainer != null) {
+                return pipeContainer;
+            }
+        }
+
+        return null;
     }
 
     @Nonnull

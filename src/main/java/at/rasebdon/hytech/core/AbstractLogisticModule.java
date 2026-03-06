@@ -1,6 +1,6 @@
 package at.rasebdon.hytech.core;
 
-import at.rasebdon.hytech.core.components.LogisticComponent;
+import at.rasebdon.hytech.core.components.LogisticBlockComponent;
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import at.rasebdon.hytech.core.networks.LogisticNetworkSystem;
 import at.rasebdon.hytech.core.systems.LogisticComponentRegistrationSystem;
@@ -16,12 +16,11 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import javax.annotation.Nonnull;
 
 public abstract class AbstractLogisticModule<
-        TBlockComponent extends LogisticComponent<TContainer>,
+        TBlockComponent extends LogisticBlockComponent<TContainer>,
         TPipeComponent extends LogisticPipeComponent<TContainer>,
         TRegistrationSystem extends LogisticComponentRegistrationSystem<TContainer>,
         TContainer
         > {
-
     protected final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
     protected final ComponentType<ChunkStore, TBlockComponent> blockComponentType;
@@ -47,12 +46,14 @@ public abstract class AbstractLogisticModule<
                 blockId,
                 blockCodec
         );
+        HytechCoreModule.get().blockComponents.add(blockComponentType);
 
         pipeComponentType = registry.registerComponent(
                 pipeClass,
                 pipeId,
                 pipeCodec
         );
+        HytechCoreModule.get().pipeComponents.add(pipeComponentType);
 
         // Create network system
         networkSystem = createNetworkSystem();

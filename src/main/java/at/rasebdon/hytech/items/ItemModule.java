@@ -31,10 +31,10 @@ public final class ItemModule extends AbstractLogisticModule<
                 registry,
                 eventRegistry,
                 ItemBlockComponent.class,
-                "hytech:item:container",
+                "hytech:items:container",
                 ItemBlockComponent.CODEC,
                 ItemPipeComponent.class,
-                "hytech:item:pipe",
+                "hytech:items:pipe",
                 ItemPipeComponent.CODEC
         );
     }
