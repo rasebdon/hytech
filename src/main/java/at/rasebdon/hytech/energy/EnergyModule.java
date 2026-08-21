@@ -5,6 +5,8 @@ import at.rasebdon.hytech.core.networks.LogisticNetworkSystem;
 import at.rasebdon.hytech.core.systems.LogisticTransferSystem;
 import at.rasebdon.hytech.energy.components.EnergyBlockComponent;
 import at.rasebdon.hytech.energy.components.EnergyGeneratorComponent;
+import at.rasebdon.hytech.energy.components.FuelBurnerComponent;
+import at.rasebdon.hytech.items.ItemModule;
 import at.rasebdon.hytech.energy.components.EnergyPipeComponent;
 import at.rasebdon.hytech.energy.interaction.ui.OpenBatteryPageInteraction;
 import at.rasebdon.hytech.energy.interaction.ui.OpenGeneratorPageInteraction;
@@ -13,6 +15,7 @@ import at.rasebdon.hytech.energy.systems.EnergyComponentRegistrationSystem;
 import at.rasebdon.hytech.energy.systems.EnergyGenerationSystem;
 import at.rasebdon.hytech.energy.systems.EnergyNetworkSaveSystem;
 import at.rasebdon.hytech.energy.systems.EnergyTransferSystem;
+import at.rasebdon.hytech.energy.systems.visual.BurnerBlockStateSystem;
 import at.rasebdon.hytech.energy.systems.visual.EnergyBlockStateSystem;
 import com.hypixel.hytale.component.ComponentRegistryProxy;
 import com.hypixel.hytale.component.ComponentType;
@@ -30,6 +33,7 @@ public final class EnergyModule extends AbstractLogisticModule<
     private static EnergyModule INSTANCE;
 
     private ComponentType<ChunkStore, EnergyGeneratorComponent> generatorComponentType;
+    private ComponentType<ChunkStore, FuelBurnerComponent> fuelBurnerComponentType;
 
     private EnergyModule(
             ComponentRegistryProxy<ChunkStore> registry,
@@ -65,14 +69,29 @@ public final class EnergyModule extends AbstractLogisticModule<
                 EnergyGeneratorComponent.CODEC
         );
 
+        fuelBurnerComponentType = registry.registerComponent(
+                FuelBurnerComponent.class,
+                "hytech:energy:fuel_burner",
+                FuelBurnerComponent.CODEC
+        );
+
         registry.registerSystem(
-                new EnergyGenerationSystem(generatorComponentType, getBlockComponentType())
+                new EnergyGenerationSystem(
+                        generatorComponentType,
+                        getBlockComponentType(),
+                        fuelBurnerComponentType,
+                        // Energy initialises after items precisely so this is available: a
+                        // burner reads its fuel from an item container the pipes can fill.
+                        ItemModule.get().getBlockComponentType())
         );
         registry.registerSystem(
                 new EnergyNetworkSaveSystem(getNetworkSystem())
         );
         registry.registerSystem(
                 new EnergyBlockStateSystem(blockComponentType)
+        );
+        registry.registerSystem(
+                new BurnerBlockStateSystem(fuelBurnerComponentType)
         );
 
         Interaction.CODEC.register(
@@ -117,5 +136,9 @@ public final class EnergyModule extends AbstractLogisticModule<
 
     public ComponentType<ChunkStore, EnergyGeneratorComponent> getGeneratorComponentType() {
         return generatorComponentType;
+    }
+
+    public ComponentType<ChunkStore, FuelBurnerComponent> getFuelBurnerComponentType() {
+        return fuelBurnerComponentType;
     }
 }

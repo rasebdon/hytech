@@ -1,0 +1,156 @@
+{
+  "TranslationProperties": {
+    "Name": "server.items.Burner_Generator.name"
+  },
+  "ItemLevel": 600,
+  "Categories": [
+    "Technic.Machines"
+  ],
+  "PlayerAnimationsId": "Block",
+  "Set": "Machine",
+  "Tags": {
+    "Type": [
+      "Machine"
+    ]
+  },
+  "ItemSoundSetId": "ISS_Blocks_Stone",
+  "IconProperties": {
+    "Scale": 0.58823,
+    "Rotation": [
+      22.5,
+      45,
+      22.5
+    ],
+    "Translation": [
+      0,
+      -13.5
+    ]
+  },
+  "BlockType": {
+    "Material": "Solid",
+    "DrawType": "Cube",
+    "Group": "Props",
+    "Textures": [
+      {
+        "Sides": "BlockTextures/Generators/Burner/Burner_Casing.png",
+        "UpDown": "BlockTextures/Generators/Burner/Burner_Casing.png",
+        "North": "BlockTextures/Generators/Burner/Burner_Front.png",
+        "Weight": 1
+      }
+    ],
+    "Gathering": {
+      "Breaking": {
+        "GatherType": "Rocks"
+      }
+    },
+    "BlockEntity": {
+      "Components": {
+        "hytech:energy:generator": {
+          "GenerationRate": 40,
+          "GeneratorType": "FUEL_SOLID"
+        },
+        "hytech:energy:fuel_burner": {
+          "SecondsPerFuelQuality": 2.0
+        },
+        "hytech:energy:container": {
+          "MaxTransfer": 40,
+          "TransferPriority": 0,
+          "TotalCapacity": 4000,
+          "IsExtracting": true,
+          "BlockFaceConfig": {
+            "None": [
+              "OUTPUT"
+            ],
+            "Up": [
+              "OUTPUT"
+            ],
+            "Down": [
+              "OUTPUT"
+            ],
+            "North": [
+              "OUTPUT"
+            ],
+            "South": [
+              "OUTPUT"
+            ],
+            "East": [
+              "OUTPUT"
+            ],
+            "West": [
+              "OUTPUT"
+            ]
+          }
+        },
+        "hytech:items:container": {
+          "MaxTransfer": 8,
+          "TransferPriority": 25,
+          "IsExtracting": false,
+          "BlockFaceConfig": {
+            "None": [
+              "INPUT"
+            ],
+            "Up": [
+              "INPUT"
+            ],
+            "Down": [
+              "INPUT"
+            ],
+            "North": [
+              "INPUT"
+            ],
+            "South": [
+              "INPUT"
+            ],
+            "East": [
+              "INPUT"
+            ],
+            "West": [
+              "INPUT"
+            ]
+          }
+        }
+      }
+    },
+    "VariantRotation": "NESW",
+    "BlockParticleSetId": "Metal",
+    "ParticleColor": "#353535",
+    "Flags": {
+      "IsUsable": true
+    },
+    "Interactions": {
+      "Use": {
+        "Interactions": [
+          {
+            "Type": "OpenGeneratorPage"
+          }
+        ]
+      }
+    },
+    "BlockSoundSetId": "Metal",
+    "State": {
+      "Definitions": {
+        "Idle": {
+          "Textures": [
+            {
+              "Sides": "BlockTextures/Generators/Burner/Burner_Casing.png",
+              "UpDown": "BlockTextures/Generators/Burner/Burner_Casing.png",
+              "North": "BlockTextures/Generators/Burner/Burner_Front.png",
+              "Weight": 1
+            }
+          ]
+        },
+        "Burning": {
+          "Textures": [
+            {
+              "Sides": "BlockTextures/Generators/Burner/Burner_Casing.png",
+              "UpDown": "BlockTextures/Generators/Burner/Burner_Casing.png",
+              "North": "BlockTextures/Generators/Burner/Burner_Front_Lit.png",
+              "Weight": 1
+            }
+          ]
+        }
+      }
+    }
+  },
+  "Icon": "Icons/ItemsGenerated/Burner_Generator.png"
+}

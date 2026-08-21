@@ -24,7 +24,10 @@ public final class HytechPlugin extends JavaPlugin {
         var eventRegistry = this.getEventRegistry();
 
         HytechCoreModule.init(entityStoreRegistry, chunkStoreRegistry);
-        EnergyModule.init(chunkStoreRegistry, eventRegistry);
+
+        // Items before energy: the burner generator burns items for energy, so energy is the
+        // module with the dependency. Nothing on the item side needs energy.
         ItemModule.init(chunkStoreRegistry, eventRegistry);
+        EnergyModule.init(chunkStoreRegistry, eventRegistry);
     }
 }

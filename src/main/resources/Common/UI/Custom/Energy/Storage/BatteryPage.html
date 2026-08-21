@@ -1,14 +1,18 @@
 <div class="page-overlay" style="layout-mode: Middle;">
     <div class="container" data-hyui-title="{{$blockName}}" id="base-container"
-         style="anchor-height: 230; anchor-width: 300;">
+         style="anchor-height: 250; anchor-width: 300;">
         <div class="container-contents" style="layout-mode: Middle;">
-            <progress id="energy-bar" max="1" style="anchor-width: 200; anchor-height: 15; margin-vertical: 10"
+
+            <progress id="energy-bar" max="1" style="anchor-width: 200; anchor-height: 18; margin-vertical: 12"
                       value="{{$energyFillRatio}}"></progress>
-            <p id="energy-label" style="margin-top: 10; text-align: center;">
-                {{$currentEnergy|number}}/{{$maxEnergy|number}} RF</p>
-            <p id="energy-change-label" style="color: {{$energyDeltaColor}}; margin-top: 10; text-align: center;">
+            <p id="energy-label" style="margin-top: 6; text-align: center;">
+                {{$currentEnergy|number}}/{{$maxEnergy|number}} RF ({{$fillPercent}}%)</p>
+            <p id="energy-change-label" style="color: {{$energyDeltaColor}}; margin-top: 8; text-align: center;">
                 {{$energyDeltaSymbol}}{{$energyDelta|number}} RF/t</p>
-            <button id="exit-button" style="margin-top: 50; anchor-height: 25; anchor-width: 150">Exit</button>
+            <p id="transfer-label" style="margin-top: 8; text-align: center;">
+                Max transfer: {{$transferSpeed|number}} RF/t</p>
+
+            <button id="exit-button" style="margin-top: 20; anchor-height: 25; anchor-width: 150">Exit</button>
         </div>
     </div>
 </div>
