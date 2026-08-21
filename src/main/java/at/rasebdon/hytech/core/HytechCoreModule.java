@@ -3,6 +3,7 @@ package at.rasebdon.hytech.core;
 import at.rasebdon.hytech.core.components.LogisticBlockComponent;
 import at.rasebdon.hytech.core.components.LogisticEntityProxyComponent;
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
+import at.rasebdon.hytech.core.interactions.ReadLogisticContainerInteraction;
 import at.rasebdon.hytech.core.interactions.WrenchInteraction;
 import at.rasebdon.hytech.core.systems.FaceConfigOverlaySystem;
 import at.rasebdon.hytech.core.systems.PipeConnectionStateSystem;
@@ -17,14 +18,20 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.HashSet;
+import java.util.Collections;
 import java.util.Set;
 
 public class HytechCoreModule {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
-    public Set<ComponentType<ChunkStore, ? extends LogisticBlockComponent<?>>> blockComponents
+    /// Every registered resource type's block and pipe component types.
+    ///
+    /// The wrench, the read interaction and the face overlay all need to find "whichever
+    /// logistic component this block has" without knowing the resource types, so modules
+    /// register into these as they initialise.
+    private final Set<ComponentType<ChunkStore, ? extends LogisticBlockComponent<?>>> blockComponents
             = new HashSet<>();
-    public Set<ComponentType<ChunkStore, ? extends LogisticPipeComponent<?>>> pipeComponents
+    private final Set<ComponentType<ChunkStore, ? extends LogisticPipeComponent<?>>> pipeComponents
             = new HashSet<>();
 
     @Nullable
@@ -56,6 +63,11 @@ public class HytechCoreModule {
                 WrenchInteraction.class,
                 WrenchInteraction.CODEC);
 
+        Interaction.CODEC.register(
+                "ReadLogisticContainer",
+                ReadLogisticContainerInteraction.class,
+                ReadLogisticContainerInteraction.CODEC);
+
         LOGGER.atInfo().log("Hytech Core Module initialized");
     }
 
@@ -76,8 +88,26 @@ public class HytechCoreModule {
     /// Opts a resource module's pipe component into the shared rendering systems.
     public void registerPipeType(
             @Nonnull ComponentType<ChunkStore, ? extends LogisticPipeComponent<?>> pipeType) {
+        this.pipeComponents.add(pipeType);
         this.pipeConnectionStateSystem.registerPipeType(pipeType);
         this.pipeMarkerCleanupSystem.registerPipeType(pipeType);
+    }
+
+    public void registerBlockType(
+            @Nonnull ComponentType<ChunkStore, ? extends LogisticBlockComponent<?>> blockType) {
+        this.blockComponents.add(blockType);
+    }
+
+    /// Block component types of every registered resource type.
+    @Nonnull
+    public Set<ComponentType<ChunkStore, ? extends LogisticBlockComponent<?>>> getBlockComponents() {
+        return Collections.unmodifiableSet(this.blockComponents);
+    }
+
+    /// Pipe component types of every registered resource type.
+    @Nonnull
+    public Set<ComponentType<ChunkStore, ? extends LogisticPipeComponent<?>>> getPipeComponents() {
+        return Collections.unmodifiableSet(this.pipeComponents);
     }
 
     @Nonnull

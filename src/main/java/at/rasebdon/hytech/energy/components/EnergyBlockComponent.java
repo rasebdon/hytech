@@ -5,7 +5,6 @@ import at.rasebdon.hytech.core.components.LogisticComponent;
 import at.rasebdon.hytech.core.events.LogisticChangeType;
 import at.rasebdon.hytech.core.events.LogisticComponentChangedEvent;
 import at.rasebdon.hytech.core.transport.BlockFaceConfig;
-import at.rasebdon.hytech.core.transport.BlockFaceConfigState;
 import at.rasebdon.hytech.core.util.Validation;
 import at.rasebdon.hytech.energy.HytechEnergyContainer;
 import at.rasebdon.hytech.energy.events.EnergyContainerChangedEvent;
@@ -19,10 +18,8 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.Nonnull;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class EnergyBlockComponent extends LogisticBlockComponent<HytechEnergyContainer> implements HytechEnergyContainer {
 
@@ -98,44 +95,46 @@ public class EnergyBlockComponent extends LogisticBlockComponent<HytechEnergyCon
         return new EnergyContainerChangedEvent(type, component);
     }
 
-    public long getEnergy() {
+    @Override
+    public long getAmount() {
         return this.energy;
     }
 
+    @Override
     public long getTotalCapacity() {
         return this.totalCapacity;
     }
 
+    @Override
     public long getTransferSpeed() {
         return this.transferSpeed;
     }
 
     @Override
-    public long getEnergyDelta() {
+    public long getDelta() {
         return this.energy - this.lastTickEnergy;
     }
 
-    public void addEnergy(long amount) {
+    @Override
+    public void add(long amount) {
         if (amount <= 0) return;
         this.energy = Math.min(this.totalCapacity, this.energy + amount);
     }
 
-    public void reduceEnergy(long amount) {
+    @Override
+    public void reduce(long amount) {
         if (amount <= 0) return;
         this.energy = Math.max(0, this.energy - amount);
     }
 
     @Override
-    public void updateEnergyDelta() {
+    public void updateDelta() {
         this.lastTickEnergy = this.energy;
     }
 
     public String toString() {
-        var sides = Arrays.stream(this.blockFaceConfig.getCurrentStates())
-                .map(BlockFaceConfigState::toString)
-                .collect(Collectors.joining(", "));
         return String.format("Energy: %d/%d RF (Prio: %d) | Sides: [%s]",
-                energy, totalCapacity, transferPriority, sides);
+                energy, totalCapacity, transferPriority, describeFaces());
     }
 
     @Nullable

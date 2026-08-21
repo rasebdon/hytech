@@ -30,20 +30,7 @@ public class ItemNetwork extends LogisticNetwork<HytechItemContainer> implements
     }
 
     @Override
-    protected void setPipes(Set<LogisticPipeComponent<HytechItemContainer>> newPipes) {
-        super.setPipes(newPipes);
-        recalculateStats();
-    }
-
-    @Override
-    protected void addPipe(LogisticPipeComponent<HytechItemContainer> pipe) {
-        super.addPipe(pipe);
-        recalculateStats();
-    }
-
-    @Override
-    protected void removePipe(LogisticPipeComponent<HytechItemContainer> pipe) {
-        super.removePipe(pipe);
+    protected void onPipesChanged() {
         recalculateStats();
     }
 

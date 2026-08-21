@@ -3,6 +3,7 @@ package at.rasebdon.hytech.core.components;
 import at.rasebdon.hytech.core.events.LogisticChangeType;
 import at.rasebdon.hytech.core.events.LogisticComponentChangedEvent;
 import at.rasebdon.hytech.core.transport.BlockFaceConfig;
+import at.rasebdon.hytech.core.transport.BlockFaceConfigState;
 import at.rasebdon.hytech.core.transport.BlockFaceConfigType;
 import at.rasebdon.hytech.core.util.EventBusUtil;
 import com.hypixel.hytale.codec.KeyedCodec;
@@ -12,6 +13,8 @@ import com.hypixel.hytale.protocol.BlockFace;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 
 public abstract class LogisticComponent<TContainer>
@@ -107,4 +110,14 @@ public abstract class LogisticComponent<TContainer>
 
     @Nullable
     public abstract Component<ChunkStore> clone();
+
+    /// Comma-separated per-face configuration, for `toString` and the read interaction.
+    ///
+    /// Every component printed this the same way; keeping it here means the format stays
+    /// consistent across resource types.
+    protected String describeFaces() {
+        return Arrays.stream(this.blockFaceConfig.getCurrentStates())
+                .map(BlockFaceConfigState::toString)
+                .collect(Collectors.joining(", "));
+    }
 }

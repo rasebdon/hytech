@@ -25,7 +25,7 @@ public abstract class LogisticNetwork<TContainer> extends ContainerHolder<TConta
 
     protected void setPipes(Set<LogisticPipeComponent<TContainer>> newPipes) {
 
-        LOGGER.atInfo().log("Setting Network with %d Pipes", newPipes.size());
+        LOGGER.atFine().log("Setting Network with %d Pipes", newPipes.size());
 
         // Detach old pipes
         for (var pipe : pipes) {
@@ -42,6 +42,14 @@ public abstract class LogisticNetwork<TContainer> extends ContainerHolder<TConta
         }
 
         rebuildTargets();
+        onPipesChanged();
+    }
+
+    /// Called after any change to the pipe set, once targets have been rebuilt.
+    ///
+    /// Every subclass overrode `setPipes`/`addPipe`/`removePipe` purely to recompute its
+    /// aggregate afterwards. One hook says the same thing and cannot be half-implemented.
+    protected void onPipesChanged() {
     }
 
     public List<ContainerHolder<TContainer>> getPullTargets() {
@@ -54,7 +62,7 @@ public abstract class LogisticNetwork<TContainer> extends ContainerHolder<TConta
 
     protected void addPipe(LogisticPipeComponent<TContainer> pipe) {
 
-        LOGGER.atInfo().log("Adding Pipe to Network");
+        LOGGER.atFine().log("Adding Pipe to Network");
 
         if (pipe.getNetwork() != null && pipe.getNetwork() != this) {
             pipe.getNetwork().removePipe(pipe);
@@ -63,11 +71,12 @@ public abstract class LogisticNetwork<TContainer> extends ContainerHolder<TConta
         pipes.add(pipe);
         pipe.assignNetwork(this);
         rebuildTargets();
+        onPipesChanged();
     }
 
     protected void removePipe(LogisticPipeComponent<TContainer> pipe) {
 
-        LOGGER.atInfo().log("Detaching Pipe");
+        LOGGER.atFine().log("Detaching Pipe");
 
         pipes.remove(pipe);
 
@@ -76,6 +85,7 @@ public abstract class LogisticNetwork<TContainer> extends ContainerHolder<TConta
         }
 
         rebuildTargets();
+        onPipesChanged();
     }
 
     public void rebuildTargets() {
@@ -100,7 +110,7 @@ public abstract class LogisticNetwork<TContainer> extends ContainerHolder<TConta
             }
         }
 
-        LOGGER.atInfo().log(
+        LOGGER.atFine().log(
                 "Network Rebuilt: %d PULL / %d PUSH Targets",
                 pullTargets.size(),
                 pushTargets.size()

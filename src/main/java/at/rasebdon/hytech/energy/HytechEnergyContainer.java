@@ -1,41 +1,31 @@
 package at.rasebdon.hytech.energy;
 
-public interface HytechEnergyContainer {
-    long getEnergy();
+import at.rasebdon.hytech.core.containers.ScalarContainer;
 
-    long getTotalCapacity();
+/// Energy is a plain fungible scalar, so this adds nothing to [ScalarContainer] but names.
+///
+/// The energy-flavoured accessors are kept as aliases because the UI templates and the read
+/// interaction read far better with them, and they cost nothing -- but the framework only
+/// ever talks to the generic names, so nothing here is load bearing.
+public interface HytechEnergyContainer extends ScalarContainer {
 
-    long getTransferSpeed();
-
-    long getEnergyDelta();
-
-    /* ---------------- Derived values ---------------- */
-
-    default long getRemainingCapacity() {
-        return Math.max(0L, getTotalCapacity() - getEnergy());
+    default long getEnergy() {
+        return getAmount();
     }
 
-    default boolean isFull() {
-        return getEnergy() >= getTotalCapacity();
+    default long getEnergyDelta() {
+        return getDelta();
     }
 
-    default boolean isEmpty() {
-        return getEnergy() <= 0;
+    default void addEnergy(long amount) {
+        add(amount);
     }
 
-    default float getFillRatio() {
-        long capacity = getTotalCapacity();
-        return capacity == 0 ? 0f : (float) getEnergy() / capacity;
+    default void reduceEnergy(long amount) {
+        reduce(amount);
     }
 
-    /* ---------------- Mutations ---------------- */
-
-    /// Returns the remaining energy that could not be added
-    void addEnergy(long amount);
-
-    /// Returns the actually reduced energy
-    void reduceEnergy(long amount);
-
-    void updateEnergyDelta();
+    default void updateEnergyDelta() {
+        updateDelta();
+    }
 }
-

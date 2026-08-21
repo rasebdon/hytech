@@ -2,6 +2,7 @@ package at.rasebdon.hytech.core;
 
 import at.rasebdon.hytech.core.components.LogisticBlockComponent;
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
+import at.rasebdon.hytech.core.containers.LogisticContainer;
 import at.rasebdon.hytech.core.networks.LogisticNetworkSystem;
 import at.rasebdon.hytech.core.systems.LogisticComponentRegistrationSystem;
 import at.rasebdon.hytech.core.systems.LogisticTransferSystem;
@@ -18,7 +19,7 @@ public abstract class AbstractLogisticModule<
         TBlockComponent extends LogisticBlockComponent<TContainer>,
         TPipeComponent extends LogisticPipeComponent<TContainer>,
         TRegistrationSystem extends LogisticComponentRegistrationSystem<TContainer>,
-        TContainer
+        TContainer extends LogisticContainer
         > {
     protected final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
@@ -45,19 +46,18 @@ public abstract class AbstractLogisticModule<
                 blockId,
                 blockCodec
         );
-        HytechCoreModule.get().blockComponents.add(blockComponentType);
+        HytechCoreModule.get().registerBlockType(blockComponentType);
 
         pipeComponentType = registry.registerComponent(
                 pipeClass,
                 pipeId,
                 pipeCodec
         );
-        HytechCoreModule.get().pipeComponents.add(pipeComponentType);
 
         // Create network system
         networkSystem = createNetworkSystem();
 
-        // Register pipe rendering (shared systems, one instance for all resource types)
+        // Registers the pipe type for rendering and for the wrench/overlay lookups.
         HytechCoreModule.get().registerPipeType(pipeComponentType);
 
         // Register core systems

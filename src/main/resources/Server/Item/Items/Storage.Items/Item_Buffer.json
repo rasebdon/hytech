@@ -52,7 +52,7 @@
       "Use": {
         "Interactions": [
           {
-            "Type": "ReadItemContainer"
+            "Type": "ReadLogisticContainer"
           }
         ]
       }

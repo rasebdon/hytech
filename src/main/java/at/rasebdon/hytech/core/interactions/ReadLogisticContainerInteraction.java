@@ -1,14 +1,13 @@
-package at.rasebdon.hytech.items.interaction;
+package at.rasebdon.hytech.core.interactions;
 
+import at.rasebdon.hytech.core.HytechCoreModule;
 import at.rasebdon.hytech.core.components.LogisticComponent;
 import at.rasebdon.hytech.core.util.HytechUtil;
-import at.rasebdon.hytech.items.HytechItemContainer;
-import at.rasebdon.hytech.items.ItemModule;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.CommandBuffer;
-import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.protocol.Interaction;
 import com.hypixel.hytale.protocol.InteractionType;
+import com.hypixel.hytale.protocol.UseBlockInteraction;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHandler;
@@ -20,44 +19,44 @@ import org.joml.Vector3i;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-/// Item-side counterpart to
-/// [at.rasebdon.hytech.energy.interaction.ReadEnergyContainerBlockInteraction]: reports
-/// what an item block or pipe segment is currently holding.
-public class ReadItemContainerBlockInteraction extends SimpleBlockInteraction {
+/// Prints whatever logistic component the targeted block carries.
+///
+/// Energy and items each had their own copy of this that differed only in which module it
+/// asked for the component type. Since every component already describes itself through
+/// `toString`, one interaction that walks the registered component types covers every
+/// resource type -- including a block that carries several, such as the burner generator
+/// holding both energy and items.
+public class ReadLogisticContainerInteraction extends SimpleBlockInteraction {
+
     @Nonnull
-    public static final BuilderCodec<ReadItemContainerBlockInteraction> CODEC =
+    public static final BuilderCodec<ReadLogisticContainerInteraction> CODEC =
             BuilderCodec.builder(
-                            ReadItemContainerBlockInteraction.class,
-                            ReadItemContainerBlockInteraction::new,
+                            ReadLogisticContainerInteraction.class,
+                            ReadLogisticContainerInteraction::new,
                             SimpleBlockInteraction.CODEC)
-                    .documentation("Attempts to read the target blocks item container.").build();
+                    .documentation("Reports every Hytech logistic container on the target block.")
+                    .build();
 
     private static void doInteraction(
             @Nonnull InteractionContext context,
             @Nonnull World world,
             @Nonnull Vector3i targetBlock) {
 
-        var itemBlock = HytechUtil.getBlockComponent(
-                world,
-                targetBlock,
-                ItemModule.get().getBlockComponentType()
-        );
+        var core = HytechCoreModule.get();
 
-        var itemPipe = HytechUtil.getBlockComponent(
-                world,
-                targetBlock,
-                ItemModule.get().getPipeComponentType()
-        );
+        for (var blockType : core.getBlockComponents()) {
+            report(context, HytechUtil.getBlockComponent(world, targetBlock, blockType));
+        }
 
-        var component = itemBlock == null ? itemPipe : itemBlock;
-        if (component != null) {
-            sendItemMessageToPlayer(context.getEntity(), component);
+        for (var pipeType : core.getPipeComponents()) {
+            report(context, HytechUtil.getBlockComponent(world, targetBlock, pipeType));
         }
     }
 
-    private static void sendItemMessageToPlayer(
-            Ref<EntityStore> playerRef, LogisticComponent<HytechItemContainer> component) {
-        HytechUtil.sendPlayerMessage(playerRef, component.toString());
+    private static void report(@Nonnull InteractionContext context, @Nullable LogisticComponent<?> component) {
+        if (component == null) return;
+
+        HytechUtil.sendPlayerMessage(context.getEntity(), component.toString());
     }
 
     @Override
@@ -85,12 +84,12 @@ public class ReadItemContainerBlockInteraction extends SimpleBlockInteraction {
     @Nonnull
     @Override
     protected Interaction generatePacket() {
-        return new com.hypixel.hytale.protocol.UseBlockInteraction();
+        return new UseBlockInteraction();
     }
 
     @Nonnull
     @Override
     public String toString() {
-        return "ReadItemContainerBlockInteraction{} " + super.toString();
+        return "ReadLogisticContainerInteraction{} " + super.toString();
     }
 }

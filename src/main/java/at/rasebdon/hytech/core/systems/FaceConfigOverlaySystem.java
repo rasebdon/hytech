@@ -236,7 +236,7 @@ public final class FaceConfigOverlaySystem extends TickingSystem<EntityStore> {
     /// pipe components -- so their arms keep showing connectivity without a quad over them.
     @Nullable
     private LogisticComponent<?> logisticBlockAt(@NonNull World world, @NonNull Vector3i blockPos) {
-        for (var blockType : HytechCoreModule.get().blockComponents) {
+        for (var blockType : HytechCoreModule.get().getBlockComponents()) {
             var component = HytechUtil.getBlockComponent(world, blockPos, blockType);
             if (component != null) {
                 return component;

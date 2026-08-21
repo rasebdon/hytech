@@ -34,7 +34,7 @@ public final class LogisticNeighborMap<TContainer> {
             return;
         }
 
-        LOGGER.atInfo().log("%s registered neighbor container", face.name());
+        LOGGER.atFine().log("%s registered neighbor container", face.name());
 
         faceToNeighbor.put(face, neighbor);
         holderToFace.put(container, face);

@@ -26,7 +26,7 @@
     "Secondary": {
       "Interactions": [
         {
-          "Type": "ReadEnergyContainer"
+          "Type": "ReadLogisticContainer"
         }
       ]
     }

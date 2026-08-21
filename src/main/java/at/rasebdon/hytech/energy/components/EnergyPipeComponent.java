@@ -5,7 +5,6 @@ import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import at.rasebdon.hytech.core.events.LogisticChangeType;
 import at.rasebdon.hytech.core.events.LogisticComponentChangedEvent;
 import at.rasebdon.hytech.core.transport.BlockFaceConfig;
-import at.rasebdon.hytech.core.transport.BlockFaceConfigState;
 import at.rasebdon.hytech.core.transport.BlockFaceConfigType;
 import at.rasebdon.hytech.core.util.Validation;
 import at.rasebdon.hytech.energy.HytechEnergyContainer;
@@ -18,11 +17,15 @@ import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
 import javax.annotation.Nonnull;
-import java.util.Arrays;
+import javax.annotation.Nullable;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-public class EnergyPipeComponent extends LogisticPipeComponent<HytechEnergyContainer> implements HytechEnergyContainer {
+/// An energy pipe is a *holder*, not a container.
+///
+/// It reports the network's container as its own, which is all the framework ever asks for.
+/// It used to also implement the container interface itself and forward every method to the
+/// network, which bought nothing and meant an unnetworked pipe threw on any read.
+public class EnergyPipeComponent extends LogisticPipeComponent<HytechEnergyContainer> {
 
     public static final BuilderCodec<EnergyPipeComponent> CODEC =
             BuilderCodec.builder(EnergyPipeComponent.class, EnergyPipeComponent::new, LogisticPipeComponent.CODEC)
@@ -76,6 +79,7 @@ public class EnergyPipeComponent extends LogisticPipeComponent<HytechEnergyConta
     }
 
     @Override
+    @Nullable
     public HytechEnergyContainer getContainer() {
         return getNetworkContainer();
     }
@@ -92,45 +96,13 @@ public class EnergyPipeComponent extends LogisticPipeComponent<HytechEnergyConta
         return new EnergyContainerChangedEvent(type, component);
     }
 
-    @Override
-    public long getEnergy() {
-        return getNetworkContainer().getEnergy();
-    }
-
-    @Override
-    public long getTotalCapacity() {
-        return getNetworkContainer().getTotalCapacity();
-    }
-
-    @Override
-    public long getTransferSpeed() {
-        return getNetworkContainer().getTransferSpeed();
-    }
-
-    @Override
-    public long getEnergyDelta() {
-        return this.getNetworkContainer().getEnergyDelta();
-    }
-
-    @Override
-    public void addEnergy(long amount) {
-        getNetworkContainer().addEnergy(amount);
-    }
-
-    @Override
-    public void reduceEnergy(long amount) {
-        getNetworkContainer().reduceEnergy(amount);
-    }
-
-    @Override
-    public void updateEnergyDelta() {
-    }
-
+    /// The network's container, or null while this pipe is not yet part of one.
+    ///
+    /// Returns null rather than throwing: pipes are routinely read during placement and
+    /// teardown, before a network exists, and the transfer system tolerates a null container.
+    @Nullable
     private HytechEnergyContainer getNetworkContainer() {
-        if (network == null) {
-            throw new IllegalStateException("EnergyPipe has no network");
-        }
-        return network.getContainer();
+        return network == null ? null : network.getContainer();
     }
 
     public long getSavedEnergy() {
@@ -151,17 +123,14 @@ public class EnergyPipeComponent extends LogisticPipeComponent<HytechEnergyConta
 
 
     public String toString() {
-        var sides = Arrays.stream(this.blockFaceConfig.getCurrentStates())
-                .map(BlockFaceConfigState::toString)
-                .collect(Collectors.joining(", "));
+        var container = getNetworkContainer();
 
-        if (isAvailable()) {
-            var container = getNetworkContainer();
+        if (container != null) {
             return String.format("(EnergyPipe): [NET] %d/%d RF | Sides: [%s]",
-                    container.getEnergy(), container.getTotalCapacity(), sides);
-        } else {
-            return String.format("(EnergyPipe): %d/%d RF | Sides: [%s]",
-                    savedEnergy, pipeCapacity, sides);
+                    container.getAmount(), container.getTotalCapacity(), describeFaces());
         }
+
+        return String.format("(EnergyPipe): %d/%d RF | Sides: [%s]",
+                savedEnergy, pipeCapacity, describeFaces());
     }
 }

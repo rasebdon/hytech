@@ -146,7 +146,11 @@ public class BlockFaceConfig implements Cloneable {
     }
 
     /// Packed states in the order the wrench should present them.
-    private static int[] cycleOrder() {
+    /// Precomputed because it is a pure function of compile-time constants, and the wrench
+    /// asked for it on every single click.
+    private static final int[] CYCLE_ORDER = buildCycleOrder();
+
+    private static int[] buildCycleOrder() {
         int indexCount = 1 << INDEX_BITS;
         int[] order = new int[PRIORITY.length * indexCount];
 
@@ -181,7 +185,7 @@ public class BlockFaceConfig implements Cloneable {
         long mask = allowedMasks[face.getValue()];
         int current = extract(face);
 
-        int[] order = cycleOrder();
+        int[] order = CYCLE_ORDER;
         int start = 0;
         for (int i = 0; i < order.length; i++) {
             if (order[i] == current) {

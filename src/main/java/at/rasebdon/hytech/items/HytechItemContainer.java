@@ -1,18 +1,20 @@
 package at.rasebdon.hytech.items;
 
+import at.rasebdon.hytech.core.containers.LogisticContainer;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 
 import javax.annotation.Nullable;
 
-/// Item-side counterpart to [at.rasebdon.hytech.energy.HytechEnergyContainer].
+/// The odd one out among logistic containers.
 ///
-/// Energy is a scalar, so its container exposes an amount and a capacity. Items are not:
-/// capacity is bounded by slots, and what fits depends on what is already in them. So the
-/// shared vocabulary here is slot-based, and the actual moving of items is delegated to
-/// the vanilla [ItemContainer], which already handles slot selection, stack merging and
-/// filters.
-public interface HytechItemContainer {
+/// Every other resource -- energy, heat, fluid, gas -- is a scalar and gets
+/// [at.rasebdon.hytech.core.containers.ScalarContainer] for free. Items are not: capacity is
+/// bounded by slots, and what fits depends on what is already in them, so there is no
+/// meaningful "remaining capacity". This implements the bare [LogisticContainer] contract
+/// instead and delegates the actual moving to the vanilla [ItemContainer], which already
+/// handles slot selection, stack merging and filters.
+public interface HytechItemContainer extends LogisticContainer {
 
     private static long movedQuantity(
             @Nullable com.hypixel.hytale.server.core.inventory.transaction.ItemStackTransaction add,
@@ -31,7 +33,8 @@ public interface HytechItemContainer {
     @Nullable
     ItemContainer getItemContainer();
 
-    /// Maximum number of items this container will move per transfer tick.
+    /// Maximum number of items this container will move per transfer pass.
+    @Override
     long getTransferSpeed();
 
     /* ---------------- Derived values ---------------- */
@@ -68,12 +71,27 @@ public interface HytechItemContainer {
         return used;
     }
 
+    @Override
     default boolean isEmpty() {
         return getUsedSlots() == 0;
     }
 
+    @Override
+    default long getAvailable() {
+        return getItemCount();
+    }
+
+    /// Unbounded on purpose: a free slot takes a whole stack, and a partly filled one takes
+    /// an unknown amount of its own item, so there is no scalar answer. The transfer system
+    /// sums these with [LogisticContainer#saturatingSum] and clamps by the source instead.
+    @Override
+    default long getAcceptable() {
+        return isFull() ? 0L : Long.MAX_VALUE;
+    }
+
     /// Full in the sense that matters for routing: no free slot left. Partially filled
     /// stacks may still accept more of their own item, which the move call discovers.
+    @Override
     default boolean isFull() {
         int slots = getSlotCount();
         return slots > 0 && getUsedSlots() >= slots;
@@ -81,11 +99,15 @@ public interface HytechItemContainer {
 
     /// Moves up to `maxItems` items into `target`, returning how many actually moved.
     /// Stack merging and destination slot choice are the vanilla container's job.
-    default long moveTo(@Nullable HytechItemContainer target, long maxItems) {
-        if (target == null || maxItems <= 0) return 0L;
+    @Override
+    default long moveTo(@Nullable LogisticContainer target, long maxItems) {
+        if (maxItems <= 0) return 0L;
+
+        // A network only ever holds one container family, so a mismatch is a wiring bug.
+        if (!(target instanceof HytechItemContainer itemTarget)) return 0L;
 
         var from = getItemContainer();
-        var to = target.getItemContainer();
+        var to = itemTarget.getItemContainer();
         if (from == null || to == null || from == to) return 0L;
 
         long moved = 0L;

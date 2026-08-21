@@ -6,7 +6,6 @@ import at.rasebdon.hytech.core.systems.LogisticTransferSystem;
 import at.rasebdon.hytech.energy.components.EnergyBlockComponent;
 import at.rasebdon.hytech.energy.components.EnergyGeneratorComponent;
 import at.rasebdon.hytech.energy.components.EnergyPipeComponent;
-import at.rasebdon.hytech.energy.interaction.ReadEnergyContainerBlockInteraction;
 import at.rasebdon.hytech.energy.interaction.ui.OpenBatteryPageInteraction;
 import at.rasebdon.hytech.energy.interaction.ui.OpenGeneratorPageInteraction;
 import at.rasebdon.hytech.energy.networks.EnergyNetworkSystem;
@@ -76,10 +75,6 @@ public final class EnergyModule extends AbstractLogisticModule<
                 new EnergyBlockStateSystem(blockComponentType)
         );
 
-        Interaction.CODEC.register(
-                "ReadEnergyContainer",
-                ReadEnergyContainerBlockInteraction.class,
-                ReadEnergyContainerBlockInteraction.CODEC);
         Interaction.CODEC.register(
                 "OpenGeneratorPage",
                 OpenGeneratorPageInteraction.class,

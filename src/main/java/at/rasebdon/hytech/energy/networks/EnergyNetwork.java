@@ -7,6 +7,10 @@ import at.rasebdon.hytech.energy.components.EnergyPipeComponent;
 
 import java.util.Set;
 
+/// The aggregate buffer formed by a connected run of energy pipes.
+///
+/// Capacity and speed are the sum and the minimum over the member pipes, so a network is
+/// only as fast as its slowest segment.
 public class EnergyNetwork extends LogisticNetwork<HytechEnergyContainer> implements HytechEnergyContainer {
 
     private long energy;
@@ -20,43 +24,28 @@ public class EnergyNetwork extends LogisticNetwork<HytechEnergyContainer> implem
     }
 
     @Override
-    protected void setPipes(Set<LogisticPipeComponent<HytechEnergyContainer>> newPipes) {
-        super.setPipes(newPipes);
-        recalculateStats();
-    }
-
-    @Override
-    protected void addPipe(LogisticPipeComponent<HytechEnergyContainer> pipe) {
-        super.addPipe(pipe);
-        recalculateStats();
-    }
-
-    @Override
-    protected void removePipe(LogisticPipeComponent<HytechEnergyContainer> pipe) {
-        super.removePipe(pipe);
+    protected void onPipesChanged() {
         recalculateStats();
     }
 
     private void recalculateStats() {
-        energy = 0;
+        long stored = 0;
         long capacity = 0;
         long minSpeed = Long.MAX_VALUE;
 
-        // TODO : Look into world saving
         for (var pipe : pipes) {
-            var energyPipe = (EnergyPipeComponent) pipe;
-            energy += energyPipe.getSavedEnergy();
+            // instanceof rather than a cast: a mixed-type network would be a bug elsewhere,
+            // but it should not take the whole network down with a ClassCastException.
+            if (!(pipe instanceof EnergyPipeComponent energyPipe)) continue;
+
+            stored += energyPipe.getSavedEnergy();
             capacity += energyPipe.getPipeCapacity();
             minSpeed = Math.min(minSpeed, energyPipe.getPipeTransferSpeed());
         }
 
         this.totalCapacity = Math.max(0, capacity);
         this.transferSpeed = minSpeed == Long.MAX_VALUE ? 0 : minSpeed;
-
-        // Clamp stored energy
-        if (energy > totalCapacity) {
-            energy = totalCapacity;
-        }
+        this.energy = Math.min(stored, this.totalCapacity);
     }
 
     @Override
@@ -71,11 +60,17 @@ public class EnergyNetwork extends LogisticNetwork<HytechEnergyContainer> implem
 
     @Override
     public void reload() {
-        // TODO : implement reload?
+        // Was an empty TODO, which meant a network never recomputed its capacity or speed
+        // when its neighbourhood changed -- so attaching a battery to a live run had no
+        // effect until a restart. ContainerHolder calls this on every neighbour change.
+        rebuildTargets();
+        recalculateStats();
     }
 
+    /* ---------------- Container ---------------- */
+
     @Override
-    public long getEnergy() {
+    public long getAmount() {
         return energy;
     }
 
@@ -90,25 +85,24 @@ public class EnergyNetwork extends LogisticNetwork<HytechEnergyContainer> implem
     }
 
     @Override
-    public long getEnergyDelta() {
+    public long getDelta() {
         return this.energy - this.lastTickEnergy;
     }
 
     @Override
-    public void addEnergy(long amount) {
+    public void add(long amount) {
         if (amount <= 0) return;
         energy = Math.min(totalCapacity, energy + amount);
     }
 
     @Override
-    public void reduceEnergy(long amount) {
+    public void reduce(long amount) {
         if (amount <= 0) return;
         energy = Math.max(0, energy - amount);
     }
 
     @Override
-    public void updateEnergyDelta() {
+    public void updateDelta() {
         this.lastTickEnergy = this.energy;
     }
 }
-

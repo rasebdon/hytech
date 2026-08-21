@@ -5,7 +5,6 @@ import at.rasebdon.hytech.core.networks.LogisticNetworkSystem;
 import at.rasebdon.hytech.core.systems.LogisticTransferSystem;
 import at.rasebdon.hytech.items.components.ItemBlockComponent;
 import at.rasebdon.hytech.items.components.ItemPipeComponent;
-import at.rasebdon.hytech.items.interaction.ReadItemContainerBlockInteraction;
 import at.rasebdon.hytech.items.networks.ItemNetworkSystem;
 import at.rasebdon.hytech.items.systems.ItemBlockStateRegistrationSystem;
 import at.rasebdon.hytech.items.systems.ItemComponentRegistrationSystem;
@@ -60,10 +59,6 @@ public final class ItemModule extends AbstractLogisticModule<
         // those containers are part of ItemPipeComponent's codec, so contents persist with
         // the block instead of having to be redistributed across the network on save.
 
-        Interaction.CODEC.register(
-                "ReadItemContainer",
-                ReadItemContainerBlockInteraction.class,
-                ReadItemContainerBlockInteraction.CODEC);
     }
 
     @Override

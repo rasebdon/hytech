@@ -38,12 +38,12 @@ public abstract class LogisticNetworkSystem<TContainer> {
     }
 
     private void handlePipeAdded(LogisticPipeComponent<TContainer> pipe) {
-        LOGGER.atInfo().log("Pipe added");
+        LOGGER.atFine().log("Pipe added");
         rebuildFromPipe(pipe);
     }
 
     private void handlePipeRemoved(LogisticPipeComponent<TContainer> pipe) {
-        LOGGER.atInfo().log("Pipe removed");
+        LOGGER.atFine().log("Pipe removed");
 
         LogisticNetwork<TContainer> old = pipe.getNetwork();
         if (old == null) {
@@ -58,7 +58,7 @@ public abstract class LogisticNetworkSystem<TContainer> {
     }
 
     private void handlePipeChanged(LogisticPipeComponent<TContainer> pipe) {
-        LOGGER.atInfo().log("Pipe changed");
+        LOGGER.atFine().log("Pipe changed");
         rebuildFromPipe(pipe);
     }
 

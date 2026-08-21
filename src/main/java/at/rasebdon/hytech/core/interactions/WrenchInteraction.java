@@ -124,14 +124,14 @@ public class WrenchInteraction extends SimpleInteraction {
     private static LogisticComponent<?> getContainer(World world, Vector3i targetBlock) {
         // TODO : Wrench Config for specific block type (especially important for machines)
 
-        for (var blockType : HytechCoreModule.get().blockComponents) {
+        for (var blockType : HytechCoreModule.get().getBlockComponents()) {
             var blockContainer = HytechUtil.getBlockComponent(world, targetBlock, blockType);
             if (blockContainer != null) {
                 return blockContainer;
             }
         }
 
-        for (var pipeType : HytechCoreModule.get().pipeComponents) {
+        for (var pipeType : HytechCoreModule.get().getPipeComponents()) {
             var pipeContainer = HytechUtil.getBlockComponent(world, targetBlock, pipeType);
             if (pipeContainer != null) {
                 return pipeContainer;
