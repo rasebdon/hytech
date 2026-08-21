@@ -2,6 +2,9 @@ package at.rasebdon.hytech;
 
 import at.rasebdon.hytech.core.HytechCoreModule;
 import at.rasebdon.hytech.energy.EnergyModule;
+import at.rasebdon.hytech.fluid.FluidModule;
+import at.rasebdon.hytech.gas.GasModule;
+import at.rasebdon.hytech.heat.HeatModule;
 import at.rasebdon.hytech.items.ItemModule;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
@@ -29,5 +32,8 @@ public final class HytechPlugin extends JavaPlugin {
         // module with the dependency. Nothing on the item side needs energy.
         ItemModule.init(chunkStoreRegistry, eventRegistry);
         EnergyModule.init(chunkStoreRegistry, eventRegistry);
+        HeatModule.init(chunkStoreRegistry, eventRegistry);
+        FluidModule.init(chunkStoreRegistry, eventRegistry);
+        GasModule.init(chunkStoreRegistry, eventRegistry);
     }
 }

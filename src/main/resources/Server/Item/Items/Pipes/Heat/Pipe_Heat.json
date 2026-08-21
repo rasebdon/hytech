@@ -1,0 +1,415 @@
+{
+  "TranslationProperties": {
+    "Name": "server.items.Pipe_Heat.name"
+  },
+  "ItemLevel": 15,
+  "MaxStack": 100,
+  "Categories": [
+    "Technic.General"
+  ],
+  "PlayerAnimationsId": "Item",
+  "Interactions": {
+    "Primary": "Block_Primary",
+    "Secondary": "Block_Secondary"
+  },
+  "Set": "Rock_Stone_Brick",
+  "Recipe": {
+    "Input": [
+      {
+        "ResourceTypeId": "Rock_Stone_Brick",
+        "Quantity": 1
+      }
+    ],
+    "BenchRequirement": [
+      {
+        "Id": "Builders",
+        "Type": "StructuralCrafting",
+        "Categories": [
+          "Beam"
+        ]
+      }
+    ],
+    "OutputQuantity": 2,
+    "TimeSeconds": 0
+  },
+  "BlockType": {
+    "Material": "Solid",
+    "DrawType": "Model",
+    "Opacity": "Transparent",
+    "CustomModel": "Blocks/Pipes/Default/Pipe_Center.blockymodel",
+    "CustomModelTexture": [
+      {
+        "Texture": "BlockTextures/Pipes/Heat/Pipe_Heat.png",
+        "Weight": 1
+      }
+    ],
+    "Group": "Stone",
+    "HitboxType": "Pipe",
+    "Gathering": {
+      "Breaking": {
+        "GatherType": "Rocks"
+      }
+    },
+    "BlockEntity": {
+      "Components": {
+        "hytech:heat:pipe": {
+          "PipeCapacity": 4000,
+          "PipeTransferSpeed": 200,
+          "NormalConnectionModelAsset": "Pipe_Heat_Normal",
+          "PushConnectionModelAsset": "Pipe_Heat_Push",
+          "PullConnectionModelAsset": "Pipe_Heat_Pull"
+        }
+      }
+    },
+    "VariantRotation": "None",
+    "BlockParticleSetId": "Stone",
+    "ParticleColor": "#737055",
+    "BlockSoundSetId": "Stone",
+    "State": {
+      "Definitions": {
+        "Conn_0": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_0.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_0",
+          "InteractionHitboxType": "Pipe_Default_Conn_0"
+        },
+        "Conn_1": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_1.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_1",
+          "InteractionHitboxType": "Pipe_Default_Conn_1"
+        },
+        "Conn_2": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_2.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_2",
+          "InteractionHitboxType": "Pipe_Default_Conn_2"
+        },
+        "Conn_3": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_3.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_3",
+          "InteractionHitboxType": "Pipe_Default_Conn_3"
+        },
+        "Conn_4": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_4.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_4",
+          "InteractionHitboxType": "Pipe_Default_Conn_4"
+        },
+        "Conn_5": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_5.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_5",
+          "InteractionHitboxType": "Pipe_Default_Conn_5"
+        },
+        "Conn_6": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_6.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_6",
+          "InteractionHitboxType": "Pipe_Default_Conn_6"
+        },
+        "Conn_7": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_7.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_7",
+          "InteractionHitboxType": "Pipe_Default_Conn_7"
+        },
+        "Conn_8": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_8.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_8",
+          "InteractionHitboxType": "Pipe_Default_Conn_8"
+        },
+        "Conn_9": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_9.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_9",
+          "InteractionHitboxType": "Pipe_Default_Conn_9"
+        },
+        "Conn_10": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_10.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_10",
+          "InteractionHitboxType": "Pipe_Default_Conn_10"
+        },
+        "Conn_11": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_11.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_11",
+          "InteractionHitboxType": "Pipe_Default_Conn_11"
+        },
+        "Conn_12": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_12.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_12",
+          "InteractionHitboxType": "Pipe_Default_Conn_12"
+        },
+        "Conn_13": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_13.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_13",
+          "InteractionHitboxType": "Pipe_Default_Conn_13"
+        },
+        "Conn_14": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_14.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_14",
+          "InteractionHitboxType": "Pipe_Default_Conn_14"
+        },
+        "Conn_15": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_15.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_15",
+          "InteractionHitboxType": "Pipe_Default_Conn_15"
+        },
+        "Conn_16": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_16.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_16",
+          "InteractionHitboxType": "Pipe_Default_Conn_16"
+        },
+        "Conn_17": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_17.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_17",
+          "InteractionHitboxType": "Pipe_Default_Conn_17"
+        },
+        "Conn_18": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_18.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_18",
+          "InteractionHitboxType": "Pipe_Default_Conn_18"
+        },
+        "Conn_19": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_19.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_19",
+          "InteractionHitboxType": "Pipe_Default_Conn_19"
+        },
+        "Conn_20": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_20.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_20",
+          "InteractionHitboxType": "Pipe_Default_Conn_20"
+        },
+        "Conn_21": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_21.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_21",
+          "InteractionHitboxType": "Pipe_Default_Conn_21"
+        },
+        "Conn_22": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_22.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_22",
+          "InteractionHitboxType": "Pipe_Default_Conn_22"
+        },
+        "Conn_23": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_23.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_23",
+          "InteractionHitboxType": "Pipe_Default_Conn_23"
+        },
+        "Conn_24": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_24.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_24",
+          "InteractionHitboxType": "Pipe_Default_Conn_24"
+        },
+        "Conn_25": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_25.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_25",
+          "InteractionHitboxType": "Pipe_Default_Conn_25"
+        },
+        "Conn_26": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_26.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_26",
+          "InteractionHitboxType": "Pipe_Default_Conn_26"
+        },
+        "Conn_27": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_27.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_27",
+          "InteractionHitboxType": "Pipe_Default_Conn_27"
+        },
+        "Conn_28": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_28.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_28",
+          "InteractionHitboxType": "Pipe_Default_Conn_28"
+        },
+        "Conn_29": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_29.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_29",
+          "InteractionHitboxType": "Pipe_Default_Conn_29"
+        },
+        "Conn_30": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_30.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_30",
+          "InteractionHitboxType": "Pipe_Default_Conn_30"
+        },
+        "Conn_31": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_31.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_31",
+          "InteractionHitboxType": "Pipe_Default_Conn_31"
+        },
+        "Conn_32": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_32.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_32",
+          "InteractionHitboxType": "Pipe_Default_Conn_32"
+        },
+        "Conn_33": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_33.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_33",
+          "InteractionHitboxType": "Pipe_Default_Conn_33"
+        },
+        "Conn_34": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_34.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_34",
+          "InteractionHitboxType": "Pipe_Default_Conn_34"
+        },
+        "Conn_35": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_35.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_35",
+          "InteractionHitboxType": "Pipe_Default_Conn_35"
+        },
+        "Conn_36": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_36.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_36",
+          "InteractionHitboxType": "Pipe_Default_Conn_36"
+        },
+        "Conn_37": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_37.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_37",
+          "InteractionHitboxType": "Pipe_Default_Conn_37"
+        },
+        "Conn_38": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_38.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_38",
+          "InteractionHitboxType": "Pipe_Default_Conn_38"
+        },
+        "Conn_39": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_39.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_39",
+          "InteractionHitboxType": "Pipe_Default_Conn_39"
+        },
+        "Conn_40": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_40.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_40",
+          "InteractionHitboxType": "Pipe_Default_Conn_40"
+        },
+        "Conn_41": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_41.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_41",
+          "InteractionHitboxType": "Pipe_Default_Conn_41"
+        },
+        "Conn_42": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_42.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_42",
+          "InteractionHitboxType": "Pipe_Default_Conn_42"
+        },
+        "Conn_43": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_43.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_43",
+          "InteractionHitboxType": "Pipe_Default_Conn_43"
+        },
+        "Conn_44": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_44.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_44",
+          "InteractionHitboxType": "Pipe_Default_Conn_44"
+        },
+        "Conn_45": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_45.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_45",
+          "InteractionHitboxType": "Pipe_Default_Conn_45"
+        },
+        "Conn_46": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_46.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_46",
+          "InteractionHitboxType": "Pipe_Default_Conn_46"
+        },
+        "Conn_47": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_47.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_47",
+          "InteractionHitboxType": "Pipe_Default_Conn_47"
+        },
+        "Conn_48": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_48.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_48",
+          "InteractionHitboxType": "Pipe_Default_Conn_48"
+        },
+        "Conn_49": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_49.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_49",
+          "InteractionHitboxType": "Pipe_Default_Conn_49"
+        },
+        "Conn_50": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_50.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_50",
+          "InteractionHitboxType": "Pipe_Default_Conn_50"
+        },
+        "Conn_51": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_51.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_51",
+          "InteractionHitboxType": "Pipe_Default_Conn_51"
+        },
+        "Conn_52": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_52.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_52",
+          "InteractionHitboxType": "Pipe_Default_Conn_52"
+        },
+        "Conn_53": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_53.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_53",
+          "InteractionHitboxType": "Pipe_Default_Conn_53"
+        },
+        "Conn_54": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_54.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_54",
+          "InteractionHitboxType": "Pipe_Default_Conn_54"
+        },
+        "Conn_55": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_55.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_55",
+          "InteractionHitboxType": "Pipe_Default_Conn_55"
+        },
+        "Conn_56": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_56.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_56",
+          "InteractionHitboxType": "Pipe_Default_Conn_56"
+        },
+        "Conn_57": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_57.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_57",
+          "InteractionHitboxType": "Pipe_Default_Conn_57"
+        },
+        "Conn_58": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_58.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_58",
+          "InteractionHitboxType": "Pipe_Default_Conn_58"
+        },
+        "Conn_59": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_59.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_59",
+          "InteractionHitboxType": "Pipe_Default_Conn_59"
+        },
+        "Conn_60": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_60.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_60",
+          "InteractionHitboxType": "Pipe_Default_Conn_60"
+        },
+        "Conn_61": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_61.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_61",
+          "InteractionHitboxType": "Pipe_Default_Conn_61"
+        },
+        "Conn_62": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_62.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_62",
+          "InteractionHitboxType": "Pipe_Default_Conn_62"
+        },
+        "Conn_63": {
+          "CustomModel": "Blocks/Pipes/Generated/Default/Conn_63.blockymodel",
+          "HitboxType": "Pipe_Default_Conn_63",
+          "InteractionHitboxType": "Pipe_Default_Conn_63"
+        }
+      }
+    }
+  },
+  "Tags": {
+    "Type": [
+      "Rock"
+    ],
+    "Family": [
+      "Stone"
+    ]
+  },
+  "ItemSoundSetId": "ISS_Blocks_Stone",
+  "IconProperties": {
+    "Scale": 0.58823,
+    "Rotation": [
+      22.5,
+      45,
+      22.5
+    ],
+    "Translation": [
+      0,
+      -13.5
+    ]
+  },
+  "Icon": "Icons/ItemsGenerated/Pipe_Heat.png"
+}

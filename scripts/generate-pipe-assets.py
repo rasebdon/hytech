@@ -40,7 +40,14 @@ PIPE_TYPES = [
         "center_model": RESOURCES / "Common/Blocks/Pipes/Default/Pipe_Center.blockymodel",
         "arm_model": RESOURCES / "Common/Blocks/Pipes/Default/Pipe_Full.blockymodel",
         "hub_units": 8,
-        "item_jsons": [RESOURCES / "Server/Item/Items/Pipes/Energy/Pipe_Energy.json"],
+        # Every scalar resource shares this geometry; only CustomModelTexture on each item
+        # JSON differs, so a new type costs no generated models or hitboxes at all.
+        "item_jsons": [
+            RESOURCES / "Server/Item/Items/Pipes/Energy/Pipe_Energy.json",
+            RESOURCES / "Server/Item/Items/Pipes/Fluid/Pipe_Fluid.json",
+            RESOURCES / "Server/Item/Items/Pipes/Gas/Pipe_Gas.json",
+            RESOURCES / "Server/Item/Items/Pipes/Heat/Pipe_Heat.json",
+        ],
     },
     {
         "name": "Items",

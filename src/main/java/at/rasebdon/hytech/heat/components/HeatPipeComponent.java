@@ -1,4 +1,4 @@
-package at.rasebdon.hytech.energy.components;
+package at.rasebdon.hytech.heat.components;
 
 import at.rasebdon.hytech.core.components.AbstractScalarPipeComponent;
 import at.rasebdon.hytech.core.components.LogisticComponent;
@@ -7,8 +7,8 @@ import at.rasebdon.hytech.core.events.LogisticChangeType;
 import at.rasebdon.hytech.core.events.LogisticComponentChangedEvent;
 import at.rasebdon.hytech.core.transport.BlockFaceConfig;
 import at.rasebdon.hytech.core.transport.BlockFaceConfigType;
-import at.rasebdon.hytech.energy.HytechEnergyContainer;
-import at.rasebdon.hytech.energy.events.EnergyContainerChangedEvent;
+import at.rasebdon.hytech.heat.HytechHeatContainer;
+import at.rasebdon.hytech.heat.events.HeatContainerChangedEvent;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
@@ -20,53 +20,49 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Map;
 
-/// An energy conduit. A holder for its network's container, not a container itself.
-public class EnergyPipeComponent extends AbstractScalarPipeComponent<HytechEnergyContainer> {
+/// An insulated duct carrying heat.
+public class HeatPipeComponent extends AbstractScalarPipeComponent<HytechHeatContainer> {
 
     @Nonnull
-    public static final BuilderCodec<EnergyPipeComponent> CODEC =
-            BuilderCodec.builder(EnergyPipeComponent.class, EnergyPipeComponent::new,
+    public static final BuilderCodec<HeatPipeComponent> CODEC =
+            BuilderCodec.builder(HeatPipeComponent.class, HeatPipeComponent::new,
                             AbstractScalarPipeComponent.CODEC)
-                    // Kept as "SavedEnergy" for the same compatibility reason the block keeps
-                    // "Energy": existing worlds already store it under this key.
-                    .append(new KeyedCodec<>("SavedEnergy", Codec.LONG),
+                    .append(new KeyedCodec<>("SavedAmount", Codec.LONG),
                             (c, v) -> c.savedAmount = v,
                             (c) -> c.savedAmount)
                     .addValidator(Validators.greaterThanOrEqual(0L))
-                    .documentation("Energy held by this segment when its chunk was last saved")
-                    .add()
+                    .documentation("Heat held by this segment when its chunk was last saved").add()
                     .build();
 
-    public EnergyPipeComponent() {
+    public HeatPipeComponent() {
         this(new BlockFaceConfig(), LogisticPipeComponent.DEFAULT_CONNECTION_MODEL_ASSETS, 0L, 0L, 0L);
     }
 
-    public EnergyPipeComponent(
+    public HeatPipeComponent(
             BlockFaceConfig blockFaceConfig,
             Map<BlockFaceConfigType, String> connectionModelAssetNames,
-            long savedEnergy,
+            long savedAmount,
             long pipeCapacity,
-            long pipeTransferSpeed
-    ) {
-        super(blockFaceConfig, connectionModelAssetNames, savedEnergy, pipeCapacity, pipeTransferSpeed);
+            long pipeTransferSpeed) {
+        super(blockFaceConfig, connectionModelAssetNames, savedAmount, pipeCapacity, pipeTransferSpeed);
     }
 
     @Override
     @Nonnull
     public Component<ChunkStore> clone() {
-        return new EnergyPipeComponent(this.blockFaceConfig.clone(), this.connectionModelAssetNames,
+        return new HeatPipeComponent(this.blockFaceConfig.clone(), this.connectionModelAssetNames,
                 this.savedAmount, this.pipeCapacity, this.pipeTransferSpeed);
     }
 
     @Override
-    protected LogisticComponentChangedEvent<HytechEnergyContainer> createContainerChangedEvent(
-            LogisticChangeType type, LogisticComponent<HytechEnergyContainer> component) {
-        return new EnergyContainerChangedEvent(type, component);
+    protected LogisticComponentChangedEvent<HytechHeatContainer> createContainerChangedEvent(
+            LogisticChangeType type, LogisticComponent<HytechHeatContainer> component) {
+        return new HeatContainerChangedEvent(type, component);
     }
 
     @Override
     @Nullable
-    public HytechEnergyContainer getContainer() {
+    public HytechHeatContainer getContainer() {
         return this.network == null ? null : this.network.getContainer();
     }
 
@@ -75,11 +71,11 @@ public class EnergyPipeComponent extends AbstractScalarPipeComponent<HytechEnerg
         var container = getContainer();
 
         if (container != null) {
-            return String.format("(EnergyPipe): [NET] %d/%d RF | Sides: [%s]",
+            return String.format("(HeatPipe): [NET] %d/%d HU | Sides: [%s]",
                     container.getAmount(), container.getTotalCapacity(), describeFaces());
         }
 
-        return String.format("(EnergyPipe): %d/%d RF | Sides: [%s]",
+        return String.format("(HeatPipe): %d/%d HU | Sides: [%s]",
                 this.savedAmount, this.pipeCapacity, describeFaces());
     }
 }
