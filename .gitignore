@@ -33,3 +33,6 @@ build/
 
 ### Misc ###
 /run/
+
+### Decompiled Hytale API (unpacked from HytaleServer-sources.jar) ###
+/hytale-sources/

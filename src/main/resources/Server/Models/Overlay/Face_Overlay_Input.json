@@ -1,0 +1,16 @@
+{
+  "Model": "VFX/Overlay/Face_Overlay.blockymodel",
+  "Texture": "VFX/Overlay/Face_Overlay_Input.png",
+  "HitBox": {
+    "Min": {
+      "X": -0.5,
+      "Y": -0.03,
+      "Z": -0.5
+    },
+    "Max": {
+      "X": 0.5,
+      "Y": 0.03,
+      "Z": 0.5
+    }
+  }
+}

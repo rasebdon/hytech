@@ -70,6 +70,11 @@ public class EnergyNetwork extends LogisticNetwork<HytechEnergyContainer> implem
     }
 
     @Override
+    public void reload() {
+        // TODO : implement reload?
+    }
+
+    @Override
     public long getEnergy() {
         return energy;
     }

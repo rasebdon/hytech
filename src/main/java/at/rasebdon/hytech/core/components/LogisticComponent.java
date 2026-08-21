@@ -4,8 +4,6 @@ import at.rasebdon.hytech.core.events.LogisticChangeType;
 import at.rasebdon.hytech.core.events.LogisticComponentChangedEvent;
 import at.rasebdon.hytech.core.transport.BlockFaceConfig;
 import at.rasebdon.hytech.core.transport.BlockFaceConfigType;
-import at.rasebdon.hytech.core.transport.LogisticNeighbor;
-import at.rasebdon.hytech.core.transport.LogisticNeighborMap;
 import at.rasebdon.hytech.core.util.EventBusUtil;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
@@ -14,10 +12,11 @@ import com.hypixel.hytale.protocol.BlockFace;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
 import javax.annotation.Nullable;
-import java.util.Set;
 
 
-public abstract class LogisticComponent<TContainer> implements ContainerHolder<TContainer>, Component<ChunkStore> {
+public abstract class LogisticComponent<TContainer>
+        extends ContainerHolder<TContainer>
+        implements Component<ChunkStore> {
     @SuppressWarnings("rawtypes")
     public static final BuilderCodec<LogisticComponent> CODEC =
             BuilderCodec.abstractBuilder(LogisticComponent.class)
@@ -27,7 +26,6 @@ public abstract class LogisticComponent<TContainer> implements ContainerHolder<T
                     .documentation("Side configuration for Logistic Container Block").add()
                     .build();
 
-    protected final LogisticNeighborMap<TContainer> neighbors;
     protected BlockFaceConfig blockFaceConfig;
 
     protected LogisticComponent(BlockFaceConfig blockFaceConfig) {
@@ -36,77 +34,8 @@ public abstract class LogisticComponent<TContainer> implements ContainerHolder<T
     }
 
     protected LogisticComponent() {
+        super();
         this.blockFaceConfig = new BlockFaceConfig();
-        this.neighbors = new LogisticNeighborMap<>();
-    }
-
-    @Nullable
-    public LogisticNeighbor<TContainer> getNeighbor(BlockFace face) {
-        return neighbors.getByFace(face);
-    }
-
-    @Nullable
-    public LogisticComponent<TContainer> getNeighborLogisticContainer(BlockFace face) {
-        var neighbor = neighbors.getByFace(face);
-        if (neighbor != null) {
-            return neighbor.getLogisticContainer();
-        }
-        return null;
-    }
-
-    @Nullable
-    public BlockFace getNeighborFace(LogisticNeighbor<TContainer> neighbor) {
-        return getNeighborFace(neighbor.getHolder());
-    }
-
-    @Nullable
-    public BlockFace getNeighborFace(ContainerHolder<TContainer> holder) {
-        return neighbors.getByContainer(holder);
-    }
-
-    public Set<LogisticNeighbor<TContainer>> getNeighbors() {
-        return neighbors.getAllNeighbors();
-    }
-
-    public void addExternalNeighbor(BlockFace face, ContainerHolder<TContainer> holder) {
-        this.neighbors.put(face, holder);
-        this.reloadContainer();
-    }
-
-    public void removeExternalNeighbor(ContainerHolder<TContainer> holder) {
-        this.neighbors.remove(holder);
-        this.reloadContainer();
-    }
-
-    public void addNeighbor(BlockFace localFace, BlockFace neighborFace, LogisticComponent<TContainer> neighbor) {
-        this.neighbors.put(localFace, neighbor);
-        neighbor.neighbors.put(neighborFace, this);
-
-        this.reloadContainer();
-        neighbor.reloadContainer();
-    }
-
-    public void removeNeighbor(LogisticComponent<TContainer> neighbor) {
-        this.neighbors.remove(neighbor);
-        neighbor.neighbors.remove(this);
-
-        this.reloadContainer();
-        neighbor.reloadContainer();
-    }
-
-    public void clearNeighbors() {
-        var allNeighbors = this.neighbors.getAllNeighbors();
-        for (var neighbor : allNeighbors) {
-            this.neighbors.remove(neighbor);
-
-            var neighborLogistic = neighbor.getLogisticContainer();
-            if (neighborLogistic != null) {
-                neighborLogistic.neighbors.remove(this);
-                neighborLogistic.reloadContainer();
-            }
-        }
-
-        this.reloadContainer();
     }
 
     public BlockFaceConfigType getFaceConfigTowards(ContainerHolder<TContainer> holder) {
@@ -134,32 +63,48 @@ public abstract class LogisticComponent<TContainer> implements ContainerHolder<T
     }
 
     public void cycleBlockFaceConfig(BlockFace face) {
-        blockFaceConfig.cycleFace(face);
+        if (isPipeToPipe(face)) {
+            // Direction is meaningless between two pipes -- they are the same network, so a
+            // pipe-to-pipe face is only ever connected or not.
+            blockFaceConfig.toggleFace(face);
+        } else {
+            blockFaceConfig.cycleFace(face);
+        }
 
-        this.reloadContainer();
-        this.reloadNeighborContainer(face);
+        this.reload();
+        this.reloadNeighborHolder(face);
     }
 
-    public void reloadContainer() {
+    /// True when the neighbour on this face is another pipe rather than a container.
+    private boolean isPipeToPipe(BlockFace face) {
+        var neighbor = getNeighbor(face);
+        return neighbor != null && neighbor.getHolder() instanceof LogisticPipeComponent<?>;
+    }
+
+    private void reloadNeighborHolder(BlockFace face) {
+        var neighbor = getNeighbor(face);
+        if (neighbor == null) return;
+
+        var holder = neighbor.getHolder();
+        if (holder == null) return;
+
+        holder.reload();
+    }
+
+    @Override
+    public void reload() {
         dispatchChangeEvent(LogisticChangeType.CHANGED);
     }
-
-    private void reloadNeighborContainer(BlockFace face) {
-        var neighbor = getNeighborLogisticContainer(face);
-        if (neighbor != null) {
-            neighbor.reloadContainer();
-        }
-    }
-
-    @Nullable
-    public abstract Component<ChunkStore> clone();
-
-    protected abstract LogisticComponentChangedEvent<TContainer> createContainerChangedEvent(
-            LogisticChangeType type, LogisticComponent<TContainer> component);
 
     public void dispatchChangeEvent(LogisticChangeType logisticChangeType) {
         EventBusUtil.dispatchIfListening(
                 createContainerChangedEvent(logisticChangeType, this)
         );
     }
+
+    protected abstract LogisticComponentChangedEvent<TContainer> createContainerChangedEvent(
+            LogisticChangeType type, LogisticComponent<TContainer> component);
+
+    @Nullable
+    public abstract Component<ChunkStore> clone();
 }

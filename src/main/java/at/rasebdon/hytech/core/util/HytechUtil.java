@@ -5,17 +5,15 @@ import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
-import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
-import com.hypixel.hytale.server.core.universe.world.meta.BlockState;
-import com.hypixel.hytale.server.core.universe.world.meta.BlockStateModule;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import org.joml.Vector3i;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -33,19 +31,6 @@ public class HytechUtil {
             @Nonnull Vector3i pos,
             @Nonnull ComponentType<ChunkStore, T> type) {
         return BlockModule.getComponent(type, world, pos.x, pos.y, pos.z);
-    }
-
-    @SuppressWarnings("removal")
-    @Nullable
-    public static <T extends BlockState> T getBlockState(
-            @Nonnull World world,
-            @Nonnull Vector3i pos,
-            @Nonnull Class<T> entityClass) {
-        var blockStateModule = BlockStateModule.get();
-        var type = blockStateModule.getComponentType(entityClass);
-        assert type != null;
-
-        return getBlockComponent(world, pos, type);
     }
 
     @Nullable
@@ -66,10 +51,10 @@ public class HytechUtil {
     }
 
 
-    public static void sendPlayerMessage(@Nonnull Ref<EntityStore> playerRef, @Nonnull String text) {
-        var player = playerRef.getStore().getComponent(playerRef, Player.getComponentType());
-        if (player != null) {
-            player.sendMessage(Message.raw(text));
+    public static void sendPlayerMessage(@Nonnull Ref<EntityStore> entityRef, @Nonnull String text) {
+        var playerRef = entityRef.getStore().getComponent(entityRef, PlayerRef.getComponentType());
+        if (playerRef != null) {
+            playerRef.sendMessage(Message.raw(text));
         }
     }
 
@@ -83,7 +68,6 @@ public class HytechUtil {
         return new Vector3i(localX, localY, localZ);
     }
 
-    @SuppressWarnings("removal")
     @Nullable
     public static BlockTransform getBlockTransform(@Nonnull Ref<ChunkStore> blockRef, @Nonnull Store<ChunkStore> store) {
         var info = store.getComponent(blockRef, BlockModule.BlockStateInfo.getComponentType());
@@ -95,13 +79,13 @@ public class HytechUtil {
         var localPosition = getLocalBlockPosition(info);
 
         // Transform to world coordinates
-        int worldX = ChunkUtil.worldCoordFromLocalCoord(worldChunk.getX(), localPosition.getX());
-        int worldZ = ChunkUtil.worldCoordFromLocalCoord(worldChunk.getZ(), localPosition.getZ());
+        int worldX = ChunkUtil.worldCoordFromLocalCoord(worldChunk.getX(), localPosition.x);
+        int worldZ = ChunkUtil.worldCoordFromLocalCoord(worldChunk.getZ(), localPosition.z);
 
-        var rotation = worldChunk.getRotation(worldX, localPosition.getY(), worldZ);
+        var rotation = worldChunk.getRotation(worldX, localPosition.y, worldZ);
 
         return new BlockTransform(
-                new Vector3i(worldX, localPosition.getY(), worldZ),
+                new Vector3i(worldX, localPosition.y, worldZ),
                 localPosition,
                 rotation,
                 worldChunk.getX(),

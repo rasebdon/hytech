@@ -5,7 +5,6 @@ import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import at.rasebdon.hytech.core.networks.LogisticNetworkSystem;
 import at.rasebdon.hytech.core.systems.LogisticComponentRegistrationSystem;
 import at.rasebdon.hytech.core.systems.LogisticTransferSystem;
-import at.rasebdon.hytech.core.systems.PipeRenderModule;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.ComponentRegistryProxy;
 import com.hypixel.hytale.component.ComponentType;
@@ -58,8 +57,8 @@ public abstract class AbstractLogisticModule<
         // Create network system
         networkSystem = createNetworkSystem();
 
-        // Register pipe rendering
-        PipeRenderModule.registerPipe(pipeComponentType);
+        // Register pipe rendering (shared systems, one instance for all resource types)
+        HytechCoreModule.get().registerPipeType(pipeComponentType);
 
         // Register core systems
         registry.registerSystem(createTransferSystem(eventRegistry));

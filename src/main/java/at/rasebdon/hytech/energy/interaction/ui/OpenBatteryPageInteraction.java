@@ -8,12 +8,12 @@ import au.ellie.hyui.builders.PageBuilder;
 import au.ellie.hyui.events.PageRefreshResult;
 import au.ellie.hyui.html.TemplateProcessor;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
 import com.hypixel.hytale.server.core.universe.world.World;
 import org.jetbrains.annotations.NotNull;
+import org.joml.Vector3i;
 
 import javax.annotation.Nonnull;
 

@@ -4,7 +4,6 @@ import at.rasebdon.hytech.core.components.LogisticComponent;
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import at.rasebdon.hytech.core.events.LogisticChangeType;
 import at.rasebdon.hytech.core.events.LogisticComponentChangedEvent;
-import at.rasebdon.hytech.core.systems.PipeRenderHelper;
 import at.rasebdon.hytech.core.transport.BlockFaceConfig;
 import at.rasebdon.hytech.core.transport.BlockFaceConfigState;
 import at.rasebdon.hytech.core.transport.BlockFaceConfigType;
@@ -68,7 +67,7 @@ public class EnergyPipeComponent extends LogisticPipeComponent<HytechEnergyConta
 
     public EnergyPipeComponent() {
         this(0L, 0L, 0L, new BlockFaceConfig(),
-                PipeRenderHelper.DEFAULT_CONNECTION_MODEL_ASSETS);
+                LogisticPipeComponent.DEFAULT_CONNECTION_MODEL_ASSETS);
     }
 
     @Override

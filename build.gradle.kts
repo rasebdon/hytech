@@ -22,7 +22,7 @@ repositories {
 }
 
 dependencies {
-    implementation("curse.maven:hyui-1431415:7667069")
+    implementation("curse.maven:hyui-1431415:8363317")
 
     compileOnly(libs.jetbrains.annotations)
     compileOnly(libs.jspecify)
@@ -67,6 +67,12 @@ tasks.named<ProcessResources>("processResources") {
 
 hytale {
 
+}
+
+// The decompiler runs in a forked JVM, so org.gradle.jvmargs does not reach it. Without a
+// decent heap it spends its time in GC rather than decompiling.
+tasks.named<JavaExec>("decompileServer") {
+    maxHeapSize = "4g"
 }
 
 tasks.withType<Jar> {

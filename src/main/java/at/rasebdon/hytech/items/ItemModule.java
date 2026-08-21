@@ -5,6 +5,7 @@ import at.rasebdon.hytech.core.networks.LogisticNetworkSystem;
 import at.rasebdon.hytech.core.systems.LogisticTransferSystem;
 import at.rasebdon.hytech.items.components.ItemBlockComponent;
 import at.rasebdon.hytech.items.components.ItemPipeComponent;
+import at.rasebdon.hytech.items.interaction.ReadItemContainerBlockInteraction;
 import at.rasebdon.hytech.items.networks.ItemNetworkSystem;
 import at.rasebdon.hytech.items.systems.ItemBlockStateRegistrationSystem;
 import at.rasebdon.hytech.items.systems.ItemComponentRegistrationSystem;
@@ -12,6 +13,7 @@ import at.rasebdon.hytech.items.systems.ItemTransferSystem;
 import com.hypixel.hytale.component.ComponentRegistryProxy;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.event.IEventRegistry;
+import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
 public final class ItemModule extends AbstractLogisticModule<
@@ -53,6 +55,15 @@ public final class ItemModule extends AbstractLogisticModule<
     protected void registerAdditionalSystems(ComponentRegistryProxy<ChunkStore> registry, IEventRegistry eventRegistry) {
         var itemBlockStateRegistrationSystem = new ItemBlockStateRegistrationSystem(registrationSystem);
         registry.registerSystem(itemBlockStateRegistrationSystem);
+
+        // No save system here on purpose: unlike energy, item pipes own their buffers and
+        // those containers are part of ItemPipeComponent's codec, so contents persist with
+        // the block instead of having to be redistributed across the network on save.
+
+        Interaction.CODEC.register(
+                "ReadItemContainer",
+                ReadItemContainerBlockInteraction.class,
+                ReadItemContainerBlockInteraction.CODEC);
     }
 
     @Override

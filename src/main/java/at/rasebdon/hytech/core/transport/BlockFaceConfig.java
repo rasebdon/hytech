@@ -145,11 +145,53 @@ public class BlockFaceConfig implements Cloneable {
         }
     }
 
+    /// Packed states in the order the wrench should present them.
+    private static int[] cycleOrder() {
+        int indexCount = 1 << INDEX_BITS;
+        int[] order = new int[PRIORITY.length * indexCount];
+
+        int at = 0;
+        for (BlockFaceConfigType type : PRIORITY) {
+            for (int index = 0; index < indexCount; index++) {
+                order[at++] = combine(type, index);
+            }
+        }
+
+        return order;
+    }
+
+    /// Flips a face between fully connected and disconnected, skipping the directional
+    /// states. Used where direction has no meaning, such as a pipe facing another pipe.
+    public void toggleFace(BlockFace face) {
+        var next = getType(face) == BlockFaceConfigType.NONE
+                ? BlockFaceConfigType.BOTH
+                : BlockFaceConfigType.NONE;
+
+        long mask = allowedMasks[face.getValue()];
+        int packed = combine(next, 0);
+        if ((mask & (1L << packed)) != 0) {
+            insert(face, packed);
+        }
+    }
+
+    /// Advances a face to the next allowed state in [#PRIORITY] order: BOTH, then pull,
+    /// then push, then none. The packed values sort differently (none is zero), so the
+    /// cycle walks the priority list rather than counting.
     public void cycleFace(BlockFace face) {
         long mask = allowedMasks[face.getValue()];
         int current = extract(face);
-        for (int i = 1; i < (1 << BITS_PER_SIDE); i++) {
-            int next = (current + i) % (1 << BITS_PER_SIDE);
+
+        int[] order = cycleOrder();
+        int start = 0;
+        for (int i = 0; i < order.length; i++) {
+            if (order[i] == current) {
+                start = i;
+                break;
+            }
+        }
+
+        for (int step = 1; step <= order.length; step++) {
+            int next = order[(start + step) % order.length];
             if ((mask & (1L << next)) != 0) {
                 insert(face, next);
                 return;

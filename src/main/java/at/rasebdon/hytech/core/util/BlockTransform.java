@@ -1,7 +1,7 @@
 package at.rasebdon.hytech.core.util;
 
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.RotationTuple;
+import org.joml.Vector3i;
 
 import javax.annotation.Nonnull;
 

@@ -6,7 +6,7 @@ import com.hypixel.hytale.logger.HytaleLogger;
 
 import java.util.*;
 
-public abstract class LogisticNetwork<TContainer> implements ContainerHolder<TContainer> {
+public abstract class LogisticNetwork<TContainer> extends ContainerHolder<TContainer> {
 
     protected static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
@@ -15,6 +15,7 @@ public abstract class LogisticNetwork<TContainer> implements ContainerHolder<TCo
     protected final List<ContainerHolder<TContainer>> pushTargets = new ArrayList<>();
 
     protected LogisticNetwork(Set<LogisticPipeComponent<TContainer>> initialPipes) {
+        super();
         setPipes(initialPipes);
     }
 

@@ -12,9 +12,10 @@ import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.RefSystem;
 import com.hypixel.hytale.event.IEventRegistry;
-import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.math.vector.Vector3iUtil;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Vector3i;
 
 import javax.annotation.Nonnull;
 
@@ -84,11 +85,11 @@ public abstract class LogisticComponentRegistrationSystem<TContainer>
 
         var world = store.getExternalData().getWorld();
 
-        for (var worldDir : Vector3i.BLOCK_SIDES) {
+        for (var worldDir : Vector3iUtil.BLOCK_SIDES) {
             var localFace = BlockFaceUtil.getLocalFace(worldDir, transform.rotation());
 
             var neighborRef = HytechUtil.getBlockEntityRef(
-                    world, worldDir.clone().add(transform.worldPos())
+                    world, new Vector3i(worldDir).add(transform.worldPos())
             );
             if (neighborRef == null) continue;
 
@@ -97,7 +98,7 @@ public abstract class LogisticComponentRegistrationSystem<TContainer>
             if (neighborContainer == null || neighborTransform == null) continue;
 
             var neighborFace = BlockFaceUtil.getLocalFace(
-                    worldDir.clone().negate(),
+                    new Vector3i(worldDir).negate(),
                     neighborTransform.rotation()
             );
 
@@ -118,9 +119,9 @@ public abstract class LogisticComponentRegistrationSystem<TContainer>
 
         var world = store.getExternalData().getWorld();
 
-        for (var worldDir : Vector3i.BLOCK_SIDES) {
+        for (var worldDir : Vector3iUtil.BLOCK_SIDES) {
             var neighborRef = HytechUtil.getBlockEntityRef(
-                    world, worldDir.clone().add(transform.worldPos())
+                    world, new Vector3i(worldDir).add(transform.worldPos())
             );
             if (neighborRef == null) continue;
 

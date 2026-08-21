@@ -6,9 +6,9 @@ import at.rasebdon.hytech.energy.components.EnergyGeneratorComponent;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
+import org.joml.Vector3i;
 
 import javax.annotation.Nonnull;
 
@@ -40,7 +40,7 @@ public class EnergyGenerationSystem extends EntityTickingSystem<ChunkStore> {
         var blockPosition = HytechUtil.getBlockTransform(blockRef, store);
         assert blockPosition != null;
 
-        long currentRate = calculateCurrentRate(gen, store, blockPosition.worldPos().clone(), dt);
+        long currentRate = calculateCurrentRate(gen, store, new Vector3i(blockPosition.worldPos()), dt);
         gen.setCurrentRate(currentRate);
 
         if (currentRate > 0) {

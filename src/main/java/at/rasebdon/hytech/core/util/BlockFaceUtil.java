@@ -1,12 +1,13 @@
 package at.rasebdon.hytech.core.util;
 
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.BlockFace;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.Rotation;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.RotationTuple;
+import org.joml.Vector3i;
+import org.joml.Vector3ic;
 
 public class BlockFaceUtil {
-    public static BlockFace getLocalFace(Vector3i worldDir, RotationTuple rotation) {
+    public static BlockFace getLocalFace(Vector3ic worldDir, RotationTuple rotation) {
         // Apply inverse rotation to the world direction to find the local face
         Rotation invYaw = Rotation.None.subtract(rotation.yaw());
         Rotation invPitch = Rotation.None.subtract(rotation.pitch());

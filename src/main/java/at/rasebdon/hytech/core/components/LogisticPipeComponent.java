@@ -4,18 +4,14 @@ import at.rasebdon.hytech.core.networks.LogisticNetwork;
 import at.rasebdon.hytech.core.transport.BlockFaceConfig;
 import at.rasebdon.hytech.core.transport.BlockFaceConfigType;
 import at.rasebdon.hytech.core.transport.LogisticNeighbor;
+import at.rasebdon.hytech.core.util.PipeConnectionMask;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
-import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.protocol.BlockFace;
 import com.hypixel.hytale.server.core.asset.type.model.config.ModelAsset;
-import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public abstract class LogisticPipeComponent<TContainer> extends LogisticComponent<TContainer> {
@@ -33,9 +29,15 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticComponen
                             (c, v) -> c.setConnectionModelAssetName(BlockFaceConfigType.INPUT, v),
                             c -> c.getModelAssetName(BlockFaceConfigType.INPUT)).add()
                     .build();
-    // Render Vars
+    /// Fallback model names for the push/pull markers placed on explicitly configured
+    /// faces. Plain connections are part of the block's own model, so they need none.
+    public static final Map<BlockFaceConfigType, String> DEFAULT_CONNECTION_MODEL_ASSETS = Map.of(
+            BlockFaceConfigType.BOTH, "Pipe_Normal",
+            BlockFaceConfigType.OUTPUT, "Pipe_Push",
+            BlockFaceConfigType.INPUT, "Pipe_Pull"
+    );
+
     protected final Map<BlockFaceConfigType, String> connectionModelAssetNames = new HashMap<>();
-    private final List<Ref<EntityStore>> modelRefs = new ArrayList<>();
     @Nullable
     protected LogisticNetwork<TContainer> network;
     private boolean needsRenderReload;
@@ -55,8 +57,8 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticComponen
     }
 
     @Override
-    public void reloadContainer() {
-        super.reloadContainer();
+    public void reload() {
+        super.reload();
         if (this.network != null) {
             this.network.rebuildTargets();
         }
@@ -71,33 +73,11 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticComponen
         connectionModelAssetNames.put(configType, modelAssetName);
     }
 
+    /// Model used for the marker on a face with the given explicit configuration.
     @Nullable
-    public ModelAsset getConnectionModelAsset(BlockFace face) {
-        var neighbor = this.getNeighbor(face);
-
-        if (neighbor == null) return null;
-
-        if (neighbor.getLogisticContainer() instanceof LogisticPipeComponent<TContainer>) {
-            return ModelAsset.getAssetMap().getAsset(connectionModelAssetNames.get(BlockFaceConfigType.BOTH));
-        }
-
-        if (this.canPullFrom(neighbor)) {
-            return ModelAsset.getAssetMap().getAsset(connectionModelAssetNames.get(BlockFaceConfigType.INPUT));
-        }
-
-        if (this.canPushTo(neighbor)) {
-            return ModelAsset.getAssetMap().getAsset(connectionModelAssetNames.get(BlockFaceConfigType.OUTPUT));
-        }
-
-        if (this.isConnectedTo(neighbor)) {
-            return ModelAsset.getAssetMap().getAsset(connectionModelAssetNames.get(BlockFaceConfigType.BOTH));
-        }
-
-        return null;
-    }
-
-    public List<Ref<EntityStore>> getModelRefs() {
-        return this.modelRefs;
+    public ModelAsset getConnectionModelAssetFor(BlockFaceConfigType configType) {
+        var name = connectionModelAssetNames.get(configType);
+        return name == null ? null : ModelAsset.getAssetMap().getAsset(name);
     }
 
     public boolean canPullFrom(LogisticNeighbor<TContainer> target) {
@@ -119,6 +99,16 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticComponen
         var neighborHolder = neighbor.getHolder();
         return (this.hasOutputOrBothTowards(neighborHolder) && neighbor.allowsInputTowards(this))
                 || (this.hasInputOrBothTowards(neighborHolder) && neighbor.allowsOutputTowards(this));
+    }
+
+    /// Size of this pipe's centre hub in model units, used to hit-test the arms.
+    ///
+    /// This is geometry, not configuration: it must match the source models the generator
+    /// builds each type's variants from (see PIPE_TYPES in scripts/generate-pipe-assets.py).
+    /// Deliberately not codec backed -- a persisted copy would go stale on blocks placed
+    /// before a geometry change and silently mis-aim the wrench.
+    public int getHubSize() {
+        return PipeConnectionMask.DEFAULT_HUB_UNITS;
     }
 
     public boolean needsRenderReload() {

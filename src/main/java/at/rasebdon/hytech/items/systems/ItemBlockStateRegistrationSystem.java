@@ -3,9 +3,11 @@ package at.rasebdon.hytech.items.systems;
 import at.rasebdon.hytech.core.util.HytechUtil;
 import at.rasebdon.hytech.items.components.HytechItemContainerWrapper;
 import at.rasebdon.hytech.items.utils.ItemUtils;
+import com.hypixel.hytale.builtin.crafting.component.ProcessingBenchBlock;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.RefSystem;
+import com.hypixel.hytale.server.core.modules.block.components.ItemContainerBlock;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
 import javax.annotation.Nonnull;
@@ -32,7 +34,8 @@ public class ItemBlockStateRegistrationSystem extends RefSystem<ChunkStore> {
 
             if (itemContainer != null) {
                 var containerWrapper = new HytechItemContainerWrapper(itemContainer);
-                logisticRegistrationSystem.registerLegacyContainer(containerWrapper, ref, store);
+                logisticRegistrationSystem.registerLegacyContainer(
+                        containerWrapper, blockTransform.worldPos(), ref, store);
             }
         }
     }
@@ -45,17 +48,17 @@ public class ItemBlockStateRegistrationSystem extends RefSystem<ChunkStore> {
             @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
         var blockTransform = HytechUtil.getBlockTransform(ref, store);
         if (blockTransform != null) {
-            var world = store.getExternalData().getWorld();
-            var itemContainer = ItemUtils.getLegacyItemContainer(world, blockTransform.worldPos());
-
-            if (itemContainer != null) {
-                logisticRegistrationSystem.unregisterLegacyContainer(itemContainer, ref, store);
-            }
+            logisticRegistrationSystem.unregisterLegacyContainer(
+                    blockTransform.worldPos(), ref, store);
         }
     }
 
+    /// Only blocks that actually hold a vanilla container are of interest. Scanning every
+    /// block entity meant two component lookups for every block in every loaded chunk.
     @Override
     public @Nullable Query<ChunkStore> getQuery() {
-        return Query.any();
+        return Query.or(
+                ItemContainerBlock.getComponentType(),
+                ProcessingBenchBlock.getComponentType());
     }
 }

@@ -10,13 +10,12 @@ import at.rasebdon.hytech.core.util.HytechUtil;
 import at.rasebdon.hytech.items.HytechItemContainer;
 import at.rasebdon.hytech.items.components.HytechItemContainerWrapper;
 import at.rasebdon.hytech.items.events.ItemContainerChangedEvent;
-import at.rasebdon.hytech.items.utils.ItemUtils;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.event.IEventRegistry;
-import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.math.vector.Vector3iUtil;
 import com.hypixel.hytale.protocol.BlockFace;
-import com.hypixel.hytale.server.core.universe.world.meta.state.ItemContainerBlockState;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
+import org.joml.Vector3i;
 
 import javax.annotation.Nonnull;
 import java.util.HashMap;
@@ -25,7 +24,10 @@ import java.util.Map;
 public class ItemComponentRegistrationSystem
         extends LogisticComponentRegistrationSystem<HytechItemContainer> {
 
-    private final Map<ItemContainerBlockState, HytechItemContainerWrapper> wrappers =
+    /// Wrappers for vanilla containers, keyed by world position. Block states used to be
+    /// identity-stable objects that could key this map; components are looked up per call, so
+    /// the position is now the stable identity.
+    private final Map<Vector3i, HytechItemContainerWrapper> wrappers =
             new HashMap<>();
 
     public ItemComponentRegistrationSystem(
@@ -39,19 +41,20 @@ public class ItemComponentRegistrationSystem
 
     public void registerLegacyContainer(
             @Nonnull HytechItemContainerWrapper wrapper,
+            @Nonnull Vector3i worldPos,
             @Nonnull Ref<ChunkStore> ref,
             @Nonnull Store<ChunkStore> store
     ) {
-        wrappers.put(wrapper.blockState(), wrapper);
+        wrappers.put(new Vector3i(worldPos), wrapper);
         attachWrapperToAdjacentComponents(wrapper, ref, store);
     }
 
     public void unregisterLegacyContainer(
-            @Nonnull ItemContainerBlockState state,
+            @Nonnull Vector3i worldPos,
             @Nonnull Ref<ChunkStore> ref,
             @Nonnull Store<ChunkStore> store
     ) {
-        var wrapper = wrappers.remove(state);
+        var wrapper = wrappers.remove(worldPos);
         if (wrapper != null) {
             detachWrapperFromAdjacentComponents(wrapper, ref, store);
         }
@@ -93,8 +96,8 @@ public class ItemComponentRegistrationSystem
             Store<ChunkStore> store
     ) {
         forEachAdjacentLogisticComponent(ref, store,
-                (face, component) ->
-                        component.addExternalNeighbor(face, wrapper));
+                (componentFace, wrapperFace, component) ->
+                        component.addNeighbor(componentFace, wrapperFace, wrapper));
     }
 
     private void detachWrapperFromAdjacentComponents(
@@ -103,8 +106,8 @@ public class ItemComponentRegistrationSystem
             Store<ChunkStore> store
     ) {
         forEachAdjacentLogisticComponent(ref, store,
-                (_, component) ->
-                        component.removeExternalNeighbor(wrapper));
+                (_, _, component) ->
+                        component.removeNeighbor(wrapper));
     }
 
     private void attachAdjacentWrappers(
@@ -117,19 +120,20 @@ public class ItemComponentRegistrationSystem
 
         var world = store.getExternalData().getWorld();
 
-        for (var worldDir : Vector3i.BLOCK_SIDES) {
+        for (var worldDir : Vector3iUtil.BLOCK_SIDES) {
 
             var localFace = BlockFaceUtil.getLocalFace(worldDir, transform.rotation());
-            var neighborPos = worldDir.clone().add(transform.worldPos());
+            var neighborPos = new Vector3i(worldDir).add(transform.worldPos());
 
-            var blockState = ItemUtils.getLegacyItemContainer(world, neighborPos);
-            if (blockState instanceof ItemContainerBlockState itemState) {
+            var wrapper = wrappers.get(neighborPos);
+            if (wrapper == null) continue;
 
-                var wrapper = wrappers.get(itemState);
-                if (wrapper != null) {
-                    component.addExternalNeighbor(localFace, wrapper);
-                }
-            }
+            var wrapperRef = HytechUtil.getBlockEntityRef(world, neighborPos);
+            var wrapperTransform = wrapperRef != null ? HytechUtil.getBlockTransform(wrapperRef, store) : null;
+            if (wrapperTransform == null) continue;
+
+            var wrapperFace = BlockFaceUtil.getLocalFace(new Vector3i(worldDir).negate(), wrapperTransform.rotation());
+            component.addNeighbor(localFace, wrapperFace, wrapper);
         }
     }
 
@@ -141,18 +145,13 @@ public class ItemComponentRegistrationSystem
         var transform = HytechUtil.getBlockTransform(ref, store);
         if (transform == null) return;
 
-        var world = store.getExternalData().getWorld();
+        for (var worldDir : Vector3iUtil.BLOCK_SIDES) {
 
-        for (var worldDir : Vector3i.BLOCK_SIDES) {
+            var neighborPos = new Vector3i(worldDir).add(transform.worldPos());
 
-            var neighborPos = worldDir.clone().add(transform.worldPos());
-            var blockState = ItemUtils.getLegacyItemContainer(world, neighborPos);
-
-            if (blockState instanceof ItemContainerBlockState itemState) {
-                var wrapper = wrappers.get(itemState);
-                if (wrapper != null) {
-                    component.removeExternalNeighbor(wrapper);
-                }
+            var wrapper = wrappers.get(neighborPos);
+            if (wrapper != null) {
+                component.removeNeighbor(wrapper);
             }
         }
     }
@@ -167,26 +166,30 @@ public class ItemComponentRegistrationSystem
 
         var world = store.getExternalData().getWorld();
 
-        for (var worldDir : Vector3i.BLOCK_SIDES) {
+        for (var worldDir : Vector3iUtil.BLOCK_SIDES) {
 
-            var localFace = BlockFaceUtil.getLocalFace(worldDir, transform.rotation());
+            var wrapperFace = BlockFaceUtil.getLocalFace(worldDir, transform.rotation());
 
             var neighborRef = HytechUtil.getBlockEntityRef(
                     world,
-                    worldDir.clone().add(transform.worldPos())
+                    new Vector3i(worldDir).add(transform.worldPos())
             );
 
             if (neighborRef == null) continue;
 
             var component = getContainer(store, neighborRef);
-            if (component != null) {
-                consumer.accept(localFace, component);
-            }
+            if (component == null) continue;
+
+            var neighborTransform = HytechUtil.getBlockTransform(neighborRef, store);
+            if (neighborTransform == null) continue;
+
+            var componentFace = BlockFaceUtil.getLocalFace(new Vector3i(worldDir).negate(), neighborTransform.rotation());
+            consumer.accept(componentFace, wrapperFace, component);
         }
     }
 
     @FunctionalInterface
     private interface AdjacentConsumer {
-        void accept(BlockFace face, LogisticComponent<HytechItemContainer> component);
+        void accept(BlockFace componentFace, BlockFace wrapperFace, LogisticComponent<HytechItemContainer> component);
     }
 }
