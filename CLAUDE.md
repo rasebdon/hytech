@@ -64,31 +64,84 @@ sources from Maven if you need them.
 
 ### Plugin Initialization
 
-`HytechPlugin.setup()` initializes three modules in order:
+`HytechPlugin.setup()` initializes the modules in a load-bearing order:
 
-1. `HytechCoreModule` — registers shared components (pipes, blocks, entity proxies, wrench interaction)
-2. `EnergyModule` — energy network, transfer, generation, UI
-3. `ItemModule` — item network, transfer, legacy container wrapping
+1. `HytechCoreModule` — shared components, pipe rendering, wrench, face overlay, read interaction
+2. `ItemModule` — item network, transfer, vanilla container wrapping
+3. `EnergyModule` — energy network, transfer, generation, UIs
+4. `HeatModule`, `FluidModule`, `GasModule` — network, transfer, persistence
+
+Items must come **before** energy: the burner generator reads its fuel from a
+`hytech:items:container` so item pipes can feed it, which makes energy the module with the
+dependency. Nothing on the item side needs energy.
 
 ### Generic Logistic Framework
 
-Every resource type (energy, items) extends
-`AbstractLogisticModule<TBlockComponent, TPipeComponent, TRegistrationSystem, TContainer>`. The four type parameters
-are:
+Every resource type (energy, items, fluid, gas, heat) extends
+`AbstractLogisticModule<TBlockComponent, TPipeComponent, TRegistrationSystem, TContainer>`, where
+`TContainer extends LogisticContainer`. The four type parameters are:
 
 - `TBlockComponent` — storage/processing blocks
 - `TPipeComponent` — transport pipes
 - `TRegistrationSystem` — handles component registration with Hytale's chunk/entity stores
-- `TContainer` — the transferable resource interface (`HytechEnergyContainer`, `HytechItemContainer`)
+- `TContainer` — the transferable resource interface
 
-### Component Hierarchy
+### Container Contract
+
+`core/containers/` is what makes the framework generic. Before it existed `TContainer` was an
+unbounded type variable, the framework could not call a single method on a container, and every
+resource type therefore shipped its own copy of the transfer algorithm.
 
 ```
-ContainerHolder<TContainer>           (neighbor tracking)
-  └── LogisticComponent<TContainer>   (per-face block face config: INPUT/OUTPUT/BOTH/DISABLED)
-        ├── LogisticBlockComponent     (storage: transfer priority, extraction flag)
-        └── LogisticPipeComponent      (transport: network assignment, render state)
+LogisticContainer                         getTransferSpeed, isEmpty, isFull,
+                                          getAvailable, getAcceptable, moveTo
+ScalarContainer         : Logistic…       getAmount, getTotalCapacity, add, reduce,
+                                          getDelta, updateDelta  (+ derived helpers)
+TypedScalarContainer<R> : Scalar…         getResourceType, setResourceType, canAccept
 ```
+
+`LogisticContainer` deliberately has **no** F-bound. `LogisticContainer<T extends LogisticContainer<T>>`
+would give `moveTo` a statically typed target, but the bound then has to be repeated on every
+generic declaration in `core/` for no practical gain — a network only ever holds containers of one
+family, so the `instanceof` in each `moveTo` is a guard against a bug, not a routine cast.
+
+`getAcceptable` returns `Long.MAX_VALUE` for slot-based containers, so sum it with
+`LogisticContainer.saturatingSum` rather than `+`.
+
+Energy, fluid, gas and heat are scalars; **items are the odd one out** and implement only the bare
+`LogisticContainer`, because slot capacity depends on what is already in the slots and there is no
+meaningful "remaining capacity".
+
+Fluid and gas are **single-type tanks** (Mekanism style): a tank adopts whatever first enters it,
+rejects anything else until drained, and releases the claim once empty. The resource is a plain
+string id, so a new fluid is declared entirely in assets. Two invariants hold in both tanks and
+pipes: an amount with no type is unreachable and gets zeroed, and clearing a type zeroes the amount
+— which is why `TypedScalarNetworkSaveSystem` writes the amount *before* the type.
+
+Heat is a stored scalar rather than a temperature that equalises. A full heat block stops accepting
+instead of reaching equilibrium with its neighbours; gradients would need a diffusion transfer
+system instead of the shared pull/push one.
+
+### Shared Component and Network Bases
+
+| Base | Purpose |
+|---|---|
+| `AbstractScalarBlockComponent` | amount/capacity/speed + codec for a storage block |
+| `AbstractScalarPipeComponent` | per-segment capacity/speed and saved contents |
+| `AbstractTypedScalar{Block,Pipe}Component` | adds the resource id for fluid/gas |
+| `ScalarNetwork` / `TypedScalarNetwork` | aggregate buffer: capacity summed, speed minimised |
+| `ScalarNetworkSaveSystem` / typed variant | capacity-weighted persistence with remainder carry |
+| `AbstractBlockStateSystem` | drives a block's visual state from one of its components |
+
+**Codec key naming.** Capacity and transfer speed are spelled identically everywhere and live on
+the shared bases. The stored *amount* is per-subclass: energy keeps `Energy` and `SavedEnergy`
+because shipped assets and existing worlds use those keys, while new types use `Amount`. Renaming
+energy's would silently zero every battery and pipe in an existing world.
+
+A pipe is a **holder, not a container** — it reports its network's container as its own and returns
+null when unnetworked. It must not implement the container interface itself; the energy pipe used
+to, forwarding 40 lines of delegation to the network and throwing on any read before a network
+existed.
 
 ### Network System Pattern
 
@@ -100,8 +153,17 @@ Each resource type has three collaborating systems:
 2. **NetworkSystem** (`LogisticNetworkSystem`) — listens to component change events (`ADDED`/`REMOVED`/`CHANGED`), runs
    connected-component DFS to rebuild networks, fires network lifecycle events.
 
-3. **TransferSystem** (e.g., `EnergyTransferSystem`) — ticking system that listens to component and network events,
-   implements pull-from-sources → push-to-sinks logic with priority-based ordering and rate limiting.
+3. **TransferSystem** — `AbstractTransferSystem<TContainer>` holds the *entire* algorithm: pull
+   into each network, then priority-ordered block push, then network push, all with fair-share
+   distribution and rate limiting. A concrete transfer system is pure configuration (~25 lines):
+   the two event classes, an optional pass interval, and an optional delta hook.
+
+   Note `MaxTransfer` is denominated **per transfer pass**, not per second. Energy passes every
+   tick; items pass once a second. Unifying that would rebalance every existing block, so the
+   interval stays per module via `getTransferIntervalSeconds()`.
+
+   A source is capped by its own transfer speed across *all* targets. Energy originally applied the
+   cap per target, so a block with N outputs emitted up to `N × MaxTransfer` per tick.
 
 ### Event-Driven Design
 
@@ -173,26 +235,36 @@ the block states they replaced — are not identity-stable across lookups.
 | File                                                    | Purpose                                         |
 |---------------------------------------------------------|-------------------------------------------------|
 | `HytechPlugin.java`                                     | Entry point, module init order                  |
-| `core/AbstractLogisticModule.java`                      | Generic framework all systems extend            |
-| `energy/EnergyModule.java`                              | Reference implementation of the generic pattern |
+| `core/AbstractLogisticModule.java`                      | Generic framework all modules extend            |
+| `core/containers/LogisticContainer.java`                | The contract that makes the framework generic   |
+| `core/systems/AbstractTransferSystem.java`              | The whole transfer algorithm, once               |
+| `heat/HeatModule.java`                                  | Smallest complete resource type; copy this       |
+| `energy/EnergyModule.java`                              | Richest module: generation, UIs, block states    |
 | `core/components/ContainerHolder.java`                  | Neighbor tracking base                          |
 | `core/networks/LogisticNetwork.java`                    | Network graph structure                         |
 | `core/networks/LogisticNetworkSystem.java`              | Graph algorithms (connected-component DFS)      |
-| `energy/networks/EnergyNetwork.java`                    | Concrete network with transfer logic            |
+| `core/networks/ScalarNetwork.java`                      | Aggregate buffer shared by all scalar types      |
 | `core/systems/LogisticComponentRegistrationSystem.java` | Component lifecycle with Hytale stores          |
 
 ## Current Development
 
-Branch `feat/item-system` is implementing the item transfer system by mirroring the energy system pattern. The
-`ItemModule`, `ItemNetwork`, `ItemNetworkSystem`, `ItemTransferSystem`, and supporting components are all modeled after
-their `energy/` counterparts.
+Branch `feat/item-system`. Five resource modules are live — `energy`, `items`, `fluid`, `gas`,
+`heat` — plus a Burner Generator that turns any vanilla `Fuel` item into energy.
 
-The item side now mirrors energy: real container semantics on `HytechItemContainer`,
-working pull/push transfer with face-config filtering, priority ordering, fair-share
-distribution and rate limiting, plus an `Item_Buffer` block and a `ReadItemContainer`
-inspection interaction.
+Module init order is **core → items → energy → heat → fluid → gas**. Items must precede energy
+because the burner reads its fuel from a `hytech:items:container`, so item pipes can feed it. The
+dependency only runs one way.
 
-One deliberate divergence: there is **no** `ItemNetworkSaveSystem`. Item pipes own their
-buffer containers and those are part of `ItemPipeComponent`'s codec, so contents persist
-with the block. `ItemNetwork` only aggregates them through a `CombinedItemContainer`. This
-avoids the rounding loss `EnergyNetworkSaveSystem` still has (`perPipe = energy / pipeCount`).
+Adding another scalar resource type costs ~11 small classes and no new pipe geometry. Most of those
+classes are only separate because `ComponentRegistry` and `IEventRegistry` both key by class, so a
+shared generic instance would collide.
+
+Known gaps:
+
+- **Items deliberately have no save system.** Item pipes own their buffer containers and those are
+  part of `ItemPipeComponent`'s codec, so contents persist with the block.
+- **Breaking a pipe fails when aimed at a marker-drawn arm.** The marker entity absorbs the break
+  ray. Left as is by decision; the alternatives each trade one bug for another.
+- **`FUEL_LIQUID` generators return 0.** Wiring them to the fluid module is not done.
+- **Fluid, gas and heat have never been tested in-world.** They compile and the assets cross-check,
+  but no transfer has been observed.
