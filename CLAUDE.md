@@ -24,7 +24,15 @@ Gradle itself must run on a **Java 25+ JVM** — the `hytale-mod` plugin require
 default JDK fails during configuration with "Dependency requires at least JVM runtime version 25".
 Set `JAVA_HOME` accordingly before invoking `./gradlew`.
 
-There is no test framework configured.
+There is no test framework configured; verification is in-world. See `TESTING.md` for the
+checklist and for the creative source/void blocks that make fluid, gas and heat observable.
+
+Run `python scripts/check-asset-refs.py` before launching. A missing `Icon` or texture is a
+fatal validation error for that item, which the server reports as `SEVERE` lines and then
+carries on without the item -- so it does not fail the build and is easy to miss. Note that
+`Icons/ItemsGenerated/` is written by the game's icon renderer and copied back by `syncAssets`,
+which happens *after* validation, so every new item needs a placeholder icon committed up front
+(`scripts/generate-icons.py`).
 
 ### Decompiled server sources for the IDE
 

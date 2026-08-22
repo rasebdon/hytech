@@ -1,0 +1,125 @@
+{
+  "TranslationProperties": {
+    "Name": "server.items.Fluid_Void.name"
+  },
+  "ItemLevel": 15,
+  "MaxStack": 100,
+  "Categories": [
+    "Technic.General"
+  ],
+  "PlayerAnimationsId": "Item",
+  "Interactions": {
+    "Primary": "Block_Primary",
+    "Secondary": "Block_Secondary"
+  },
+  "Set": "Rock_Stone_Brick",
+  "Recipe": {
+    "Input": [
+      {
+        "ResourceTypeId": "Rock_Stone_Brick",
+        "Quantity": 4
+      }
+    ],
+    "BenchRequirement": [
+      {
+        "Id": "Builders",
+        "Type": "StructuralCrafting",
+        "Categories": [
+          "Beam"
+        ]
+      }
+    ],
+    "OutputQuantity": 1,
+    "TimeSeconds": 0
+  },
+  "BlockType": {
+    "Material": "Solid",
+    "DrawType": "Cube",
+    "Group": "Props",
+    "Gathering": {
+      "Breaking": {
+        "GatherType": "Rocks"
+      }
+    },
+    "Interactions": {
+      "Use": {
+        "Interactions": [
+          {
+            "Type": "ReadLogisticContainer"
+          }
+        ]
+      }
+    },
+    "BlockEntity": {
+      "Components": {
+        "hytech:fluid:container": {
+          "TotalCapacity": 8000,
+          "MaxTransfer": 400,
+          "TransferPriority": 100,
+          "IsExtracting": false,
+          "BlockFaceConfig": {
+            "None": [
+              "INPUT"
+            ],
+            "Up": [
+              "INPUT"
+            ],
+            "Down": [
+              "INPUT"
+            ],
+            "North": [
+              "INPUT"
+            ],
+            "South": [
+              "INPUT"
+            ],
+            "East": [
+              "INPUT"
+            ],
+            "West": [
+              "INPUT"
+            ]
+          }
+        },
+        "hytech:core:creative_source": {
+          "Voiding": true
+        }
+      }
+    },
+    "VariantRotation": "NESW",
+    "BlockParticleSetId": "Stone",
+    "ParticleColor": "#737055",
+    "BlockSoundSetId": "Stone",
+    "Textures": [
+      {
+        "All": "BlockTextures/Pipes/Fluid/Pipe_Fluid.png",
+        "Weight": 1
+      }
+    ],
+    "Flags": {
+      "IsUsable": true
+    }
+  },
+  "Tags": {
+    "Type": [
+      "Rock"
+    ],
+    "Family": [
+      "Stone"
+    ]
+  },
+  "ItemSoundSetId": "ISS_Blocks_Stone",
+  "IconProperties": {
+    "Scale": 0.58823,
+    "Rotation": [
+      22.5,
+      45,
+      22.5
+    ],
+    "Translation": [
+      0,
+      -13.5
+    ]
+  },
+  "Icon": "Icons/ItemsGenerated/Fluid_Void.png"
+}

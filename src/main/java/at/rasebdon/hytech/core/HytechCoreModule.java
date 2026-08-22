@@ -1,9 +1,11 @@
 package at.rasebdon.hytech.core;
 
+import at.rasebdon.hytech.core.components.CreativeSourceComponent;
 import at.rasebdon.hytech.core.components.LogisticBlockComponent;
 import at.rasebdon.hytech.core.components.LogisticEntityProxyComponent;
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import at.rasebdon.hytech.core.interactions.ReadLogisticContainerInteraction;
+import at.rasebdon.hytech.core.systems.CreativeSourceSystem;
 import at.rasebdon.hytech.core.interactions.WrenchInteraction;
 import at.rasebdon.hytech.core.systems.FaceConfigOverlaySystem;
 import at.rasebdon.hytech.core.systems.PipeConnectionStateSystem;
@@ -40,6 +42,7 @@ public class HytechCoreModule {
     /// One instance each, shared by every resource module: the component registry allows
     /// a single system per class, so these cannot be per-module.
     private final ComponentType<EntityStore, LogisticEntityProxyComponent> logisticEntityProxyComponentType;
+    private final ComponentType<ChunkStore, CreativeSourceComponent> creativeSourceComponentType;
     private final PipeConnectionStateSystem pipeConnectionStateSystem;
     private final PipeMarkerCleanupSystem pipeMarkerCleanupSystem;
 
@@ -50,6 +53,14 @@ public class HytechCoreModule {
                 LogisticEntityProxyComponent.class,
                 "hytech:core:logistic_entity_proxy",
                 LogisticEntityProxyComponent.CODEC);
+
+        // Registered in core rather than per module so one system covers every resource type.
+        this.creativeSourceComponentType = chunkStoreComponentRegistry.registerComponent(
+                CreativeSourceComponent.class,
+                "hytech:core:creative_source",
+                CreativeSourceComponent.CODEC);
+        chunkStoreComponentRegistry.registerSystem(
+                new CreativeSourceSystem(this.creativeSourceComponentType));
 
         this.pipeConnectionStateSystem = new PipeConnectionStateSystem();
         this.pipeMarkerCleanupSystem = new PipeMarkerCleanupSystem(this.pipeConnectionStateSystem);
