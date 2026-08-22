@@ -232,6 +232,47 @@ the block states they replaced — are not identity-stable across lookups.
 - `BlockAccessor.getRotation`/`getRotationIndex` are deprecated for removal with no replacement
   exposed yet, so `HytechUtil.getBlockTransform` still emits one deprecation warning.
 
+### HyUI (machine UIs)
+
+UIs are built with **HyUI** (`curse.maven:hyui-1431415`, group `Ellie`, declared in
+`manifest.json`). The source is worth cloning when touching UI code -- it answers questions the
+docs do not:
+
+```bash
+git clone --depth 1 https://github.com/Elliesaur/HyUI.git hyui-source   # gitignored
+```
+
+Rules established by reading that source, each of which cost a round of broken UI:
+
+- **Only statically declared elements can receive events.** `addEventListener` throws
+  `IllegalArgumentException` unless the id is in `elementRegistry`, and the registry is filled
+  when the HTML is parsed. HyUI's own dynamic example (`HyUIBountyCommand`) adds cards through
+  `ctx.editors().on("list", GroupBuilder.class, list -> list.addChild(card))` and gives them
+  **no ids and no listeners** -- dynamic content is for display only. So anything clickable is
+  declared in the HTML up front and only ever relabelled or hidden via `editById`.
+- **`addElement` registers but does not render where you want.** It sets
+  `inside("#HyUIRoot")`, and `PageBuilder.open` builds `getTopLevelElements()`, which is the
+  root group plus elements whose `parentSelector` is exactly `#HyUIRoot`. Calling `inside()`
+  afterwards to reparent therefore drops the subtree out of the built list entirely, so it
+  renders nowhere. Conversely `addChild` on a container renders (a parent's `build` overrides
+  each child's `parentSelector` to its own selector) but registers nothing.
+- **A nested `div` carrying its own `layout-mode` disconnects the client** with
+  "CustomUI Set command couldn't set value". Keep pages flat:
+  `page-overlay > container > container-contents` with plain `p`/`progress`/`button` children.
+- **Layout modes** are `Full/Left/Center/Right/Top/Middle/Bottom`, the `*Scrolling` variants,
+  `CenterMiddle`/`MiddleCenter` and `LeftCenterWrap`/`RightCenterWrap` -- *not* "Vertical" or
+  "Horizontal". A `Group` defaults to `Top` (vertical); `Left` or `LeftCenterWrap` gives a row,
+  and `withFlexWeight(n)` proportions children within it.
+- **A HyUI page is an overlay and never shows the player's inventory**, so nothing can be
+  dragged into an item grid from it. `ItemGridBuilder` is a rendered view plus events. For real
+  drag and drop use `PageManager.setPageWithWindows(ref, store, Page.Bench, true,
+  new ContainerWindow(container))` -- what vanilla's `OpenContainerInteraction` does for a chest
+  -- and do not close the HyUI page first, since that cancels the window.
+  `openCustomPageWithWindows` accepts a `CustomUIPage` and `HyUIPage` is one, so a single screen
+  with both is possible, but HyUI exposes no way to build a page without opening it.
+- `HytechPage.of` wires refresh and the Exit button; `HytechPage.onClick` wires a click only if
+  the element exists, because a throw while opening takes the whole page down.
+
 ### Resource Assets
 
 - `src/main/resources/Common/` — client-side (textures, block models, UI, icons)

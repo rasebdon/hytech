@@ -11,6 +11,8 @@ import au.ellie.hyui.builders.PageBuilder;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.html.TemplateProcessor;
 import com.hypixel.hytale.protocol.BlockFace;
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.util.MessageUtil;
 import com.hypixel.hytale.server.core.universe.world.World;
 import org.joml.Vector3i;
 
@@ -150,7 +152,12 @@ public final class SideConfigPage {
         component.cycleBlockFaceConfig(localFace(world, blockPos, face));
     }
 
-    /// "Up: Both" -- the face and its mode on one button, since a button is all there is.
+    /// "Up: Both  -> Energy Pipe" -- face, mode, and what is on that side.
+    ///
+    /// The neighbour goes in the text rather than as an icon: an icon would have to be a
+    /// dynamically added element, and those render but never receive events, so mixing them in
+    /// beside the static buttons is layout-fragile for no functional gain. Knowing a side points
+    /// at a pipe is the part that actually helps.
     private static String faceLabel(World world, Vector3i blockPos,
                                     LogisticResourceType resource, BlockFace face) {
         var config = faceConfig(world, blockPos, resource, face);
@@ -162,7 +169,27 @@ public final class SideConfigPage {
             case NONE -> "Off";
         };
 
-        return face.name() + ": " + mode;
+        var neighbour = neighbourName(world, blockPos, face);
+
+        return neighbour == null
+                ? String.format("%s: %s", face.name(), mode)
+                : String.format("%s: %s  -> %s", face.name(), mode, neighbour);
+    }
+
+    /// Display name of the block on that side, or null for air and unloaded chunks.
+    @Nullable
+    private static String neighbourName(World world, Vector3i blockPos, BlockFace face) {
+        var direction = BlockFaceUtil.getVectorFromFace(face);
+        var blockType = HytechUtil.getBlockType(world, new Vector3i(blockPos).add(direction));
+        if (blockType == null) return null;
+
+        var item = blockType.getItem();
+        if (item == null) return null;
+
+        var translation = item.getTranslationProperties();
+        if (translation == null || translation.getName() == null) return null;
+
+        return MessageUtil.toAnsiString(Message.translation(translation.getName())).toString();
     }
 
     @Nullable
