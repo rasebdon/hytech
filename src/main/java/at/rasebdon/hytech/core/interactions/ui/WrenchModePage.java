@@ -17,14 +17,17 @@ import javax.annotation.Nullable;
 
 /// A menu for picking which resource the wrench configures.
 ///
-/// Crouch-and-scroll works, but it is a hidden gesture and the client switches hotbar slots
-/// optimistically, so restoring the slot server-side reads as a flicker. This is the
-/// discoverable version: crouch and right-click with the wrench and pick from a list. Scroll
-/// stays as the shortcut once you know the modes.
+/// Crouch and right-click with the wrench to open it.
+///
+/// This replaced a crouch-and-scroll gesture. Scroll was workable but wrong on two counts: it is
+/// undiscoverable, and the only trace of a scroll available to a plugin is the hotbar's active
+/// slot changing -- so the client switched slots optimistically and the server-side restore was
+/// always a tick behind, which showed as a flicker. A menu has neither problem.
 public final class WrenchModePage {
 
     private static final String HTML = "Core/WrenchModePage.html";
     private static final String LIST_ID = "wrench-mode-list";
+    private static final String GENERATED_ID = "wrench-mode-generated";
 
     private WrenchModePage() {
     }
@@ -51,16 +54,19 @@ public final class WrenchModePage {
 
         var page = HytechPage.of(HTML, template);
 
-        var list = page.getById(LIST_ID, GroupBuilder.class);
-        if (list.isEmpty()) return;
+        var list = GroupBuilder.group().withId(GENERATED_ID).withLayoutMode("Top");
 
-        // Attach every button first; they only enter the element registry then, and
-        // addEventListener throws on an id it cannot find.
         for (var resource : resources) {
-            list.get().addChild(ButtonBuilder.secondaryTextButton()
+            list.addChild(ButtonBuilder.secondaryTextButton()
                     .withId(buttonId(resource.id()))
                     .withText(label(resource.label(), resource == selected)));
         }
+
+        // addElement registers the subtree's ids so the buttons can be wired; inside() then puts
+        // it where the HTML says it belongs. Without the first the clicks never bind -- which is
+        // why the picker showed the current mode but could not change it.
+        page.addElement(list);
+        list.inside("#" + LIST_ID);
 
         var finalMode = mode;
 

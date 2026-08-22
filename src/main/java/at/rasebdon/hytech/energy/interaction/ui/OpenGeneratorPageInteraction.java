@@ -9,6 +9,7 @@ import at.rasebdon.hytech.energy.components.FuelBurnerComponent;
 import at.rasebdon.hytech.energy.util.FuelUtil;
 import at.rasebdon.hytech.items.ItemModule;
 import au.ellie.hyui.builders.ItemGridBuilder;
+import au.ellie.hyui.builders.HyUIPage;
 import au.ellie.hyui.builders.PageBuilder;
 import au.ellie.hyui.events.PageRefreshResult;
 import au.ellie.hyui.events.SlotClickingEventData;
@@ -16,10 +17,12 @@ import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.html.TemplateProcessor;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
+import com.hypixel.hytale.protocol.packets.interface_.Page;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.entity.entities.player.windows.ContainerWindow;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.server.core.inventory.InventoryComponent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
@@ -38,7 +41,7 @@ import java.util.List;
 public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
 
     private static final String FUEL_GRID_ID = "fuel-grid";
-    private static final String FUEL_INSERT_ID = "fuel-insert-button";
+    private static final String FUEL_WINDOW_ID = "fuel-window-button";
 
     /// Wind output ramps between these heights, matching `EnergyGenerationSystem`.
     private static final int WIND_MIN_HEIGHT = 64;
@@ -146,14 +149,14 @@ public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
         fillGrid(page, fuel);
 
         return page
-                // Insert from the hand rather than by dragging. A HyUI custom page is an overlay
-                // and does not show the player's inventory, so there is nothing on screen to drag
-                // *from* -- the grid can only ever display what is already inside. The held item
-                // is reachable server-side, so one button does the job the drag could not.
-                .addEventListener(FUEL_INSERT_ID, CustomUIEventBindingType.Activating,
+                // Hands the fuel container to a real inventory window -- the same mechanism a
+                // chest or an alchemy table uses, so drag and drop is engine-handled and the
+                // player's own inventory is on screen. A HyUI page is an overlay and never shows
+                // the inventory, so no amount of grid configuration could have made dragging work.
+                .addEventListener(FUEL_WINDOW_ID, CustomUIEventBindingType.Activating,
                         (_, ctx) -> {
-                            insertHeldFuel(store, playerRef, fuel);
-                            refreshGrid(ctx, fuel);
+                            ctx.getPage().ifPresent(HyUIPage::close);
+                            world.execute(() -> openFuelWindow(world, playerRef, fuel));
                         })
                 // Clicking a slot takes it back out, so fuel is never trapped in the machine.
                 .addEventListener(FUEL_GRID_ID, CustomUIEventBindingType.SlotClicking,
@@ -171,17 +174,22 @@ public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
                 });
     }
 
-    /// Moves the player's held stack into the fuel container.
+    /// Opens the fuel container as a vanilla inventory window.
     ///
-    /// Non-fuel is accepted deliberately: the container is a plain item container that pipes can
-    /// also fill, and rejecting by hand while allowing it by pipe would be inconsistent. The grid
-    /// marks anything unburnable as incompatible so it is still obvious.
-    private void insertHeldFuel(Store<EntityStore> store, Ref<EntityStore> playerRef,
-                                ItemContainer fuel) {
-        var held = InventoryComponent.getItemInHand(store, playerRef);
-        if (ItemStack.isEmpty(held)) return;
+    /// `Page.Bench` with a `ContainerWindow` is exactly what `OpenContainerInteraction` does for a
+    /// chest, so the player gets their own inventory alongside and the engine performs the item
+    /// moves. Nothing here validates the items: the same container is fed by item pipes, and
+    /// rejecting fuel by hand while accepting it by pipe would be incoherent.
+    private void openFuelWindow(World world, Ref<EntityStore> playerRef, ItemContainer fuel) {
+        var store = world.getEntityStore().getStore();
 
-        UiItemTransfer.intoContainer(store, playerRef, held.getItemId(), held.getQuantity(), fuel);
+        var player = store.getComponent(playerRef, Player.getComponentType());
+        if (player == null) return;
+
+        var pageManager = player.getPageManager();
+        if (pageManager == null) return;
+
+        pageManager.setPageWithWindows(playerRef, store, Page.Bench, true, new ContainerWindow(fuel));
     }
 
     private String burnStatus(FuelBurnerComponent burner) {

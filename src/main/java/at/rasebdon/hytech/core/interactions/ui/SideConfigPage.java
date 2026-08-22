@@ -38,8 +38,9 @@ public final class SideConfigPage {
 
     private static final String HTML = "Core/SideConfigPage.html";
 
-    /// Where the generated rows are attached.
+    /// The container the HTML declares, and the generated subtree parented into it.
     private static final String ROWS_CONTAINER_ID = "side-config-rows";
+    private static final String ROWS_ID = "side-config-generated";
 
     /// Valid HyUI layout modes. "Vertical"/"Horizontal" are not among them -- a Group stacks
     /// vertically by default (its .ui declares LayoutMode: Top), and a horizontal run of children
@@ -71,17 +72,22 @@ public final class SideConfigPage {
         var template = new TemplateProcessor().setVariable("blockName", blockName);
         var page = HytechPage.of(HTML, template);
 
-        // Populate the container the HTML declares. addElement would register the element but
-        // leave it outside this container's layout tree, so the page opened completely empty.
-        var rows = page.getById(ROWS_CONTAINER_ID, GroupBuilder.class);
-        if (rows.isEmpty()) return null;
+        var rows = GroupBuilder.group()
+                .withId(ROWS_ID)
+                .withLayoutMode(LAYOUT_STACK);
 
         for (var resource : present) {
-            rows.get().addChild(resourceRow(world, blockPos, resource));
+            rows.addChild(resourceRow(world, blockPos, resource));
         }
 
-        // Wire only after the children are attached: they enter the element registry then, and
-        // addEventListener throws on an unknown id.
+        // Two separate jobs, and doing only one of them was the bug. addElement walks the subtree
+        // and registers every id, which is what makes the buttons wireable -- but it parents to
+        // #HyUIRoot, so the rows landed outside the container and nothing rendered. Attaching
+        // children to a getById container renders them but registers nothing, so the listeners
+        // were skipped. Do both: register via addElement, then reparent with inside().
+        page.addElement(rows);
+        rows.inside("#" + ROWS_CONTAINER_ID);
+
         for (var resource : present) {
             for (var face : FACES) {
                 String id = buttonId(resource, face);
