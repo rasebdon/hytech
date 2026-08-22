@@ -5,6 +5,14 @@
 
             <p id="fuel-label" style="margin-top: 6; text-align: center;">Fuel</p>
 
+            <!-- Declared here and populated with getById, which is how HyUI intends it. Building
+                 it with addElement instead put a second element with the same id outside this
+                 container's layout tree, so nothing rendered. -->
+            <div class="item-grid" id="fuel-grid"
+                 data-hyui-slots-per-row="4"
+                 data-hyui-display-item-quantity="true"
+                 data-hyui-are-items-draggable="false"
+                 style="anchor-width: 200; anchor-height: 96; margin-vertical: 4"></div>
 
             <button id="fuel-insert-button" style="margin-top: 4; anchor-height: 25; anchor-width: 190">
                 Insert Held Fuel

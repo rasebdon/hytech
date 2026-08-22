@@ -1,11 +1,13 @@
 <div class="page-overlay" style="layout-mode: Middle;">
-    <div class="container" data-hyui-title="{{$blockName}}" id="base-container"
-         style="anchor-height: 260; anchor-width: 340;">
-        <div class="container-contents" style="layout-mode: Middle;">
+    <div class="decorated-container" data-hyui-title="{{$blockName}}" id="base-container"
+         style="anchor-height: 280; anchor-width: 360;">
+        <div class="container-contents" style="layout-mode: Top; padding: 6;">
 
+            <!-- One line per logistic container the block carries; filled in via getById. -->
+            <div id="container-rows" style="layout-mode: Top;"></div>
 
-            <button id="side-config-button" style="margin-top: 12; anchor-height: 25; anchor-width: 150">Configure Sides</button>
-            <button id="exit-button" style="margin-top: 8; anchor-height: 25; anchor-width: 150">Exit</button>
+            <button id="side-config-button" style="anchor-height: 25; anchor-width: 150">Configure Sides</button>
+            <button id="exit-button" style="anchor-height: 25; anchor-width: 150">Exit</button>
         </div>
     </div>
 </div>

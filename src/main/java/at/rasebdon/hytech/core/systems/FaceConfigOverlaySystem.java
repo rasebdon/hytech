@@ -45,9 +45,10 @@ public final class FaceConfigOverlaySystem extends TickingSystem<EntityStore> {
     /// no thickness, so this only needs to beat depth precision.
     private static final double SURFACE_OFFSET = 0.01;
 
-    /// Entity models render at half block scale, so a full-face quad needs 2 --
-    /// the same convention PipeFaceMarkers uses.
-    private static final float OVERLAY_SCALE = 2f;
+    /// Entity models render at half block scale, so 2 would cover the face exactly. Inset a
+    /// little instead: a badge that stops short of the edges reads as an overlay rather than as a
+    /// retexture of the block, and it stops the quad z-fighting with a neighbour's own face.
+    private static final float OVERLAY_SCALE = 1.6f;
     // Keyed by entity index, not by Ref: Ref has no equals/hashCode, so a fresh one is
     // handed out every tick and map lookups would never match -- which spawned a new quad
     // every pass and never cleaned any up.
@@ -215,7 +216,11 @@ public final class FaceConfigOverlaySystem extends TickingSystem<EntityStore> {
         if (hit == null) return null;
 
         var blockPos = hit.block();
-        var component = logisticBlockAt(world, playerRef, blockPos);
+
+        // Only the resource the wrench is currently set to. Showing a face the wrench cannot
+        // change -- because this block has no container of that type -- is worse than showing
+        // nothing: the colour would describe something the next click will not touch.
+        var component = componentForMode(world, playerRef, blockPos);
         if (component == null) return null;
 
         var worldFace = faceOfHit(hit.point(), blockPos);
@@ -230,33 +235,33 @@ public final class FaceConfigOverlaySystem extends TickingSystem<EntityStore> {
         var localFace = BlockFaceUtil.getLocalFace(
                 BlockFaceUtil.getVectorFromFace(worldFace), transform.rotation());
 
+        // A face with no configurable state is not worth a quad. `getAllowedFaceConfigs` is the
+        // block's own declaration of what it permits per side, so a side locked to one mode gets
+        // no overlay rather than one the player cannot cycle.
+        if (!component.isFaceConfigurable(localFace)) return null;
+
         return new Shown(new Vector3i(blockPos), worldFace, component.getFaceConfigTowards(localFace));
     }
 
-    /// The logistic block component whose face configuration to show.
+    /// The block component for the player's currently selected resource, or null.
     ///
-    /// Follows the player's wrench mode so the colour always describes the container their next
-    /// click will change -- otherwise, on a machine carrying two containers, the overlay would
-    /// happily show the energy side while the wrench edited the item side.
-    ///
-    /// Pipes are excluded: they are registered as pipe components, so their arms keep showing
-    /// connectivity without a quad over them.
+    /// Deliberately does *not* fall back to another resource. The wrench falls back so that
+    /// clicking a plain energy pipe in Items mode still does the obvious thing, but the overlay
+    /// must not: a quad implies "this is what you are about to change", and showing energy while
+    /// the mode says Items would be a lie the moment the block has both.
     @Nullable
-    private LogisticComponent<?> logisticBlockAt(
+    private LogisticComponent<?> componentForMode(
             @NonNull World world, @NonNull Ref<EntityStore> playerRef, @NonNull Vector3i blockPos) {
 
-        var mode = HytechCoreModule.get().getWrenchModeComponentType();
-        var selected = store(world).getComponent(playerRef, mode);
+        var modeType = HytechCoreModule.get().getWrenchModeComponentType();
+        var mode = store(world).getComponent(playerRef, modeType);
 
-        if (selected != null) {
-            var resource = selected.resolve();
-            if (resource != null) {
-                var component = resource.blockAt(world, blockPos);
-                if (component != null) return component;
-            }
-        }
+        var resource = mode == null ? null : mode.resolve();
+        if (resource == null) return null;
 
-        return LogisticLookup.blockComponentAt(world, blockPos);
+        // Pipes are excluded: their arms already show connectivity, and a quad over an arm would
+        // hide it.
+        return resource.blockAt(world, blockPos);
     }
 
     private static Store<EntityStore> store(@NonNull World world) {

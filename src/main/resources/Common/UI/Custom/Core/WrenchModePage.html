@@ -1,0 +1,16 @@
+<div class="page-overlay" style="layout-mode: Middle;">
+    <div class="decorated-container" data-hyui-title="Wrench Mode" id="base-container"
+         style="anchor-height: 300; anchor-width: 300;">
+        <div class="container-contents" style="layout-mode: Top; padding: 6;">
+
+            <p id="wrench-mode-current" style="text-align: center;">Current: {{$currentMode}}</p>
+            <p id="wrench-mode-hint" style="text-align: center;">
+                Crouch and scroll also switches mode.</p>
+
+            <!-- One button per registered resource, added via getById. -->
+            <div id="wrench-mode-list" style="layout-mode: Top;"></div>
+
+            <button id="exit-button" style="anchor-height: 25; anchor-width: 150">Close</button>
+        </div>
+    </div>
+</div>

@@ -128,6 +128,16 @@ public class BlockFaceConfig implements Cloneable {
         return res.toArray(String[]::new);
     }
 
+    /// Whether this face has more than one permitted state, i.e. whether cycling it does
+    /// anything.
+    ///
+    /// A block can pin a side to a single mode through its `BlockFaceConfig` asset -- a
+    /// generator that only ever outputs, say. Cycling such a face is a no-op, so the wrench
+    /// overlay uses this to avoid promising a change it cannot make.
+    public boolean isConfigurable(BlockFace face) {
+        return Long.bitCount(allowedMasks[face.getValue()]) > 1;
+    }
+
     public BlockFaceConfigState getFallback(BlockFace face) {
         long mask = allowedMasks[face.getValue()];
         for (BlockFaceConfigType t : PRIORITY) {

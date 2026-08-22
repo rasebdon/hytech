@@ -57,6 +57,11 @@ public class WrenchModeComponent implements Component<EntityStore> {
         return types.getFirst();
     }
 
+    /// Selects a resource directly, for the picker menu.
+    public void select(@Nullable String resourceId) {
+        this.resourceId = resourceId;
+    }
+
     /// Advances to the next or previous resource, wrapping around.
     ///
     /// Returns the new selection so the caller can tell the player what it is.

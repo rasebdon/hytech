@@ -25,10 +25,6 @@ public class OpenLogisticContainerPageInteraction extends OpenPageBlockInteracti
     private static final String HTML = "Core/LogisticContainerPage.html";
     private static final String ROWS_ID = "container-rows";
 
-    /// A Group stacks vertically by default; "Vertical" is not a valid HyUI layout mode and
-    /// passing it disconnects the client.
-    private static final String LAYOUT_STACK = "Top";
-
     @Nonnull
     public static final BuilderCodec<OpenLogisticContainerPageInteraction> CODEC =
             BuilderCodec.builder(
@@ -50,18 +46,19 @@ public class OpenLogisticContainerPageInteraction extends OpenPageBlockInteracti
         var template = new TemplateProcessor()
                 .setVariable("blockName", getBlockName(world, blockPos));
 
-        var rows = GroupBuilder.group().withId(ROWS_ID).withLayoutMode(LAYOUT_STACK);
+        var page = HytechPage.of(HTML, template);
+
+        // Into the container the HTML declares; addElement leaves the element outside the layout
+        // tree and it never appears.
+        var rows = page.getById(ROWS_ID, GroupBuilder.class);
+        if (rows.isEmpty()) return page;
 
         for (int i = 0; i < components.size(); i++) {
-            var component = components.get(i);
-
-            // Supplier-bound so the row re-renders on the page's refresh tick and follows the
-            // container as it fills, drains or changes resource.
-            rows.addChild(LabelBuilder.label()
+            rows.get().addChild(LabelBuilder.label()
                     .withId(ROWS_ID + "-" + i)
-                    .withText(component.toString()));
+                    .withText(components.get(i).toString()));
         }
 
-        return HytechPage.of(HTML, template).addElement(rows);
+        return page;
     }
 }

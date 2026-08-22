@@ -71,19 +71,17 @@ public final class SideConfigPage {
         var template = new TemplateProcessor().setVariable("blockName", blockName);
         var page = HytechPage.of(HTML, template);
 
-        var rows = GroupBuilder.group()
-                .withId(ROWS_CONTAINER_ID)
-                .withLayoutMode(LAYOUT_STACK);
+        // Populate the container the HTML declares. addElement would register the element but
+        // leave it outside this container's layout tree, so the page opened completely empty.
+        var rows = page.getById(ROWS_CONTAINER_ID, GroupBuilder.class);
+        if (rows.isEmpty()) return null;
 
         for (var resource : present) {
-            rows.addChild(resourceRow(world, blockPos, resource));
+            rows.get().addChild(resourceRow(world, blockPos, resource));
         }
 
-        // Attach first, wire second. A builder only enters the page's element registry when it is
-        // added, and addEventListener throws on an unknown id -- so wiring during construction
-        // took the whole page down on open.
-        page.addElement(rows);
-
+        // Wire only after the children are attached: they enter the element registry then, and
+        // addEventListener throws on an unknown id.
         for (var resource : present) {
             for (var face : FACES) {
                 String id = buttonId(resource, face);

@@ -65,6 +65,11 @@ public abstract class LogisticComponent<TContainer>
         return getFaceConfigTowards(target) == BlockFaceConfigType.OUTPUT;
     }
 
+    /// Whether cycling this face would change anything. See [BlockFaceConfig#isConfigurable].
+    public boolean isFaceConfigurable(BlockFace face) {
+        return this.blockFaceConfig.isConfigurable(face);
+    }
+
     public void cycleBlockFaceConfig(BlockFace face) {
         if (isPipeToPipe(face)) {
             // Direction is meaningless between two pipes -- they are the same network, so a

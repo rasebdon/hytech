@@ -40,9 +40,6 @@ public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
     private static final String FUEL_GRID_ID = "fuel-grid";
     private static final String FUEL_INSERT_ID = "fuel-insert-button";
 
-    /// A Group stacks vertically by default; "Vertical" is not a valid HyUI layout mode.
-    private static final String LAYOUT_STACK = "Top";
-
     /// Wind output ramps between these heights, matching `EnergyGenerationSystem`.
     private static final int WIND_MIN_HEIGHT = 64;
     private static final int WIND_MAX_HEIGHT = 160;
@@ -141,8 +138,14 @@ public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
         var playerRef = context.getEntity();
         var store = world.getEntityStore().getStore();
 
-        return HytechPage.of("Energy/Generators/BurnerGeneratorPage.html", template)
-                .addElement(fuelGrid(fuel))
+        var page = HytechPage.of("Energy/Generators/BurnerGeneratorPage.html", template);
+
+        // The grid is declared in the HTML, as HyUI's own examples do it. Filling that element is
+        // the point: building a second one with addElement registered the id but left the element
+        // outside the container's layout tree, so no slots ever appeared.
+        fillGrid(page, fuel);
+
+        return page
                 // Insert from the hand rather than by dragging. A HyUI custom page is an overlay
                 // and does not show the player's inventory, so there is nothing on screen to drag
                 // *from* -- the grid can only ever display what is already inside. The held item
@@ -162,8 +165,8 @@ public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
                                     slot.shortValue(), Integer.MAX_VALUE);
                             refreshGrid(ctx, fuel);
                         })
-                .onRefresh(page -> {
-                    refreshGrid(page, fuel);
+                .onRefresh(openPage -> {
+                    refreshGrid(openPage, fuel);
                     return PageRefreshResult.UPDATE;
                 });
     }
@@ -187,21 +190,12 @@ public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
         return String.format("Burning - %.0fs left", Math.ceil(burner.getBurnTimeRemaining()));
     }
 
-    private ItemGridBuilder fuelGrid(ItemContainer fuel) {
-        var grid = ItemGridBuilder.itemGrid()
-                .withId(FUEL_GRID_ID)
-                .withSlotsPerRow(4)
-                .withLayoutMode(LAYOUT_STACK)
-                // Not draggable: with no inventory panel on screen there is nowhere to drag from
-                // or to, and leaving it on advertises an interaction that cannot happen.
-                .withAreItemsDraggable(false)
-                .withDisplayItemQuantity(true);
-
-        grid.withSlots(slotsOf(fuel));
-
-        return grid;
+    /// Fills the HTML-declared grid before the page opens.
+    private void fillGrid(PageBuilder page, ItemContainer fuel) {
+        page.editById(FUEL_GRID_ID, ItemGridBuilder.class, grid -> grid.withSlots(slotsOf(fuel)));
     }
 
+    /// Refreshes it afterwards, from an event handler or the refresh tick.
     private void refreshGrid(UIContext ctx, ItemContainer fuel) {
         ctx.editById(FUEL_GRID_ID, ItemGridBuilder.class, grid -> grid.withSlots(slotsOf(fuel)));
     }

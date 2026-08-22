@@ -1,15 +1,17 @@
 <div class="page-overlay" style="layout-mode: Middle;">
-    <div class="container" data-hyui-title="{{$blockName}} - Sides" id="base-container"
-         style="anchor-height: 400; anchor-width: 420;">
-        <div class="container-contents" style="layout-mode: Middle;">
+    <div class="decorated-container" data-hyui-title="{{$blockName}} - Sides" id="base-container"
+         style="anchor-height: 420; anchor-width: 460;">
+        <div class="container-contents" style="layout-mode: Top; padding: 6;">
 
-            <p id="side-config-hint" style="margin-top: 4; text-align: center;">
+            <p id="side-config-hint" style="text-align: center;">
                 Click a side to cycle Both / In / Out / Off</p>
 
+            <!-- Rows are added per resource the block carries, via getById. Declared here rather
+                 than built with addElement, because an element added that way never enters this
+                 container's layout tree and renders nowhere. -->
+            <div id="side-config-rows" style="layout-mode: Top;"></div>
 
-            <button id="side-config-back" style="margin-top: 12; anchor-height: 25; anchor-width: 150">
-                Back
-            </button>
+            <button id="side-config-back" style="anchor-height: 25; anchor-width: 150">Back</button>
         </div>
     </div>
 </div>

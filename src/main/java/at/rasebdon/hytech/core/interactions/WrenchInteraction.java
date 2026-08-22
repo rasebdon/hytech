@@ -6,6 +6,7 @@ import at.rasebdon.hytech.core.components.LogisticEntityProxyComponent;
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import at.rasebdon.hytech.core.util.BlockFaceUtil;
 import at.rasebdon.hytech.core.util.HytechUtil;
+import at.rasebdon.hytech.core.interactions.ui.WrenchModePage;
 import at.rasebdon.hytech.core.util.LogisticLookup;
 import at.rasebdon.hytech.core.LogisticResourceType;
 import at.rasebdon.hytech.core.util.PipeConnectionMask;
@@ -20,6 +21,8 @@ import com.hypixel.hytale.server.core.modules.entity.component.TransformComponen
 import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHandler;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.SimpleInteraction;
+import com.hypixel.hytale.server.core.entity.movement.MovementStatesComponent;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.jetbrains.annotations.NotNull;
@@ -34,6 +37,20 @@ public class WrenchInteraction extends SimpleInteraction {
     public static final BuilderCodec<WrenchInteraction> CODEC = BuilderCodec.builder(
             WrenchInteraction.class, WrenchInteraction::new, SimpleInteraction.CODEC
     ).build();
+
+    /// Whether the player is crouching, which is the modifier for "change mode, do not configure".
+    ///
+    /// Readable server-side from MovementStatesComponent -- the same source the vanilla
+    /// `Condition` interaction checks for its `Crouching` key.
+    private static boolean isCrouching(@Nonnull World world, @Nonnull Ref<EntityStore> playerRef) {
+        var movement = world.getEntityStore().getStore()
+                .getComponent(playerRef, MovementStatesComponent.getComponentType());
+        if (movement == null) return false;
+
+        var states = movement.getMovementStates();
+
+        return states != null && (states.crouching || states.forcedCrouching);
+    }
 
     private static void doBlockInteraction(
             @Nonnull InteractionSyncData clientState,
@@ -197,6 +214,19 @@ public class WrenchInteraction extends SimpleInteraction {
         var playerRef = interactionContext.getEntity();
         var entityStore = playerRef.getStore();
         var world = entityStore.getExternalData().getWorld();
+
+        // Crouching means "pick the resource", not "configure this face". Checked before the
+        // target is considered, so it also works aiming at nothing.
+        if (isCrouching(world, playerRef)) {
+            var store = world.getEntityStore().getStore();
+            var pageTarget = store.getComponent(playerRef, PlayerRef.getComponentType());
+
+            if (pageTarget != null) {
+                var target = pageTarget;
+                world.execute(() -> WrenchModePage.open(store, playerRef, target));
+            }
+            return;
+        }
 
         var targetBlock = interactionContext.getTargetBlock();
         if (targetBlock != null) {

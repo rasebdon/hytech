@@ -39,18 +39,20 @@ COLOURS = {
     "Output": (0x30, 0x60, 0xD0),
 }
 
-# Must be at least as large as the biggest face of the quad (QUAD_SIZE x QUAD_SIZE in
-# model units), because every face's UV offset is (0,0). A smaller texture makes the faces
-# sample past their own region -- which reads neighbouring atlas entries and shows up as
-# mixed colours and missing patches.
-TEXTURE_SIZE = 64
+# Must be exactly the quad's size in model units, not merely at least it. Every face's UV
+# offset is (0,0), so the quad samples a QUAD_SIZE x QUAD_SIZE window: a smaller texture
+# samples past its own region and picks up neighbouring atlas entries (mixed colours, missing
+# patches), while a *larger* one gets cropped to its top-left corner -- which quietly hid the
+# right and bottom edges of the frame below.
+TEXTURE_SIZE = 32
 # Binary alpha only. This render path does cutout, not blending: a uniform 50% alpha comes
 # out fully opaque, because entity models ignore texture alpha (vanilla fades a model with
 # ModelVFX.PostColorOpacity instead). So the design works with 0/255 alpha rather than
 # against it -- a solid frame around the face, and a sparse wash inside it.
 
-# Width of the fully opaque border, in texture pixels.
-BORDER_PX = 4
+# Width of the fully opaque border, in texture pixels. Two at this size: the quad is inset on
+# the face, so a thicker frame starts to swallow the wash.
+BORDER_PX = 2
 
 # Interior wash: one opaque pixel per FILL_PERIOD x FILL_PERIOD cell, so 2 gives 25%
 # coverage. Raise it for a lighter tint, lower it for a denser one.
