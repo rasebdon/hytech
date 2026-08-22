@@ -4,30 +4,32 @@ import at.rasebdon.hytech.core.HytechCoreModule;
 import at.rasebdon.hytech.core.components.WrenchModeComponent;
 import at.rasebdon.hytech.core.util.HytechUtil;
 import au.ellie.hyui.builders.ButtonBuilder;
-import au.ellie.hyui.builders.GroupBuilder;
 import au.ellie.hyui.builders.HyUIPage;
-import au.ellie.hyui.builders.PageBuilder;
 import au.ellie.hyui.html.TemplateProcessor;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
-/// A menu for picking which resource the wrench configures.
+/// A menu for picking which resource the wrench configures. Crouch and right-click to open.
 ///
-/// Crouch and right-click with the wrench to open it.
+/// Replaced a crouch-and-scroll gesture, which was undiscoverable and visibly flickery: the only
+/// trace of a scroll available to a plugin is the hotbar active slot changing, so the client
+/// switched slots optimistically and the server-side restore was always a tick behind.
 ///
-/// This replaced a crouch-and-scroll gesture. Scroll was workable but wrong on two counts: it is
-/// undiscoverable, and the only trace of a scroll available to a plugin is the hotbar's active
-/// slot changing -- so the client switched slots optimistically and the server-side restore was
-/// always a tick behind, which showed as a flicker. A menu has neither problem.
+/// The buttons are declared statically in the HTML, one per possible resource, and hidden when
+/// unused. Creating them at runtime does not work: HyUI registers element ids at parse time, so
+/// runtime-created buttons render but never receive their click -- which is exactly why an earlier
+/// version of this page showed the current mode but could not change it.
 public final class WrenchModePage {
 
     private static final String HTML = "Core/WrenchModePage.html";
-    private static final String LIST_ID = "wrench-mode-list";
-    private static final String GENERATED_ID = "wrench-mode-generated";
+
+    /// How many mode buttons the HTML declares. Registering more resource types than this leaves
+    /// the extras unreachable from the menu rather than breaking the page.
+    private static final int MAX_BUTTONS = 6;
 
     private WrenchModePage() {
     }
@@ -35,7 +37,7 @@ public final class WrenchModePage {
     /// Opens the picker for one player. Does nothing if no resource modules registered.
     public static void open(@Nonnull Store<EntityStore> store,
                             @Nonnull Ref<EntityStore> playerRef,
-                            @Nonnull com.hypixel.hytale.server.core.universe.PlayerRef pageTarget) {
+                            @Nonnull PlayerRef pageTarget) {
 
         var resources = HytechCoreModule.get().getResourceTypes();
         if (resources.isEmpty()) return;
@@ -54,25 +56,31 @@ public final class WrenchModePage {
 
         var page = HytechPage.of(HTML, template);
 
-        var list = GroupBuilder.group().withId(GENERATED_ID).withLayoutMode("Top");
+        int shown = Math.min(resources.size(), MAX_BUTTONS);
 
-        for (var resource : resources) {
-            list.addChild(ButtonBuilder.secondaryTextButton()
-                    .withId(buttonId(resource.id()))
-                    .withText(label(resource.label(), resource == selected)));
+        if (resources.size() > MAX_BUTTONS) {
+            HytechUtil.sendPlayerMessage(playerRef,
+                    "Wrench menu shows the first " + MAX_BUTTONS + " resource types.");
         }
 
-        // addElement registers the subtree's ids so the buttons can be wired; inside() then puts
-        // it where the HTML says it belongs. Without the first the clicks never bind -- which is
-        // why the picker showed the current mode but could not change it.
-        page.addElement(list);
-        list.inside("#" + LIST_ID);
+        for (int i = 0; i < MAX_BUTTONS; i++) {
+            String id = buttonId(i);
 
-        var finalMode = mode;
+            if (i >= shown) {
+                page.editById(id, ButtonBuilder.class, button -> button.withVisible(false));
+                continue;
+            }
 
-        for (var resource : resources) {
-            HytechPage.onClick(page, buttonId(resource.id()), (_, ctx) -> {
-                finalMode.select(resource.id());
+            var resource = resources.get(i);
+            boolean active = resource == selected;
+            var target = mode;
+
+            page.editById(id, ButtonBuilder.class, button -> button
+                    .withVisible(true)
+                    .withText(active ? "> " + resource.label() : resource.label()));
+
+            HytechPage.onClick(page, id, (_, ctx) -> {
+                target.select(resource.id());
 
                 HytechUtil.sendPlayerMessage(playerRef, "Wrench mode: " + resource.label());
                 ctx.getPage().ifPresent(HyUIPage::close);
@@ -82,12 +90,7 @@ public final class WrenchModePage {
         page.open(pageTarget, store);
     }
 
-    private static String buttonId(String resourceId) {
-        return "wrench-mode-" + resourceId;
-    }
-
-    /// Marks the active entry, so the list shows state rather than only offering choices.
-    private static String label(@Nullable String resourceLabel, boolean active) {
-        return active ? "> " + resourceLabel : resourceLabel;
+    private static String buttonId(int index) {
+        return "wrench-mode-" + index;
     }
 }

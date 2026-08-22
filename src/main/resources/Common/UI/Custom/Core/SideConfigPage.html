@@ -1,17 +1,20 @@
 <div class="page-overlay" style="layout-mode: Middle;">
-    <div class="decorated-container" data-hyui-title="{{$blockName}} - Sides" id="base-container"
-         style="anchor-height: 420; anchor-width: 460;">
-        <div class="container-contents" style="layout-mode: Top; padding: 6;">
+    <div class="container" data-hyui-title="{{$blockName}} - Sides" id="base-container"
+         style="anchor-height: 400; anchor-width: 320;">
+        <div class="container-contents" style="layout-mode: Middle;">
 
-            <p id="side-config-hint" style="text-align: center;">
-                Click a side to cycle Both / In / Out / Off</p>
+            <p id="side-resource-label" style="margin-top: 8; text-align: center;">Editing: -</p>
+            <button id="side-resource-next" style="margin-top: 4; anchor-height: 22; anchor-width: 170">Next Resource</button>
 
-            <!-- Rows are added per resource the block carries, via getById. Declared here rather
-                 than built with addElement, because an element added that way never enters this
-                 container's layout tree and renders nowhere. -->
-            <div id="side-config-rows" style="layout-mode: Top;"></div>
+            <!-- One button per face. Static ids, relabelled per resource. -->
+            <button id="side-face-up" style="margin-top: 8; anchor-height: 22; anchor-width: 200">Up</button>
+            <button id="side-face-down" style="margin-top: 3; anchor-height: 22; anchor-width: 200">Down</button>
+            <button id="side-face-north" style="margin-top: 3; anchor-height: 22; anchor-width: 200">North</button>
+            <button id="side-face-south" style="margin-top: 3; anchor-height: 22; anchor-width: 200">South</button>
+            <button id="side-face-east" style="margin-top: 3; anchor-height: 22; anchor-width: 200">East</button>
+            <button id="side-face-west" style="margin-top: 3; anchor-height: 22; anchor-width: 200">West</button>
 
-            <button id="side-config-back" style="anchor-height: 25; anchor-width: 150">Back</button>
+            <button id="side-config-back" style="margin-top: 12; anchor-height: 25; anchor-width: 150">Back</button>
         </div>
     </div>
 </div>

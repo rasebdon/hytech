@@ -1,7 +1,6 @@
 package at.rasebdon.hytech.core.interactions.ui;
 
 import at.rasebdon.hytech.core.util.LogisticLookup;
-import au.ellie.hyui.builders.GroupBuilder;
 import au.ellie.hyui.builders.LabelBuilder;
 import au.ellie.hyui.builders.PageBuilder;
 import au.ellie.hyui.html.TemplateProcessor;
@@ -23,7 +22,9 @@ import javax.annotation.Nonnull;
 public class OpenLogisticContainerPageInteraction extends OpenPageBlockInteraction {
 
     private static final String HTML = "Core/LogisticContainerPage.html";
-    private static final String ROWS_ID = "container-rows";
+    /// Rows the HTML declares. A block with more containers than this shows the first few.
+    private static final int MAX_ROWS = 3;
+    private static final String ROW_ID_PREFIX = "container-row-";
 
     @Nonnull
     public static final BuilderCodec<OpenLogisticContainerPageInteraction> CODEC =
@@ -48,15 +49,23 @@ public class OpenLogisticContainerPageInteraction extends OpenPageBlockInteracti
 
         var page = HytechPage.of(HTML, template);
 
-        // Into the container the HTML declares; addElement leaves the element outside the layout
-        // tree and it never appears.
-        var rows = page.getById(ROWS_ID, GroupBuilder.class);
-        if (rows.isEmpty()) return page;
+        // Fixed rows, relabelled and hidden as needed. Rows created at runtime render but are
+        // never registered for events, and a nested container carrying its own layout-mode
+        // disconnects the client outright -- so the page declares its maximum and hides the rest.
+        for (int i = 0; i < MAX_ROWS; i++) {
+            String id = ROW_ID_PREFIX + i;
 
-        for (int i = 0; i < components.size(); i++) {
-            rows.get().addChild(LabelBuilder.label()
-                    .withId(ROWS_ID + "-" + i)
-                    .withText(components.get(i).toString()));
+            if (i >= components.size()) {
+                page.editById(id, LabelBuilder.class, label -> label.withVisible(false));
+                continue;
+            }
+
+            // Each component already formats itself, so a new resource type gets a working page
+            // with no UI code at all.
+            String text = components.get(i).toString();
+
+            page.editById(id, LabelBuilder.class,
+                    label -> label.withVisible(true).withText(text));
         }
 
         return page;

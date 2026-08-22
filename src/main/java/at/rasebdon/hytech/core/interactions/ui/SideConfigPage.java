@@ -6,8 +6,6 @@ import at.rasebdon.hytech.core.transport.BlockFaceConfigType;
 import at.rasebdon.hytech.core.util.BlockFaceUtil;
 import at.rasebdon.hytech.core.util.HytechUtil;
 import au.ellie.hyui.builders.ButtonBuilder;
-import au.ellie.hyui.builders.GroupBuilder;
-import au.ellie.hyui.builders.ItemSlotBuilder;
 import au.ellie.hyui.builders.LabelBuilder;
 import au.ellie.hyui.builders.PageBuilder;
 import au.ellie.hyui.events.UIContext;
@@ -20,16 +18,19 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
 
-/// The side-configuration page shared by every logistic block's UI.
+/// Per-resource side configuration, shared by every logistic block UI.
 ///
-/// A machine can carry several containers, so its sides are configured *per resource*: the
-/// burner generator outputs energy on a face while accepting items on the same one. A wrench
-/// cannot express that without a mode, and even with one it is fiddly -- so each container gets
-/// a row of six face buttons here, and only the resources the block actually has are shown.
+/// A machine can carry several containers -- the burner outputs energy on a face while accepting
+/// items on the same one -- so sides are configured per resource. One resource is edited at a
+/// time and "Next Resource" walks the ones this block actually has, which keeps the page a fixed
+/// size however many resource types the mod grows to.
 ///
-/// Rows are built with HyUI builders rather than template slots because the set of rows depends
-/// on the block: a battery shows one row, the burner shows two, and a static HTML page cannot
-/// declare ids for rows that may not exist.
+/// **Every element here is declared statically in the HTML and only ever relabelled.** That is
+/// not a style preference. HyUI registers element ids when the page is parsed, so a builder
+/// created at runtime and attached to a container renders but receives no events, while one added
+/// through `addElement` registers but is parented to the page root rather than the container.
+/// Static ids sidestep both, and `editById` on them is the path that actually works. A nested
+/// `div` carrying its own `layout-mode` is worse still -- it disconnects the client.
 public final class SideConfigPage {
 
     /// Element ids the machine pages and this page agree on.
@@ -37,19 +38,10 @@ public final class SideConfigPage {
     public static final String BACK_BUTTON_ID = "side-config-back";
 
     private static final String HTML = "Core/SideConfigPage.html";
+    private static final String RESOURCE_LABEL_ID = "side-resource-label";
+    private static final String RESOURCE_NEXT_ID = "side-resource-next";
 
-    /// The container the HTML declares, and the generated subtree parented into it.
-    private static final String ROWS_CONTAINER_ID = "side-config-rows";
-    private static final String ROWS_ID = "side-config-generated";
-
-    /// Valid HyUI layout modes. "Vertical"/"Horizontal" are not among them -- a Group stacks
-    /// vertically by default (its .ui declares LayoutMode: Top), and a horizontal run of children
-    /// is LeftCenterWrap. Passing an invalid value disconnects the client with
-    /// "CustomUI Set command couldn't set value".
-    private static final String LAYOUT_STACK = "Top";
-    private static final String LAYOUT_ROW = "LeftCenterWrap";
-
-    /// Face order, laid out as three opposing pairs so the rows read like the block.
+    /// Face order top to bottom, as the buttons read on screen.
     private static final List<BlockFace> FACES = List.of(
             BlockFace.Up, BlockFace.Down,
             BlockFace.North, BlockFace.South,
@@ -58,10 +50,8 @@ public final class SideConfigPage {
     private SideConfigPage() {
     }
 
-    /// Builds the page for one block, listing every resource that block participates in.
-    ///
-    /// Returns null when the block carries no logistic container at all, which is the caller's
-    /// signal to leave its button out entirely.
+    /// Builds the page for one block, or null when the block carries no logistic container --
+    /// the caller signal to leave its button out entirely.
     @Nullable
     public static PageBuilder of(@Nonnull World world, @Nonnull Vector3i blockPos,
                                  @Nonnull String blockName) {
@@ -72,31 +62,22 @@ public final class SideConfigPage {
         var template = new TemplateProcessor().setVariable("blockName", blockName);
         var page = HytechPage.of(HTML, template);
 
-        var rows = GroupBuilder.group()
-                .withId(ROWS_ID)
-                .withLayoutMode(LAYOUT_STACK);
+        // Which resource is being edited. A one-element array rather than a field because one
+        // page instance exists per player per opening, and the handlers have to mutate it.
+        var editing = new int[]{0};
 
-        for (var resource : present) {
-            rows.addChild(resourceRow(world, blockPos, resource));
-        }
+        applyLabels(page, world, blockPos, present, editing[0]);
 
-        // Two separate jobs, and doing only one of them was the bug. addElement walks the subtree
-        // and registers every id, which is what makes the buttons wireable -- but it parents to
-        // #HyUIRoot, so the rows landed outside the container and nothing rendered. Attaching
-        // children to a getById container renders them but registers nothing, so the listeners
-        // were skipped. Do both: register via addElement, then reparent with inside().
-        page.addElement(rows);
-        rows.inside("#" + ROWS_CONTAINER_ID);
+        HytechPage.onClick(page, RESOURCE_NEXT_ID, (_, ctx) -> {
+            editing[0] = (editing[0] + 1) % present.size();
+            refresh(ctx, world, blockPos, present, editing[0]);
+        });
 
-        for (var resource : present) {
-            for (var face : FACES) {
-                String id = buttonId(resource, face);
-
-                HytechPage.onClick(page, id, (_, ctx) -> {
-                    cycleFace(world, blockPos, resource, face);
-                    refresh(ctx, id, world, blockPos, resource, face);
-                });
-            }
+        for (var face : FACES) {
+            HytechPage.onClick(page, faceButtonId(face), (_, ctx) -> {
+                cycleFace(world, blockPos, present.get(editing[0]), face);
+                refresh(ctx, world, blockPos, present, editing[0]);
+            });
         }
 
         return page;
@@ -112,68 +93,53 @@ public final class SideConfigPage {
                 .toList();
     }
 
-    /// One resource: a heading, then a face button per side.
-    private static GroupBuilder resourceRow(
-            World world, Vector3i blockPos, LogisticResourceType resource) {
+    private static String faceButtonId(BlockFace face) {
+        return "side-face-" + face.name().toLowerCase();
+    }
 
-        var row = GroupBuilder.group()
-                .withId("side-row-" + resource.id())
-                .withLayoutMode(LAYOUT_STACK);
+    /// Initial labels, set on the builder before the page opens.
+    private static void applyLabels(PageBuilder page, World world, Vector3i blockPos,
+                                    List<LogisticResourceType> present, int editing) {
 
-        row.addChild(LabelBuilder.label()
-                .withId("side-head-" + resource.id())
-                .withText(resource.label()));
+        var resource = present.get(editing);
 
-        var buttons = GroupBuilder.group()
-                .withId("side-buttons-" + resource.id())
-                .withLayoutMode(LAYOUT_ROW);
+        page.editById(RESOURCE_LABEL_ID, LabelBuilder.class,
+                label -> label.withText(resourceHeading(present, editing)));
+
+        // Hidden when there is only one resource: a selector that cannot select is worse than
+        // no selector.
+        page.editById(RESOURCE_NEXT_ID, ButtonBuilder.class,
+                button -> button.withVisible(present.size() > 1));
 
         for (var face : FACES) {
-            buttons.addChild(faceButton(world, blockPos, resource, face));
+            page.editById(faceButtonId(face), ButtonBuilder.class,
+                    button -> button.withText(faceLabel(world, blockPos, resource, face)));
         }
-
-        row.addChild(buttons);
-
-        return row;
     }
 
-    /// A single face: the neighbour's icon above a button showing that side's mode.
-    ///
-    /// The icon is what makes the grid readable -- "Out" on North means little until you can see
-    /// it is pointing at a pipe.
-    private static GroupBuilder faceButton(
-            World world, Vector3i blockPos,
-            LogisticResourceType resource, BlockFace face) {
+    /// The same labels, applied through a live page after a click.
+    private static void refresh(UIContext ctx, World world, Vector3i blockPos,
+                                List<LogisticResourceType> present, int editing) {
 
-        String id = buttonId(resource, face);
+        var resource = present.get(editing);
 
-        var cell = GroupBuilder.group()
-                .withId(id + "-cell")
-                .withLayoutMode(LAYOUT_STACK);
+        ctx.editById(RESOURCE_LABEL_ID, LabelBuilder.class,
+                label -> label.withText(resourceHeading(present, editing)));
 
-        cell.addChild(LabelBuilder.label()
-                .withId(id + "-face")
-                .withText(face.name()));
-
-        var neighbour = neighbourItemId(world, blockPos, face);
-        if (neighbour != null) {
-            cell.addChild(ItemSlotBuilder.itemSlot()
-                    .withId(id + "-icon")
-                    .withItemId(neighbour)
-                    .withShowQuantity(false));
+        for (var face : FACES) {
+            ctx.editById(faceButtonId(face), ButtonBuilder.class,
+                    button -> button.withText(faceLabel(world, blockPos, resource, face)));
         }
 
-        cell.addChild(ButtonBuilder.smallSecondaryTextButton()
-                .withId(id)
-                .withText(faceLabel(world, blockPos, resource, face)));
-
-        return cell;
+        ctx.updatePage(true);
     }
 
-    /// Stable element id, so the listener and the refresh agree on which button they mean.
-    @Nonnull
-    public static String buttonId(@Nonnull LogisticResourceType resource, @Nonnull BlockFace face) {
-        return "side-" + resource.id() + "-" + face.name().toLowerCase();
+    private static String resourceHeading(List<LogisticResourceType> present, int editing) {
+        var resource = present.get(editing);
+
+        if (present.size() == 1) return "Editing: " + resource.label();
+
+        return String.format("Editing: %s  (%d/%d)", resource.label(), editing + 1, present.size());
     }
 
     private static void cycleFace(World world, Vector3i blockPos,
@@ -184,23 +150,19 @@ public final class SideConfigPage {
         component.cycleBlockFaceConfig(localFace(world, blockPos, face));
     }
 
-    private static void refresh(UIContext ctx, String id, World world, Vector3i blockPos,
-                                LogisticResourceType resource, BlockFace face) {
-        ctx.editById(id, ButtonBuilder.class,
-                button -> button.withText(faceLabel(world, blockPos, resource, face)));
-        ctx.updatePage(true);
-    }
-
+    /// "Up: Both" -- the face and its mode on one button, since a button is all there is.
     private static String faceLabel(World world, Vector3i blockPos,
                                     LogisticResourceType resource, BlockFace face) {
         var config = faceConfig(world, blockPos, resource, face);
 
-        return config == null ? "-" : switch (config) {
+        String mode = config == null ? "-" : switch (config) {
             case BOTH -> "Both";
             case INPUT -> "In";
             case OUTPUT -> "Out";
             case NONE -> "Off";
         };
+
+        return face.name() + ": " + mode;
     }
 
     @Nullable
@@ -212,21 +174,7 @@ public final class SideConfigPage {
         return component.getFaceConfigTowards(localFace(world, blockPos, face));
     }
 
-    /// The neighbouring block's item id, for its icon. Null when the side is air or unloaded.
-    @Nullable
-    private static String neighbourItemId(World world, Vector3i blockPos, BlockFace face) {
-        var direction = BlockFaceUtil.getVectorFromFace(face);
-        var neighbourPos = new Vector3i(blockPos).add(direction);
-
-        var blockType = HytechUtil.getBlockType(world, neighbourPos);
-        if (blockType == null) return null;
-
-        var item = blockType.getItem();
-
-        return item == null ? null : item.getId();
-    }
-
-    /// Converts a world face to the block's own local face, honouring its placed rotation.
+    /// Converts a world face to the block local face, honouring its placed rotation.
     ///
     /// Without this a rotated machine would configure the wrong side. The wrench goes through the
     /// same conversion, which is what keeps the two agreeing.

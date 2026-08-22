@@ -9,7 +9,6 @@ import at.rasebdon.hytech.energy.components.FuelBurnerComponent;
 import at.rasebdon.hytech.energy.util.FuelUtil;
 import at.rasebdon.hytech.items.ItemModule;
 import au.ellie.hyui.builders.ItemGridBuilder;
-import au.ellie.hyui.builders.HyUIPage;
 import au.ellie.hyui.builders.PageBuilder;
 import au.ellie.hyui.events.PageRefreshResult;
 import au.ellie.hyui.events.SlotClickingEventData;
@@ -154,10 +153,9 @@ public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
                 // player's own inventory is on screen. A HyUI page is an overlay and never shows
                 // the inventory, so no amount of grid configuration could have made dragging work.
                 .addEventListener(FUEL_WINDOW_ID, CustomUIEventBindingType.Activating,
-                        (_, ctx) -> {
-                            ctx.getPage().ifPresent(HyUIPage::close);
-                            world.execute(() -> openFuelWindow(world, playerRef, fuel));
-                        })
+                        // No explicit close: setPageWithWindows replaces whatever page is open,
+                        // and closing first cancelled the window before it could be shown.
+                        (_, _) -> world.execute(() -> openFuelWindow(world, playerRef, fuel)))
                 // Clicking a slot takes it back out, so fuel is never trapped in the machine.
                 .addEventListener(FUEL_GRID_ID, CustomUIEventBindingType.SlotClicking,
                         SlotClickingEventData.class, (event, ctx) -> {
