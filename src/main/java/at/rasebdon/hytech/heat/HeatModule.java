@@ -52,6 +52,16 @@ public final class HeatModule extends AbstractLogisticModule<
     }
 
     @Override
+    protected String getResourceId() {
+        return "heat";
+    }
+
+    @Override
+    protected String getResourceLabel() {
+        return "Heat";
+    }
+
+    @Override
     protected String getModuleName() {
         return "Heat Module";
     }

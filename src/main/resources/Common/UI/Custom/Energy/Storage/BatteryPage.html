@@ -1,6 +1,6 @@
 <div class="page-overlay" style="layout-mode: Middle;">
     <div class="container" data-hyui-title="{{$blockName}}" id="base-container"
-         style="anchor-height: 250; anchor-width: 300;">
+         style="anchor-height: 290; anchor-width: 300;">
         <div class="container-contents" style="layout-mode: Middle;">
 
             <progress id="energy-bar" max="1" style="anchor-width: 200; anchor-height: 18; margin-vertical: 12"
@@ -11,6 +11,7 @@
                 {{$energyDeltaSymbol}}{{$energyDelta|number}} RF/t</p>
             <p id="transfer-label" style="margin-top: 8; text-align: center;">
                 Max transfer: {{$transferSpeed|number}} RF/t</p>
+            <button id="side-config-button" style="margin-top: 8; anchor-height: 25; anchor-width: 150">Configure Sides</button>
 
             <button id="exit-button" style="margin-top: 20; anchor-height: 25; anchor-width: 150">Exit</button>
         </div>

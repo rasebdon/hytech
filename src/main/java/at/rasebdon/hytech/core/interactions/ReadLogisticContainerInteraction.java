@@ -1,8 +1,8 @@
 package at.rasebdon.hytech.core.interactions;
 
-import at.rasebdon.hytech.core.HytechCoreModule;
 import at.rasebdon.hytech.core.components.LogisticComponent;
 import at.rasebdon.hytech.core.util.HytechUtil;
+import at.rasebdon.hytech.core.util.LogisticLookup;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.protocol.Interaction;
@@ -42,14 +42,10 @@ public class ReadLogisticContainerInteraction extends SimpleBlockInteraction {
             @Nonnull World world,
             @Nonnull Vector3i targetBlock) {
 
-        var core = HytechCoreModule.get();
-
-        for (var blockType : core.getBlockComponents()) {
-            report(context, HytechUtil.getBlockComponent(world, targetBlock, blockType));
-        }
-
-        for (var pipeType : core.getPipeComponents()) {
-            report(context, HytechUtil.getBlockComponent(world, targetBlock, pipeType));
+        // Every container, not just the first: the burner generator reports both its energy
+        // buffer and its fuel slots, which is exactly what you want when inspecting a machine.
+        for (var component : LogisticLookup.allComponentsAt(world, targetBlock)) {
+            report(context, component);
         }
     }
 

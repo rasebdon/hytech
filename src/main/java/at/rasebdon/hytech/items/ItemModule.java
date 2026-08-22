@@ -62,6 +62,16 @@ public final class ItemModule extends AbstractLogisticModule<
     }
 
     @Override
+    protected String getResourceId() {
+        return "items";
+    }
+
+    @Override
+    protected String getResourceLabel() {
+        return "Items";
+    }
+
+    @Override
     protected String getModuleName() {
         return "Item Module";
     }

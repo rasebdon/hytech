@@ -53,6 +53,16 @@ public final class FluidModule extends AbstractLogisticModule<
     }
 
     @Override
+    protected String getResourceId() {
+        return "fluid";
+    }
+
+    @Override
+    protected String getResourceLabel() {
+        return "Fluid";
+    }
+
+    @Override
     protected String getModuleName() {
         return "Fluid Module";
     }

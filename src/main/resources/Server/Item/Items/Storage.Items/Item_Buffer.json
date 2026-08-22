@@ -52,7 +52,7 @@
       "Use": {
         "Interactions": [
           {
-            "Type": "ReadLogisticContainer"
+            "Type": "OpenLogisticContainer"
           }
         ]
       }
@@ -69,7 +69,10 @@
     "VariantRotation": "NESW",
     "BlockParticleSetId": "Stone",
     "ParticleColor": "#737055",
-    "BlockSoundSetId": "Stone"
+    "BlockSoundSetId": "Stone",
+    "Flags": {
+      "IsUsable": true
+    }
   },
   "Tags": {
     "Type": [

@@ -27,6 +27,7 @@ public abstract class AbstractLogisticModule<
     protected final ComponentType<ChunkStore, TPipeComponent> pipeComponentType;
 
     protected final LogisticNetworkSystem<TContainer> networkSystem;
+    protected LogisticResourceType resourceType;
     protected final TRegistrationSystem registrationSystem;
 
     protected AbstractLogisticModule(
@@ -46,7 +47,7 @@ public abstract class AbstractLogisticModule<
                 blockId,
                 blockCodec
         );
-        HytechCoreModule.get().registerBlockType(blockComponentType);
+
 
         pipeComponentType = registry.registerComponent(
                 pipeClass,
@@ -57,8 +58,11 @@ public abstract class AbstractLogisticModule<
         // Create network system
         networkSystem = createNetworkSystem();
 
-        // Registers the pipe type for rendering and for the wrench/overlay lookups.
-        HytechCoreModule.get().registerPipeType(pipeComponentType);
+        // One registration covering both components, so the pair can never drift apart and the
+        // wrench and side UI can name the resource rather than guess at a component type.
+        this.resourceType = new LogisticResourceType(
+                getResourceId(), getResourceLabel(), blockComponentType, pipeComponentType);
+        HytechCoreModule.get().registerResourceType(this.resourceType);
 
         // Register core systems
         registry.registerSystem(createTransferSystem(eventRegistry));
@@ -77,6 +81,12 @@ public abstract class AbstractLogisticModule<
     }
 
     protected abstract String getModuleName();
+
+    /// Stable id for this resource, matching its component ids -- `energy`, `items`, `fluid`, …
+    protected abstract String getResourceId();
+
+    /// Player-facing name, shown by the wrench and the side-configuration UI.
+    protected abstract String getResourceLabel();
 
     protected abstract LogisticNetworkSystem<TContainer> createNetworkSystem();
 
@@ -105,5 +115,9 @@ public abstract class AbstractLogisticModule<
 
     public LogisticNetworkSystem<TContainer> getNetworkSystem() {
         return networkSystem;
+    }
+
+    public LogisticResourceType getResourceType() {
+        return resourceType;
     }
 }

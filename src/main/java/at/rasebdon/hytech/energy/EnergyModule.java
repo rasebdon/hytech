@@ -105,6 +105,16 @@ public final class EnergyModule extends AbstractLogisticModule<
     }
 
     @Override
+    protected String getResourceId() {
+        return "energy";
+    }
+
+    @Override
+    protected String getResourceLabel() {
+        return "Energy";
+    }
+
+    @Override
     protected String getModuleName() {
         return "Energy Module";
     }

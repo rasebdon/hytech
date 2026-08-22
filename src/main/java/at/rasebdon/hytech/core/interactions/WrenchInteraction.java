@@ -6,6 +6,8 @@ import at.rasebdon.hytech.core.components.LogisticEntityProxyComponent;
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import at.rasebdon.hytech.core.util.BlockFaceUtil;
 import at.rasebdon.hytech.core.util.HytechUtil;
+import at.rasebdon.hytech.core.util.LogisticLookup;
+import at.rasebdon.hytech.core.LogisticResourceType;
 import at.rasebdon.hytech.core.util.PipeConnectionMask;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Ref;
@@ -39,7 +41,7 @@ public class WrenchInteraction extends SimpleInteraction {
             @Nonnull Ref<EntityStore> playerRef,
             @Nonnull Vector3i targetBlock) {
 
-        var containerComponent = getContainer(world, targetBlock);
+        var containerComponent = getContainer(world, playerRef, targetBlock);
 
         if (containerComponent != null) {
             BlockFace worldFace = resolveTargetedFace(clientState, containerComponent, playerRef, targetBlock);
@@ -120,26 +122,34 @@ public class WrenchInteraction extends SimpleInteraction {
                 "Side " + localFace.name() + " changed to: " + containerComponent.getFaceConfigTowards(localFace).name());
     }
 
+    /// The component this wrench should configure on the target block.
+    ///
+    /// A block can carry several containers -- the burner generator has both energy and items --
+    /// so the player's selected wrench mode decides which. Crouch and scroll to change it.
+    /// If the block has nothing of the selected resource, this falls back to whatever it does
+    /// have, so wrenching a plain energy pipe while in Items mode still does the obvious thing
+    /// rather than silently nothing.
     @Nullable
-    private static LogisticComponent<?> getContainer(World world, Vector3i targetBlock) {
-        // TODO : Wrench Config for specific block type (especially important for machines)
+    private static LogisticComponent<?> getContainer(
+            World world, Ref<EntityStore> playerRef, Vector3i targetBlock) {
 
-        for (var blockType : HytechCoreModule.get().getBlockComponents()) {
-            var blockContainer = HytechUtil.getBlockComponent(world, targetBlock, blockType);
-            if (blockContainer != null) {
-                return blockContainer;
-            }
+        var selected = selectedResource(world, playerRef);
+        if (selected != null) {
+            var component = selected.componentAt(world, targetBlock);
+            if (component != null) return component;
         }
 
-        for (var pipeType : HytechCoreModule.get().getPipeComponents()) {
-            var pipeContainer = HytechUtil.getBlockComponent(world, targetBlock, pipeType);
-            if (pipeContainer != null) {
-                return pipeContainer;
-            }
-        }
-
-        return null;
+        return LogisticLookup.componentAt(world, targetBlock);
     }
+
+    @Nullable
+    private static LogisticResourceType selectedResource(World world, Ref<EntityStore> playerRef) {
+        var store = world.getEntityStore().getStore();
+        var mode = store.getComponent(playerRef, HytechCoreModule.get().getWrenchModeComponentType());
+
+        return mode == null ? null : mode.resolve();
+    }
+
 
     @Nonnull
     @Override

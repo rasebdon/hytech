@@ -6,6 +6,7 @@ import at.rasebdon.hytech.core.transport.BlockFaceConfigType;
 import at.rasebdon.hytech.core.util.BlockFaceUtil;
 import at.rasebdon.hytech.core.util.BlockRayUtil;
 import at.rasebdon.hytech.core.util.HytechUtil;
+import at.rasebdon.hytech.core.util.LogisticLookup;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.system.tick.TickingSystem;
 import com.hypixel.hytale.math.vector.Rotation3f;
@@ -214,7 +215,7 @@ public final class FaceConfigOverlaySystem extends TickingSystem<EntityStore> {
         if (hit == null) return null;
 
         var blockPos = hit.block();
-        var component = logisticBlockAt(world, blockPos);
+        var component = logisticBlockAt(world, playerRef, blockPos);
         if (component == null) return null;
 
         var worldFace = faceOfHit(hit.point(), blockPos);
@@ -232,18 +233,34 @@ public final class FaceConfigOverlaySystem extends TickingSystem<EntityStore> {
         return new Shown(new Vector3i(blockPos), worldFace, component.getFaceConfigTowards(localFace));
     }
 
-    /// Logistic blocks only. Pipes are not in this set -- they are registered separately as
-    /// pipe components -- so their arms keep showing connectivity without a quad over them.
+    /// The logistic block component whose face configuration to show.
+    ///
+    /// Follows the player's wrench mode so the colour always describes the container their next
+    /// click will change -- otherwise, on a machine carrying two containers, the overlay would
+    /// happily show the energy side while the wrench edited the item side.
+    ///
+    /// Pipes are excluded: they are registered as pipe components, so their arms keep showing
+    /// connectivity without a quad over them.
     @Nullable
-    private LogisticComponent<?> logisticBlockAt(@NonNull World world, @NonNull Vector3i blockPos) {
-        for (var blockType : HytechCoreModule.get().getBlockComponents()) {
-            var component = HytechUtil.getBlockComponent(world, blockPos, blockType);
-            if (component != null) {
-                return component;
+    private LogisticComponent<?> logisticBlockAt(
+            @NonNull World world, @NonNull Ref<EntityStore> playerRef, @NonNull Vector3i blockPos) {
+
+        var mode = HytechCoreModule.get().getWrenchModeComponentType();
+        var selected = store(world).getComponent(playerRef, mode);
+
+        if (selected != null) {
+            var resource = selected.resolve();
+            if (resource != null) {
+                var component = resource.blockAt(world, blockPos);
+                if (component != null) return component;
             }
         }
 
-        return null;
+        return LogisticLookup.blockComponentAt(world, blockPos);
+    }
+
+    private static Store<EntityStore> store(@NonNull World world) {
+        return world.getEntityStore().getStore();
     }
 
     private Ref<EntityStore> spawnOverlay(Store<EntityStore> store, Shown target) {

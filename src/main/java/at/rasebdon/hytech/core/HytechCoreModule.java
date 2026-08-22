@@ -4,8 +4,11 @@ import at.rasebdon.hytech.core.components.CreativeSourceComponent;
 import at.rasebdon.hytech.core.components.LogisticBlockComponent;
 import at.rasebdon.hytech.core.components.LogisticEntityProxyComponent;
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
+import at.rasebdon.hytech.core.components.WrenchModeComponent;
 import at.rasebdon.hytech.core.interactions.ReadLogisticContainerInteraction;
+import at.rasebdon.hytech.core.interactions.ui.OpenLogisticContainerPageInteraction;
 import at.rasebdon.hytech.core.systems.CreativeSourceSystem;
+import at.rasebdon.hytech.core.systems.WrenchModeScrollSystem;
 import at.rasebdon.hytech.core.interactions.WrenchInteraction;
 import at.rasebdon.hytech.core.systems.FaceConfigOverlaySystem;
 import at.rasebdon.hytech.core.systems.PipeConnectionStateSystem;
@@ -19,22 +22,21 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Set;
+import java.util.List;
 
 public class HytechCoreModule {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
-    /// Every registered resource type's block and pipe component types.
+    /// Every registered resource type, in module registration order.
     ///
-    /// The wrench, the read interaction and the face overlay all need to find "whichever
-    /// logistic component this block has" without knowing the resource types, so modules
-    /// register into these as they initialise.
-    private final Set<ComponentType<ChunkStore, ? extends LogisticBlockComponent<?>>> blockComponents
-            = new HashSet<>();
-    private final Set<ComponentType<ChunkStore, ? extends LogisticPipeComponent<?>>> pipeComponents
-            = new HashSet<>();
+    /// A list rather than the two unordered sets this used to be. The wrench and the
+    /// side-configuration UI both have to answer "which resource am I configuring", and order
+    /// has to be stable for that: a block carrying more than one container -- the burner
+    /// generator has both energy and items -- would otherwise be configured arbitrarily, and
+    /// possibly differently after a restart.
+    private final List<LogisticResourceType> resourceTypes = new ArrayList<>();
 
     @Nullable
     private static HytechCoreModule INSTANCE;
@@ -43,6 +45,7 @@ public class HytechCoreModule {
     /// a single system per class, so these cannot be per-module.
     private final ComponentType<EntityStore, LogisticEntityProxyComponent> logisticEntityProxyComponentType;
     private final ComponentType<ChunkStore, CreativeSourceComponent> creativeSourceComponentType;
+    private final ComponentType<EntityStore, WrenchModeComponent> wrenchModeComponentType;
     private final PipeConnectionStateSystem pipeConnectionStateSystem;
     private final PipeMarkerCleanupSystem pipeMarkerCleanupSystem;
 
@@ -67,12 +70,25 @@ public class HytechCoreModule {
         chunkStoreComponentRegistry.registerSystem(this.pipeConnectionStateSystem);
         chunkStoreComponentRegistry.registerSystem(this.pipeMarkerCleanupSystem);
 
+        // Per-player wrench mode: which resource its face cycling applies to.
+        this.wrenchModeComponentType = entityStoreComponentRegistry.registerComponent(
+                WrenchModeComponent.class,
+                "hytech:core:wrench_mode",
+                WrenchModeComponent.CODEC);
+
         entityStoreComponentRegistry.registerSystem(new FaceConfigOverlaySystem());
+        entityStoreComponentRegistry.registerSystem(
+                new WrenchModeScrollSystem(this.wrenchModeComponentType));
 
         Interaction.CODEC.register(
                 "Wrench",
                 WrenchInteraction.class,
                 WrenchInteraction.CODEC);
+
+        Interaction.CODEC.register(
+                "OpenLogisticContainer",
+                OpenLogisticContainerPageInteraction.class,
+                OpenLogisticContainerPageInteraction.CODEC);
 
         Interaction.CODEC.register(
                 "ReadLogisticContainer",
@@ -97,28 +113,48 @@ public class HytechCoreModule {
     }
 
     /// Opts a resource module's pipe component into the shared rendering systems.
-    public void registerPipeType(
-            @Nonnull ComponentType<ChunkStore, ? extends LogisticPipeComponent<?>> pipeType) {
-        this.pipeComponents.add(pipeType);
-        this.pipeConnectionStateSystem.registerPipeType(pipeType);
-        this.pipeMarkerCleanupSystem.registerPipeType(pipeType);
+    /// Registers a resource type and wires its pipes into the shared rendering systems.
+    ///
+    /// Called once per module from [AbstractLogisticModule], which is what fixes the ordering.
+    public void registerResourceType(@Nonnull LogisticResourceType resourceType) {
+        this.resourceTypes.add(resourceType);
+        this.pipeConnectionStateSystem.registerPipeType(resourceType.pipeType());
+        this.pipeMarkerCleanupSystem.registerPipeType(resourceType.pipeType());
     }
 
-    public void registerBlockType(
-            @Nonnull ComponentType<ChunkStore, ? extends LogisticBlockComponent<?>> blockType) {
-        this.blockComponents.add(blockType);
+    @Nonnull
+    public ComponentType<EntityStore, WrenchModeComponent> getWrenchModeComponentType() {
+        return this.wrenchModeComponentType;
+    }
+
+    /// Every registered resource type, in registration order.
+    @Nonnull
+    public List<LogisticResourceType> getResourceTypes() {
+        return Collections.unmodifiableList(this.resourceTypes);
+    }
+
+    /// The resource type with this id, or null if no module registered it.
+    @Nullable
+    public LogisticResourceType getResourceType(@Nonnull String id) {
+        for (var resourceType : this.resourceTypes) {
+            if (resourceType.id().equals(id)) {
+                return resourceType;
+            }
+        }
+
+        return null;
     }
 
     /// Block component types of every registered resource type.
     @Nonnull
-    public Set<ComponentType<ChunkStore, ? extends LogisticBlockComponent<?>>> getBlockComponents() {
-        return Collections.unmodifiableSet(this.blockComponents);
+    public List<ComponentType<ChunkStore, ? extends LogisticBlockComponent<?>>> getBlockComponents() {
+        return this.resourceTypes.stream().map(LogisticResourceType::blockType).toList();
     }
 
     /// Pipe component types of every registered resource type.
     @Nonnull
-    public Set<ComponentType<ChunkStore, ? extends LogisticPipeComponent<?>>> getPipeComponents() {
-        return Collections.unmodifiableSet(this.pipeComponents);
+    public List<ComponentType<ChunkStore, ? extends LogisticPipeComponent<?>>> getPipeComponents() {
+        return this.resourceTypes.stream().map(LogisticResourceType::pipeType).toList();
     }
 
     @Nonnull

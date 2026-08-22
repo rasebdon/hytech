@@ -53,6 +53,16 @@ public final class GasModule extends AbstractLogisticModule<
     }
 
     @Override
+    protected String getResourceId() {
+        return "gas";
+    }
+
+    @Override
+    protected String getResourceLabel() {
+        return "Gas";
+    }
+
+    @Override
     protected String getModuleName() {
         return "Gas Module";
     }

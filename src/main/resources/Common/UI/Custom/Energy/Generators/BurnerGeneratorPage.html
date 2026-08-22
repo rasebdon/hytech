@@ -1,6 +1,6 @@
 <div class="page-overlay" style="layout-mode: Middle;">
     <div class="container" data-hyui-title="{{$blockName}}" id="base-container"
-         style="anchor-height: 340; anchor-width: 320;">
+         style="anchor-height: 380; anchor-width: 320;">
         <div class="container-contents" style="layout-mode: Middle;">
 
             <p id="fuel-label" style="margin-top: 6; text-align: center;">Fuel</p>
@@ -22,6 +22,7 @@
                 {{$currentEnergy|number}}/{{$maxEnergy|number}} RF</p>
             <p id="energy-change-label" style="color: {{$rateColor}}; margin-top: 4; text-align: center;">
                 {{$ratePrefix}}{{$currentRate|number}} RF/t (Max {{$maxRate|number}} RF/t)</p>
+            <button id="side-config-button" style="margin-top: 8; anchor-height: 25; anchor-width: 150">Configure Sides</button>
 
             <button id="exit-button" style="margin-top: 12; anchor-height: 25; anchor-width: 150">Exit</button>
         </div>
