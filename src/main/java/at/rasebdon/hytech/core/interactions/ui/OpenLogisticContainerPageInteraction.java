@@ -25,6 +25,10 @@ public class OpenLogisticContainerPageInteraction extends OpenPageBlockInteracti
     private static final String HTML = "Core/LogisticContainerPage.html";
     private static final String ROWS_ID = "container-rows";
 
+    /// A Group stacks vertically by default; "Vertical" is not a valid HyUI layout mode and
+    /// passing it disconnects the client.
+    private static final String LAYOUT_STACK = "Top";
+
     @Nonnull
     public static final BuilderCodec<OpenLogisticContainerPageInteraction> CODEC =
             BuilderCodec.builder(
@@ -46,7 +50,7 @@ public class OpenLogisticContainerPageInteraction extends OpenPageBlockInteracti
         var template = new TemplateProcessor()
                 .setVariable("blockName", getBlockName(world, blockPos));
 
-        var rows = GroupBuilder.group().withId(ROWS_ID).withLayoutMode("Vertical");
+        var rows = GroupBuilder.group().withId(ROWS_ID).withLayoutMode(LAYOUT_STACK);
 
         for (int i = 0; i < components.size(); i++) {
             var component = components.get(i);

@@ -5,11 +5,10 @@
 
             <p id="fuel-label" style="margin-top: 6; text-align: center;">Fuel</p>
 
-            <!-- Draggable so a player can drop fuel straight in. The grid only renders and
-                 reports; the server performs the actual move in the Dropped handler. -->
-            <div class="item-grid" data-hyui-are-items-draggable="true"
-                 data-hyui-display-item-quantity="true" data-hyui-slots-per-row="4"
-                 id="fuel-grid" style="anchor-width: 200; anchor-height: 96; margin-vertical: 4"></div>
+
+            <button id="fuel-insert-button" style="margin-top: 4; anchor-height: 25; anchor-width: 190">
+                Insert Held Fuel
+            </button>
 
             <p id="burn-label" style="color: {{$burnColor}}; margin-top: 8; text-align: center;">
                 {{$burnStatus}}</p>

@@ -13,7 +13,6 @@ import au.ellie.hyui.builders.PageBuilder;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.html.TemplateProcessor;
 import com.hypixel.hytale.protocol.BlockFace;
-import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.universe.world.World;
 import org.joml.Vector3i;
 
@@ -42,6 +41,13 @@ public final class SideConfigPage {
     /// Where the generated rows are attached.
     private static final String ROWS_CONTAINER_ID = "side-config-rows";
 
+    /// Valid HyUI layout modes. "Vertical"/"Horizontal" are not among them -- a Group stacks
+    /// vertically by default (its .ui declares LayoutMode: Top), and a horizontal run of children
+    /// is LeftCenterWrap. Passing an invalid value disconnects the client with
+    /// "CustomUI Set command couldn't set value".
+    private static final String LAYOUT_STACK = "Top";
+    private static final String LAYOUT_ROW = "LeftCenterWrap";
+
     /// Face order, laid out as three opposing pairs so the rows read like the block.
     private static final List<BlockFace> FACES = List.of(
             BlockFace.Up, BlockFace.Down,
@@ -67,13 +73,29 @@ public final class SideConfigPage {
 
         var rows = GroupBuilder.group()
                 .withId(ROWS_CONTAINER_ID)
-                .withLayoutMode("Vertical");
+                .withLayoutMode(LAYOUT_STACK);
 
         for (var resource : present) {
-            rows.addChild(resourceRow(page, world, blockPos, resource));
+            rows.addChild(resourceRow(world, blockPos, resource));
         }
 
-        return page.addElement(rows);
+        // Attach first, wire second. A builder only enters the page's element registry when it is
+        // added, and addEventListener throws on an unknown id -- so wiring during construction
+        // took the whole page down on open.
+        page.addElement(rows);
+
+        for (var resource : present) {
+            for (var face : FACES) {
+                String id = buttonId(resource, face);
+
+                HytechPage.onClick(page, id, (_, ctx) -> {
+                    cycleFace(world, blockPos, resource, face);
+                    refresh(ctx, id, world, blockPos, resource, face);
+                });
+            }
+        }
+
+        return page;
     }
 
     /// Resources this block actually participates in, in registration order.
@@ -88,11 +110,11 @@ public final class SideConfigPage {
 
     /// One resource: a heading, then a face button per side.
     private static GroupBuilder resourceRow(
-            PageBuilder page, World world, Vector3i blockPos, LogisticResourceType resource) {
+            World world, Vector3i blockPos, LogisticResourceType resource) {
 
         var row = GroupBuilder.group()
                 .withId("side-row-" + resource.id())
-                .withLayoutMode("Vertical");
+                .withLayoutMode(LAYOUT_STACK);
 
         row.addChild(LabelBuilder.label()
                 .withId("side-head-" + resource.id())
@@ -100,10 +122,10 @@ public final class SideConfigPage {
 
         var buttons = GroupBuilder.group()
                 .withId("side-buttons-" + resource.id())
-                .withLayoutMode("Horizontal");
+                .withLayoutMode(LAYOUT_ROW);
 
         for (var face : FACES) {
-            buttons.addChild(faceButton(page, world, blockPos, resource, face));
+            buttons.addChild(faceButton(world, blockPos, resource, face));
         }
 
         row.addChild(buttons);
@@ -116,14 +138,14 @@ public final class SideConfigPage {
     /// The icon is what makes the grid readable -- "Out" on North means little until you can see
     /// it is pointing at a pipe.
     private static GroupBuilder faceButton(
-            PageBuilder page, World world, Vector3i blockPos,
+            World world, Vector3i blockPos,
             LogisticResourceType resource, BlockFace face) {
 
         String id = buttonId(resource, face);
 
         var cell = GroupBuilder.group()
                 .withId(id + "-cell")
-                .withLayoutMode("Vertical");
+                .withLayoutMode(LAYOUT_STACK);
 
         cell.addChild(LabelBuilder.label()
                 .withId(id + "-face")
@@ -140,11 +162,6 @@ public final class SideConfigPage {
         cell.addChild(ButtonBuilder.smallSecondaryTextButton()
                 .withId(id)
                 .withText(faceLabel(world, blockPos, resource, face)));
-
-        page.addEventListener(id, CustomUIEventBindingType.Activating, (_, ctx) -> {
-            cycleFace(world, blockPos, resource, face);
-            refresh(ctx, id, world, blockPos, resource, face);
-        });
 
         return cell;
     }

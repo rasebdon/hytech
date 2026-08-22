@@ -10,7 +10,6 @@ import at.rasebdon.hytech.energy.util.FuelUtil;
 import at.rasebdon.hytech.items.ItemModule;
 import au.ellie.hyui.builders.ItemGridBuilder;
 import au.ellie.hyui.builders.PageBuilder;
-import au.ellie.hyui.events.DroppedEventData;
 import au.ellie.hyui.events.PageRefreshResult;
 import au.ellie.hyui.events.SlotClickingEventData;
 import au.ellie.hyui.events.UIContext;
@@ -18,11 +17,15 @@ import au.ellie.hyui.html.TemplateProcessor;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.server.core.inventory.InventoryComponent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
 import com.hypixel.hytale.server.core.ui.ItemGridSlot;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3i;
@@ -35,6 +38,10 @@ import java.util.List;
 public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
 
     private static final String FUEL_GRID_ID = "fuel-grid";
+    private static final String FUEL_INSERT_ID = "fuel-insert-button";
+
+    /// A Group stacks vertically by default; "Vertical" is not a valid HyUI layout mode.
+    private static final String LAYOUT_STACK = "Top";
 
     /// Wind output ramps between these heights, matching `EnergyGenerationSystem`.
     private static final int WIND_MIN_HEIGHT = 64;
@@ -136,14 +143,16 @@ public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
 
         return HytechPage.of("Energy/Generators/BurnerGeneratorPage.html", template)
                 .addElement(fuelGrid(fuel))
-                // The grid reports what the client dropped; the move itself is ours to do.
-                .addEventListener(FUEL_GRID_ID, CustomUIEventBindingType.Dropped,
-                        DroppedEventData.class, (event, ctx) -> {
-                            UiItemTransfer.intoContainer(store, playerRef,
-                                    event.getItemStackId(), quantityOf(event), fuel);
+                // Insert from the hand rather than by dragging. A HyUI custom page is an overlay
+                // and does not show the player's inventory, so there is nothing on screen to drag
+                // *from* -- the grid can only ever display what is already inside. The held item
+                // is reachable server-side, so one button does the job the drag could not.
+                .addEventListener(FUEL_INSERT_ID, CustomUIEventBindingType.Activating,
+                        (_, ctx) -> {
+                            insertHeldFuel(store, playerRef, fuel);
                             refreshGrid(ctx, fuel);
                         })
-                // Clicking a slot takes it back out, so fuel is not trapped in the machine.
+                // Clicking a slot takes it back out, so fuel is never trapped in the machine.
                 .addEventListener(FUEL_GRID_ID, CustomUIEventBindingType.SlotClicking,
                         SlotClickingEventData.class, (event, ctx) -> {
                             var slot = event.getSlotIndex();
@@ -159,27 +168,33 @@ public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
                 });
     }
 
+    /// Moves the player's held stack into the fuel container.
+    ///
+    /// Non-fuel is accepted deliberately: the container is a plain item container that pipes can
+    /// also fill, and rejecting by hand while allowing it by pipe would be inconsistent. The grid
+    /// marks anything unburnable as incompatible so it is still obvious.
+    private void insertHeldFuel(Store<EntityStore> store, Ref<EntityStore> playerRef,
+                                ItemContainer fuel) {
+        var held = InventoryComponent.getItemInHand(store, playerRef);
+        if (ItemStack.isEmpty(held)) return;
+
+        UiItemTransfer.intoContainer(store, playerRef, held.getItemId(), held.getQuantity(), fuel);
+    }
+
     private String burnStatus(FuelBurnerComponent burner) {
         if (!burner.isBurning()) return "No fuel";
 
         return String.format("Burning - %.0fs left", Math.ceil(burner.getBurnTimeRemaining()));
     }
 
-    /// A dropped stack's quantity, defaulting to one.
-    ///
-    /// The client omits the count for a single-item drop, and a negative value would let a
-    /// crafted event pull items in the wrong direction.
-    private int quantityOf(DroppedEventData event) {
-        var quantity = event.getItemStackQuantity();
-
-        return quantity == null || quantity <= 0 ? 1 : quantity;
-    }
-
     private ItemGridBuilder fuelGrid(ItemContainer fuel) {
         var grid = ItemGridBuilder.itemGrid()
                 .withId(FUEL_GRID_ID)
                 .withSlotsPerRow(4)
-                .withAreItemsDraggable(true)
+                .withLayoutMode(LAYOUT_STACK)
+                // Not draggable: with no inventory panel on screen there is nowhere to drag from
+                // or to, and leaving it on advertises an interaction that cannot happen.
+                .withAreItemsDraggable(false)
                 .withDisplayItemQuantity(true);
 
         grid.withSlots(slotsOf(fuel));

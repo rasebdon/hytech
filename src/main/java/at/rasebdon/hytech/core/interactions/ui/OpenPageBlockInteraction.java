@@ -7,7 +7,6 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.InteractionType;
-import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
@@ -81,22 +80,19 @@ public abstract class OpenPageBlockInteraction extends SimpleBlockInteraction {
 
         if (SideConfigPage.presentResources(world, blockPos).isEmpty()) return;
 
-        pageBuilder.addEventListener(SideConfigPage.OPEN_BUTTON_ID,
-                CustomUIEventBindingType.Activating, (_, ctx) -> {
-                    var sideConfig = SideConfigPage.of(world, blockPos, getBlockName(world, blockPos));
-                    if (sideConfig == null) return;
+        HytechPage.onClick(pageBuilder, SideConfigPage.OPEN_BUTTON_ID, (_, ctx) -> {
+            var sideConfig = SideConfigPage.of(world, blockPos, getBlockName(world, blockPos));
+            if (sideConfig == null) return;
 
-                    // Back reopens the machine page rather than leaving the player on nothing.
-                    sideConfig.addEventListener(SideConfigPage.BACK_BUTTON_ID,
-                            CustomUIEventBindingType.Activating,
-                            (_, backCtx) -> {
-                                backCtx.getPage().ifPresent(HyUIPage::close);
-                                world.execute(() -> openUiInternal(context, world, blockPos));
-                            });
+            // Back reopens the machine page rather than leaving the player on nothing.
+            HytechPage.onClick(sideConfig, SideConfigPage.BACK_BUTTON_ID, (_, backCtx) -> {
+                backCtx.getPage().ifPresent(HyUIPage::close);
+                world.execute(() -> openUiInternal(context, world, blockPos));
+            });
 
-                    ctx.getPage().ifPresent(HyUIPage::close);
-                    sideConfig.open(playerRef, entityStore);
-                });
+            ctx.getPage().ifPresent(HyUIPage::close);
+            sideConfig.open(playerRef, entityStore);
+        });
     }
 
     @Nullable
