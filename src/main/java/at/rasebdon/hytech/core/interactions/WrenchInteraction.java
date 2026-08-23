@@ -22,6 +22,7 @@ import com.hypixel.hytale.server.core.modules.entity.component.TransformComponen
 import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHandler;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.SimpleInteraction;
+import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -34,9 +35,32 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class WrenchInteraction extends SimpleInteraction {
+
+    /// Asset id of the wrench item, so a machine can recognise it in the player's hand.
+    private static final String WRENCH_ITEM_ID = "Wrench";
+
     public static final BuilderCodec<WrenchInteraction> CODEC = BuilderCodec.builder(
             WrenchInteraction.class, WrenchInteraction::new, SimpleInteraction.CODEC
     ).build();
+
+    /// Cycles the face the player is aiming at on `targetBlock`, honouring their wrench mode.
+    ///
+    /// Public because a block that declares its own `Use` interaction never lets the held
+    /// item's interaction run -- so a machine has to call this itself when the player is
+    /// holding a wrench. Pipes need no such handling; they declare no Use interaction, so the
+    /// wrench's own interaction reaches them.
+    public static void configureTargetedFace(
+            @Nonnull InteractionSyncData clientState,
+            @Nonnull World world,
+            @Nonnull Ref<EntityStore> playerRef,
+            @Nonnull Vector3i targetBlock) {
+        doBlockInteraction(clientState, world, playerRef, targetBlock);
+    }
+
+    /// Whether this stack is a wrench, for blocks deciding whether to defer.
+    public static boolean isWrench(@Nullable ItemStack stack) {
+        return !ItemStack.isEmpty(stack) && WRENCH_ITEM_ID.equals(stack.getItemId());
+    }
 
     private static void doBlockInteraction(
             @Nonnull InteractionSyncData clientState,

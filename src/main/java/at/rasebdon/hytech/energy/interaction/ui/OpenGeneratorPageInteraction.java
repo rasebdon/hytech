@@ -39,25 +39,6 @@ public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
                             OpenPageBlockInteraction.CODEC)
                     .build();
 
-    /// A burner opens straight to its fuel slot, with the player's inventory alongside. Crouch to
-    /// get the readouts and side configuration instead.
-    @Override
-    @Nullable
-    protected ItemContainer primaryContainer(@NotNull World world,
-                                             @NotNull Vector3i blockPos,
-                                             boolean crouching) {
-        if (crouching) return null;
-
-        var burner = HytechUtil.getBlockComponent(
-                world, blockPos, EnergyModule.get().getFuelBurnerComponentType());
-        if (burner == null) return null;
-
-        var fuelComponent = HytechUtil.getBlockComponent(
-                world, blockPos, ItemModule.get().getBlockComponentType());
-
-        return fuelComponent == null ? null : fuelComponent.getItemContainer();
-    }
-
     @Override
     @Nullable
     protected HytechCustomPage createPage(@NotNull World world,

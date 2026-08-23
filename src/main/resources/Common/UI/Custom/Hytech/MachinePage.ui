@@ -40,14 +40,8 @@ $C.@PageOverlay {
           Text: "";
         }
 
-        Group {
-          Background: (TexturePath: "Common/ProgressBar.png", Border: 2);
-          Anchor: (Width: $H.@PanelWidth, Height: 14, Bottom: 6);
-          Padding: (Full: 4);
-
-          ProgressBar #PrimaryBar {
-            BarTexturePath: "Common/ProgressBarFill.png";
-          }
+        $C.@ProgressBar #PrimaryBar {
+          @Anchor = Anchor(Bottom: 8);
         }
 
         Label #PrimaryCaption {
@@ -68,14 +62,8 @@ $C.@PageOverlay {
           Text: "";
         }
 
-        Group {
-          Background: (TexturePath: "Common/ProgressBar.png", Border: 2);
-          Anchor: (Width: $H.@PanelWidth, Height: 12, Bottom: 6);
-          Padding: (Full: 3);
-
-          ProgressBar #SecondaryBar {
-            BarTexturePath: "Common/ProgressBarFill.png";
-          }
+        $C.@ProgressBar #SecondaryBar {
+          @Anchor = Anchor(Bottom: 8);
         }
 
         Label #SecondaryCaption {

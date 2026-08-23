@@ -16,7 +16,7 @@ $C = "../Common.ui";
 @ColorValue = #ffffff;
 @ColorMuted = #878e9c;
 
-@PanelWidth = 300;
+@PanelWidth = 284;   // matches the vanilla @ProgressBar width, so bars and labels align
 
 // Section heading: uppercase, spaced, the vanilla subtitle treatment.
 @HeadingStyle = LabelStyle(

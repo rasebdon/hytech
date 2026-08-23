@@ -282,10 +282,14 @@ Things worth knowing:
 - **Bind with `locksInterface = false`.** A locking binding leaves the client on "Loading..." until
   the server answers; combined with the dropped-event rule above, one badly timed refresh froze a
   page permanently.
-- A machine whose primary screen is its container overrides
-  `OpenPageBlockInteraction.primaryContainer` and gets a window instead of a page -- the burner opens
-  straight onto its fuel slot. Crouching returns null there, which is how the readouts and side
-  configuration stay reachable.
+- **A block's own `Use` interaction runs instead of the held item's.** That is why the wrench works
+  on pipes, which declare no `Use`, and did nothing on a generator or battery, which do. A machine
+  therefore has to honour the wrench itself: `OpenPageBlockInteraction` checks
+  `WrenchInteraction.isWrench(item)` and calls `configureTargetedFace` rather than opening its page.
+  Any new machine with a page inherits that.
+- **Use the vanilla widget styles rather than rebuilding them.** `$C.@ProgressBar` carries the right
+  height, background and effect textures; wrapping a bare `ProgressBar` in a bordered `Group` and
+  forcing a taller height stretched the 9-patch and looked broken. `@PanelWidth` is 284 to match it.
 - A machine adds no UI document of its own: `MachinePage.ui` declares every section and
   [MachineView] hides the ones the machine did not fill. A new resource type needs no UI code.
 
