@@ -2,13 +2,10 @@ package at.rasebdon.hytech.core.ui;
 
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
-import com.hypixel.hytale.server.core.ui.ItemGridSlot;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Predicate;
 
 /// What a machine puts on its page, written once per refresh.
@@ -56,26 +53,48 @@ public final class MachineView {
         this.commands.set("#SecondaryCaption.Text", caption);
     }
 
-    /// Item slots showing a container's contents.
+    /// A contents summary plus the button that opens the real container.
     ///
-    /// `incompatible` marks a stack the machine cannot use -- unburnable fuel, say -- so the
-    /// player can see why nothing is happening.
-    public void slots(@Nonnull String heading, @Nullable ItemContainer container,
-                      int inventorySectionId,
-                      @Nullable Predicate<ItemStack> incompatible) {
+    /// Deliberately not item slots. Windows are a separate system from custom pages -- a window
+    /// switches the client to the Bench page, which is the screen carrying the player's inventory,
+    /// and a custom page replaces that screen. So slots embedded here would have nothing to drag
+    /// from. `incompatible` still matters: it is what lets the summary say the fuel is unusable.
+    public void container(@Nonnull String heading, @Nullable ItemContainer container,
+                          @Nullable Predicate<ItemStack> incompatible) {
         if (container == null) return;
 
         this.slotsShown = true;
 
         this.commands.set("#SlotsHeading.Text", heading);
-        this.commands.set("#Slots.Slots", snapshot(container, incompatible));
+        this.commands.set("#SlotsSummary.Text", summarise(container, incompatible));
+    }
 
-        // Ties the grid to the container window opened alongside this page. Without it the grid is
-        // a picture: the client has no way to know these slots belong to a real container, so a
-        // drag has nowhere to land.
-        if (inventorySectionId >= 0) {
-            this.commands.set("#Slots.InventorySectionId", inventorySectionId);
+    /// "12 charcoal" / "Empty" / "8 items (unusable)".
+    @Nonnull
+    private static String summarise(@Nonnull ItemContainer container,
+                                    @Nullable Predicate<ItemStack> incompatible) {
+        int total = 0;
+        int unusable = 0;
+
+        for (short slot = 0; slot < container.getCapacity(); slot++) {
+            var stack = container.getItemStack(slot);
+            if (ItemStack.isEmpty(stack)) continue;
+
+            total += stack.getQuantity();
+
+            if (incompatible != null && incompatible.test(stack)) {
+                unusable += stack.getQuantity();
+            }
         }
+
+        if (total == 0) return "Empty";
+
+        // Naming the unusable portion is the point: otherwise a full machine that is not running
+        // looks broken rather than mis-loaded.
+        if (unusable == total) return total + " items (unusable)";
+        if (unusable > 0) return String.format("%d items (%d unusable)", total, unusable);
+
+        return total + " items";
     }
 
     /// One label/value line. Extra calls beyond what the document declares are ignored rather than
@@ -104,35 +123,6 @@ public final class MachineView {
         for (int row = this.detailsUsed; row < DETAIL_ROWS; row++) {
             this.commands.set("#Detail" + row + ".Visible", false);
         }
-    }
-
-    /// The container as grid slots, rebuilt wholesale.
-    ///
-    /// Not diffed: a container is a handful of slots and an item pipe can change any of them
-    /// between refreshes, so tracking which moved would cost more than it saves.
-    @Nonnull
-    private static List<ItemGridSlot> snapshot(@Nonnull ItemContainer container,
-                                               @Nullable Predicate<ItemStack> incompatible) {
-        var slots = new ArrayList<ItemGridSlot>(container.getCapacity());
-
-        for (short slot = 0; slot < container.getCapacity(); slot++) {
-            var stack = container.getItemStack(slot);
-
-            if (ItemStack.isEmpty(stack)) {
-                slots.add(new ItemGridSlot());
-                continue;
-            }
-
-            var entry = new ItemGridSlot(stack);
-
-            if (incompatible != null && incompatible.test(stack)) {
-                entry.setItemIncompatible(true);
-            }
-
-            slots.add(entry);
-        }
-
-        return slots;
     }
 
     private static float clamp(float ratio) {

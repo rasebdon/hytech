@@ -85,8 +85,12 @@ $C.@PageOverlay {
         }
       }
 
-      // ---- Item slots. Shown only for machines that hold items, and the page is opened with a
-      //      container window when it is, which is what puts the player's inventory on screen.
+      // ---- Contents summary, plus a button to the real container.
+      //
+      // No item slots here on purpose. Windows are a separate system from custom pages: a window
+      // switches the client to the Bench page, which is the screen carrying the player's own
+      // inventory, and a custom page *replaces* that screen rather than layering over it. So slots
+      // embedded here would have nothing to drag from. The button hands over to a ContainerWindow.
       Group #SlotsSection {
         LayoutMode: Top;
         Anchor: (Bottom: 12);
@@ -97,11 +101,15 @@ $C.@PageOverlay {
           Text: "";
         }
 
-        ItemGrid #Slots {
-          Anchor: (Width: $H.@PanelWidth, Height: 72);
-          SlotsPerRow: 4;
-          AreItemsDraggable: true;
-          DisplayItemQuantity: true;
+        Label #SlotsSummary {
+          Anchor: (Width: $H.@PanelWidth, Bottom: 6);
+          Style: $H.@ValueStyle;
+          Text: "";
+        }
+
+        $C.@TextButton #ContainerButton {
+          Anchor: (Width: $H.@PanelWidth, Height: 32);
+          Text: "Open Inventory";
         }
       }
 

@@ -97,8 +97,7 @@ public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
                 if (burner != null) {
                     view.secondary("Burn", burner.getBurnRatio(), burnStatus(burner));
                 }
-                view.slots("Fuel", fuel, page.inventorySectionId(),
-                        stack -> !FuelUtil.isFuel(stack));
+                view.container("Fuel", fuel, stack -> !FuelUtil.isFuel(stack));
             }
             case FUEL_LIQUID -> {
                 // Wiring these to the fluid module is not done; say so rather than showing an

@@ -4,7 +4,6 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
-import com.hypixel.hytale.server.core.entity.entities.player.windows.ContainerWindow;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
@@ -17,12 +16,10 @@ import javax.annotation.Nullable;
 
 /// Base for every Hytech machine page, on Hytale's own custom-UI API.
 ///
-/// Replaced HyUI, which could not do two things this needs. First, its `PageBuilder.open` always
-/// calls `openCustomPage`, with no way to build a page without opening it -- so a page could never
-/// be opened *with* windows, and a machine could never show the player's inventory. Second, it
-/// registers element ids when its HTML is parsed, so only statically declared elements can receive
-/// events. Neither limit exists here: `UIEventBuilder.addEventBinding` binds any selector, and
-/// [HytechPages] chooses the open call based on whether the page has a container.
+/// Replaced HyUI, which registered element ids when its HTML was parsed, so only statically
+/// declared elements could receive events. `UIEventBuilder.addEventBinding` binds any selector,
+/// so that limit is gone -- and `.ui` gives the game's real design language rather than an
+/// approximation of it.
 ///
 /// Subclasses supply a `.ui` document, write their current values into a
 /// [UICommandBuilder], and handle named actions. `.ui` is also what gives these pages the game's
@@ -52,26 +49,16 @@ public abstract class HytechCustomPage extends InteractiveCustomUIPage<PageActio
                             @Nonnull Store<EntityStore> store) {
     }
 
-    /// The container window to open alongside this page, or null for a display-only page.
-    ///
-    /// A page that has one is opened through `openCustomPageWithWindows`, which is what puts the
-    /// player's inventory on screen and lets the engine perform the item moves. The window is
-    /// opened *before* the page is built, so by the time [#render] runs its id is assigned and an
-    /// `ItemGrid` can be bound to it -- see [MachineView#slots].
-    @Nullable
-    public ContainerWindow inventoryWindow() {
-        return null;
-    }
-
     /// Binds a click to a named action.
     ///
-    /// The action name travels as a literal in the event payload, which is how a page with many
-    /// buttons can tell them apart from a single decoded event.
+    /// The action name travels as a static literal in the event payload, which is how a page with
+    /// many buttons tells them apart from a single decoded event. The key must not start with `@`:
+    /// that prefix marks a value the client resolves as a selector, not a literal.
     protected static void onClick(@Nonnull UIEventBuilder events,
                                   @Nonnull String selector,
                                   @Nonnull String action) {
         events.addEventBinding(CustomUIEventBindingType.Activating, selector,
-                EventData.of("@Action", action));
+                EventData.of("Action", action));
     }
 
     @Override

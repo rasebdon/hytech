@@ -260,12 +260,20 @@ How it fits together:
 
 Things worth knowing:
 
-- **A page with item slots is opened with a window**, via `openCustomPageWithWindows`. Windows are
-  opened *before* the page is built, so `Window.getId()` is available during `render` and the
-  `ItemGrid` is bound to it through `InventorySectionId`. Without that binding the grid is only a
-  picture and a drag has nowhere to land.
+- **Windows and custom pages are different systems, not layers.** `setPageWithWindows` switches the
+  client to `Page.Bench` -- the screen that carries the player's inventory -- and a custom page
+  *replaces* that screen. So a custom page cannot host real item slots, and
+  `openCustomPageWithWindows` does not give you both. A machine that needs slots summarises its
+  container on the page and offers a button that opens a `ContainerWindow`. The docs are explicit:
+  "Only use `ContainerWindow` when the player needs to move actual items."
+- **`EventData` keys: no `@` for a literal, `@` for a selector.** An unprefixed key carries a static
+  value; a leading `@` marks it *dynamic*, meaning the client reads the value as a selector at event
+  time. `@Action` with a literal makes the client try to resolve it as a selector and fail with
+  "Failed to gather CustomUI event binding".
 - **One decoded event arrives per page**, not per element, so each binding carries its action name as
-  a literal in its `EventData` and `onAction` switches on it.
+  a static literal in its `EventData` and `onAction` switches on it.
+- The documented slot element is `ItemSlot`, and it belongs to window content rather than a custom
+  page. `ItemGrid` in a custom page renders nothing.
 - `render` runs on open *and* on every refresh, so it must read live state and be safe to repeat.
 - A machine adds no UI document of its own: `MachinePage.ui` declares every section and
   [MachineView] hides the ones the machine did not fill. A new resource type needs no UI code.

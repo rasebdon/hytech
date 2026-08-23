@@ -24,12 +24,11 @@ public final class HytechPages {
     private HytechPages() {
     }
 
-    /// Opens a page for a player, with an inventory window when the page has a container.
+    /// Opens a page for a player.
     ///
-    /// This is the whole reason for leaving HyUI: a page that shows item slots needs the player's
-    /// own inventory on screen to drag from, and that only happens when the page is opened
-    /// together with a window. `openCustomPageWithWindows` sends the same `OpenWindow` packet a
-    /// chest does, alongside our own layout.
+    /// Never with windows. A window switches the client to the Bench page, which is a different
+    /// screen rather than something layered over a custom page, so the two cannot share one view.
+    /// A machine needing item slots offers a button that opens the container window instead.
     public static boolean open(@Nonnull Store<EntityStore> store,
                                @Nonnull Ref<EntityStore> playerRef,
                                @Nonnull HytechCustomPage page) {
@@ -40,14 +39,7 @@ public final class HytechPages {
         var pageManager = player.getPageManager();
         if (pageManager == null) return false;
 
-        var window = page.inventoryWindow();
-
-        if (window == null) {
-            pageManager.openCustomPage(playerRef, store, page);
-        } else if (!pageManager.openCustomPageWithWindows(playerRef, store, page, window)) {
-            // Windows are opened before the page is built, so a failure here means no page either.
-            return false;
-        }
+        pageManager.openCustomPage(playerRef, store, page);
 
         OPEN.add(page);
 

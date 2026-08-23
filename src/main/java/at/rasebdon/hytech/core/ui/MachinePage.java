@@ -3,6 +3,8 @@ package at.rasebdon.hytech.core.ui;
 import at.rasebdon.hytech.core.util.HytechUtil;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.protocol.packets.interface_.Page;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.windows.ContainerWindow;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
@@ -26,6 +28,7 @@ public final class MachinePage extends HytechCustomPage {
     private static final String DOCUMENT = "Hytech/MachinePage.ui";
 
     private static final String ACTION_CONFIGURE = "configure";
+    private static final String ACTION_CONTAINER = "container";
     private static final String ACTION_CLOSE = "close";
 
     private final World world;
@@ -35,11 +38,8 @@ public final class MachinePage extends HytechCustomPage {
     /// rather than a snapshot taken when the page opened.
     private final BiConsumer<MachinePage, MachineView> content;
 
-    /// Created up front and reused, because the page needs the window's id during render and the
-    /// id is only assigned when the window is opened.
-    @Nullable
-    private final ContainerWindow window;
-
+    /// The machine's item container, if it has one. Opened as its own window rather than shown
+    /// on this page -- see openContainer.
     @Nullable
     private final ItemContainer container;
 
@@ -53,7 +53,6 @@ public final class MachinePage extends HytechCustomPage {
         this.world = world;
         this.blockPos = new Vector3i(blockPos);
         this.container = container;
-        this.window = container == null ? null : new ContainerWindow(container);
         this.content = content;
     }
 
@@ -63,18 +62,10 @@ public final class MachinePage extends HytechCustomPage {
         return DOCUMENT;
     }
 
-    /// Opened alongside a container window whenever the machine has one, which is what puts the
-    /// player's inventory on screen and lets the engine do the dragging.
-    @Override
+    /// The machine's container, for MachineView#container.
     @Nullable
-    public ContainerWindow inventoryWindow() {
-        return this.window;
-    }
-
-    /// The window's section id, or -1 when this page has no window. Machines pass it to
-    /// [MachineView#slots] so the grid binds to real slots rather than rendering a picture.
-    public int inventorySectionId() {
-        return this.window == null ? -1 : this.window.getId();
+    public ItemContainer container() {
+        return this.container;
     }
 
     @Override
@@ -92,6 +83,7 @@ public final class MachinePage extends HytechCustomPage {
     @Override
     protected void bind(@Nonnull UIEventBuilder events) {
         onClick(events, "#ConfigureButton", ACTION_CONFIGURE);
+        onClick(events, "#ContainerButton", ACTION_CONTAINER);
         onClick(events, "#CloseButton", ACTION_CLOSE);
     }
 
@@ -102,9 +94,29 @@ public final class MachinePage extends HytechCustomPage {
         switch (action) {
             case ACTION_CLOSE -> close();
             case ACTION_CONFIGURE -> openSideConfig(ref, store);
+            case ACTION_CONTAINER -> openContainer(ref, store);
             default -> {
             }
         }
+    }
+
+    /// Hands the machine's container to a real inventory window.
+    ///
+    /// setPageWithWindows with Page.Bench is the documented way to give a player item slots: it
+    /// switches the client to the container screen, which is the one carrying their own
+    /// inventory, and the engine performs the moves. That screen *replaces* this page, which is
+    /// why the two cannot be combined and why this is a button rather than a section.
+    private void openContainer(Ref<EntityStore> ref, Store<EntityStore> store) {
+        if (this.container == null) return;
+
+        var player = store.getComponent(ref, Player.getComponentType());
+        if (player == null) return;
+
+        var pageManager = player.getPageManager();
+        if (pageManager == null) return;
+
+        pageManager.setPageWithWindows(ref, store, Page.Bench, true,
+                new ContainerWindow(this.container));
     }
 
     private void openSideConfig(Ref<EntityStore> ref, Store<EntityStore> store) {
