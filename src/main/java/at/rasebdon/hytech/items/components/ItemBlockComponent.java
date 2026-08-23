@@ -88,21 +88,28 @@ public class ItemBlockComponent extends LogisticBlockComponent<HytechItemContain
     }
 
     public ItemBlockComponent() {
-        this(new BlockFaceConfig(), 0, false, 0L, SimpleItemContainer.getNewContainer(DEFAULT_SLOTS));
+        this(new BlockFaceConfig(), 0, false, 0L,
+                SimpleItemContainer.getNewContainer(DEFAULT_SLOTS), (short) 0);
     }
 
+    /// `declaredSlots` is a constructor parameter rather than a field set afterwards so that
+    /// `clone` cannot silently drop it. It did, and since placing a block clones the asset's
+    /// template component, every burner was placed with a declared size of zero -- which reads as
+    /// "leave the container alone" and left the fuel window showing sixteen slots.
     public ItemBlockComponent(
             BlockFaceConfig blockFaceConfig,
             int transferPriority,
             boolean isExtracting,
             long transferSpeed,
-            ItemContainer itemContainer) {
+            ItemContainer itemContainer,
+            short declaredSlots) {
         super(blockFaceConfig, transferPriority, isExtracting);
 
         Validation.requireNonNegative(transferSpeed, "transferSpeed");
 
         this.transferSpeed = transferSpeed;
         this.itemContainer = itemContainer;
+        this.declaredSlots = declaredSlots;
     }
 
     @Override
@@ -113,7 +120,8 @@ public class ItemBlockComponent extends LogisticBlockComponent<HytechItemContain
                 this.transferPriority,
                 this.isExtracting,
                 this.transferSpeed,
-                this.itemContainer == null ? null : this.itemContainer.clone());
+                this.itemContainer == null ? null : this.itemContainer.clone(),
+                this.declaredSlots);
     }
 
     @Override
