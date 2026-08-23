@@ -69,7 +69,7 @@ public final class MachinePage extends HytechCustomPage {
     }
 
     @Override
-    protected void render(@Nonnull UICommandBuilder commands) {
+    protected String render(@Nonnull UICommandBuilder commands) {
         var view = new MachineView(commands);
 
         view.title(HytechUtil.getBlockDisplayName(this.world, this.blockPos));
@@ -78,6 +78,8 @@ public final class MachinePage extends HytechCustomPage {
         this.content.accept(this, view);
 
         view.finish();
+
+        return view.signature();
     }
 
     @Override

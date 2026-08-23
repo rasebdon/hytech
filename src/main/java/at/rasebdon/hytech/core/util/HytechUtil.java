@@ -6,6 +6,7 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.entity.movement.MovementStatesComponent;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -75,6 +76,21 @@ public class HytechUtil {
         if (properties == null || properties.getName() == null) return null;
 
         return MessageUtil.toAnsiString(Message.translation(properties.getName())).toString();
+    }
+
+    /// Whether this entity is crouching.
+    ///
+    /// `MovementStatesComponent` is the same source vanilla's `Condition` interaction reads for
+    /// its `Crouching` key, so a crouch modifier here behaves the way one declared in an asset
+    /// would.
+    public static boolean isCrouching(@Nonnull World world, @Nonnull Ref<EntityStore> entityRef) {
+        var movement = world.getEntityStore().getStore()
+                .getComponent(entityRef, MovementStatesComponent.getComponentType());
+        if (movement == null) return false;
+
+        var states = movement.getMovementStates();
+
+        return states != null && (states.crouching || states.forcedCrouching);
     }
 
     public static void sendPlayerMessage(@Nonnull Ref<EntityStore> entityRef, @Nonnull String text) {

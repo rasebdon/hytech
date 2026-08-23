@@ -275,6 +275,17 @@ Things worth knowing:
 - The documented slot element is `ItemSlot`, and it belongs to window content rather than a custom
   page. `ItemGrid` in a custom page renders nothing.
 - `render` runs on open *and* on every refresh, so it must read live state and be safe to repeat.
+  It returns a **change signature**, and `refresh` skips the update when it matches the last one.
+  That is not an optimisation: `updateCustomPage` increments an outstanding-acknowledgment counter,
+  and `PageManager.handleEvent` **drops incoming Data events while that counter is non-zero**, so a
+  page that refreshes unconditionally eats its own button clicks.
+- **Bind with `locksInterface = false`.** A locking binding leaves the client on "Loading..." until
+  the server answers; combined with the dropped-event rule above, one badly timed refresh froze a
+  page permanently.
+- A machine whose primary screen is its container overrides
+  `OpenPageBlockInteraction.primaryContainer` and gets a window instead of a page -- the burner opens
+  straight onto its fuel slot. Crouching returns null there, which is how the readouts and side
+  configuration stay reachable.
 - A machine adds no UI document of its own: `MachinePage.ui` declares every section and
   [MachineView] hides the ones the machine did not fill. A new resource type needs no UI code.
 

@@ -20,6 +20,10 @@ public final class MachineView {
 
     private final UICommandBuilder commands;
 
+    /// Everything written this pass, so the page can skip an update that would change nothing.
+    /// Cheap and exact: the values are the strings and numbers already being sent.
+    private final StringBuilder signature = new StringBuilder();
+
     private boolean primaryShown;
     private boolean secondaryShown;
     private boolean slotsShown;
@@ -30,7 +34,28 @@ public final class MachineView {
     }
 
     public void title(@Nonnull String text) {
-        this.commands.set("#TitleLabel.Text", text);
+        set("#TitleLabel.Text", text);
+    }
+
+    private void set(@Nonnull String selector, @Nonnull String value) {
+        this.commands.set(selector, value);
+        this.signature.append(selector).append('=').append(value).append(';');
+    }
+
+    private void set(@Nonnull String selector, float value) {
+        this.commands.set(selector, value);
+        this.signature.append(selector).append('=').append(value).append(';');
+    }
+
+    private void set(@Nonnull String selector, boolean value) {
+        this.commands.set(selector, value);
+        this.signature.append(selector).append('=').append(value).append(';');
+    }
+
+    /// A signature of this pass, for change detection.
+    @Nonnull
+    String signature() {
+        return this.signature.toString();
     }
 
     /// The machine's headline number: what it holds, and how full.
@@ -38,19 +63,19 @@ public final class MachineView {
                         @Nonnull String caption) {
         this.primaryShown = true;
 
-        this.commands.set("#PrimaryHeading.Text", heading);
-        this.commands.set("#PrimaryValue.Text", value);
-        this.commands.set("#PrimaryBar.Value", clamp(ratio));
-        this.commands.set("#PrimaryCaption.Text", caption);
+        set("#PrimaryHeading.Text", heading);
+        set("#PrimaryValue.Text", value);
+        set("#PrimaryBar.Value", clamp(ratio));
+        set("#PrimaryCaption.Text", caption);
     }
 
     /// A second bar: burn progress, sunlight, altitude. Omit and the section disappears.
     public void secondary(@Nonnull String heading, float ratio, @Nonnull String caption) {
         this.secondaryShown = true;
 
-        this.commands.set("#SecondaryHeading.Text", heading);
-        this.commands.set("#SecondaryBar.Value", clamp(ratio));
-        this.commands.set("#SecondaryCaption.Text", caption);
+        set("#SecondaryHeading.Text", heading);
+        set("#SecondaryBar.Value", clamp(ratio));
+        set("#SecondaryCaption.Text", caption);
     }
 
     /// A contents summary plus the button that opens the real container.
@@ -65,8 +90,8 @@ public final class MachineView {
 
         this.slotsShown = true;
 
-        this.commands.set("#SlotsHeading.Text", heading);
-        this.commands.set("#SlotsSummary.Text", summarise(container, incompatible));
+        set("#SlotsHeading.Text", heading);
+        set("#SlotsSummary.Text", summarise(container, incompatible));
     }
 
     /// "12 charcoal" / "Empty" / "8 items (unusable)".
@@ -104,24 +129,24 @@ public final class MachineView {
 
         int row = this.detailsUsed++;
 
-        this.commands.set("#Detail" + row + "Label.Text", label);
-        this.commands.set("#Detail" + row + "Value.Text", value);
+        set("#Detail" + row + "Label.Text", label);
+        set("#Detail" + row + "Value.Text", value);
     }
 
     /// Whether a Configure Sides button makes sense for this block.
     public void configurable(boolean canConfigure) {
-        this.commands.set("#ConfigureButton.Visible", canConfigure);
+        set("#ConfigureButton.Visible", canConfigure);
     }
 
     /// Hides everything the machine did not fill in. Called after the machine has had its say.
     void finish() {
-        this.commands.set("#PrimarySection.Visible", this.primaryShown);
-        this.commands.set("#SecondarySection.Visible", this.secondaryShown);
-        this.commands.set("#SlotsSection.Visible", this.slotsShown);
-        this.commands.set("#DetailSection.Visible", this.detailsUsed > 0);
+        set("#PrimarySection.Visible", this.primaryShown);
+        set("#SecondarySection.Visible", this.secondaryShown);
+        set("#SlotsSection.Visible", this.slotsShown);
+        set("#DetailSection.Visible", this.detailsUsed > 0);
 
         for (int row = this.detailsUsed; row < DETAIL_ROWS; row++) {
-            this.commands.set("#Detail" + row + ".Visible", false);
+            set("#Detail" + row + ".Visible", false);
         }
     }
 

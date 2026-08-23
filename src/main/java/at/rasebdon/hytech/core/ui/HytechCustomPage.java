@@ -27,6 +27,10 @@ import javax.annotation.Nullable;
 /// HTML dialect only ever approximated.
 public abstract class HytechCustomPage extends InteractiveCustomUIPage<PageAction> {
 
+    /// Signature of the values last sent, so an unchanged page sends nothing.
+    @Nullable
+    private String lastSignature;
+
     protected HytechCustomPage(@Nonnull PlayerRef playerRef) {
         super(playerRef, CustomPageLifetime.CanDismiss, PageAction.CODEC);
     }
@@ -37,7 +41,11 @@ public abstract class HytechCustomPage extends InteractiveCustomUIPage<PageActio
 
     /// Writes the page's current values. Called on open *and* on every refresh, so it must be
     /// safe to run repeatedly and must not assume anything about previous state.
-    protected abstract void render(@Nonnull UICommandBuilder commands);
+    ///
+    /// Returns a signature of everything written, or null to always send. [#refresh] compares it
+    /// against the last one and skips the update when nothing moved.
+    @Nullable
+    protected abstract String render(@Nonnull UICommandBuilder commands);
 
     /// Binds click handlers. Called once, on open.
     protected void bind(@Nonnull UIEventBuilder events) {
@@ -57,8 +65,11 @@ public abstract class HytechCustomPage extends InteractiveCustomUIPage<PageActio
     protected static void onClick(@Nonnull UIEventBuilder events,
                                   @Nonnull String selector,
                                   @Nonnull String action) {
+        // locksInterface = false. A locking binding leaves the client showing "Loading..." until
+        // the server answers, and PageManager silently *drops* Data events while an update is still
+        // unacknowledged -- so one refresh landing at the wrong moment could freeze a page for good.
         events.addEventBinding(CustomUIEventBindingType.Activating, selector,
-                EventData.of("Action", action));
+                EventData.of("Action", action), false);
     }
 
     @Override
@@ -67,7 +78,7 @@ public abstract class HytechCustomPage extends InteractiveCustomUIPage<PageActio
                       @Nonnull UIEventBuilder events,
                       @Nonnull Store<EntityStore> store) {
         commands.append(document());
-        render(commands);
+        this.lastSignature = render(commands);
         bind(events);
     }
 
@@ -83,12 +94,18 @@ public abstract class HytechCustomPage extends InteractiveCustomUIPage<PageActio
 
     /// Pushes fresh values to an already-open page, without rebuilding it.
     ///
-    /// Sending only the value commands means the client keeps its layout and scroll position, so
-    /// a once-a-second refresh does not fight the player.
+    /// Skipped entirely when nothing changed. That is not just an optimisation: every update
+    /// increments the page's outstanding-acknowledgment count, and `PageManager` drops incoming
+    /// Data events while that count is non-zero. A page that refreshes unconditionally therefore
+    /// eats its own button clicks.
     public void refresh() {
         var commands = new UICommandBuilder();
 
-        render(commands);
+        String signature = render(commands);
+
+        if (signature != null && signature.equals(this.lastSignature)) return;
+
+        this.lastSignature = signature;
         sendUpdate(commands, false);
     }
 

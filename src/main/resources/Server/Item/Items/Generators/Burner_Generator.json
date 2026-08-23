@@ -83,6 +83,7 @@
         },
         "hytech:items:container": {
           "MaxTransfer": 8,
+          "Slots": 1,
           "TransferPriority": 25,
           "IsExtracting": false,
           "BlockFaceConfig": {

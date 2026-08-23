@@ -44,7 +44,15 @@ public final class WrenchModePage extends HytechCustomPage {
     }
 
     @Override
-    protected void render(@Nonnull UICommandBuilder commands) {
+    protected String render(@Nonnull UICommandBuilder commands) {
+        renderInto(commands);
+
+        // Null means "always send": these pages only change in response to a click, so they
+        // are never refreshed on a timer and have nothing to compare against.
+        return null;
+    }
+
+    private void renderInto(@Nonnull UICommandBuilder commands) {
         var resources = HytechCoreModule.get().getResourceTypes();
         var selected = mode() == null ? null : mode().resolve();
 

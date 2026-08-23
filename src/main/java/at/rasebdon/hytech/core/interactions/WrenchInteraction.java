@@ -22,7 +22,6 @@ import com.hypixel.hytale.server.core.modules.entity.component.TransformComponen
 import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHandler;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.SimpleInteraction;
-import com.hypixel.hytale.server.core.entity.movement.MovementStatesComponent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -38,20 +37,6 @@ public class WrenchInteraction extends SimpleInteraction {
     public static final BuilderCodec<WrenchInteraction> CODEC = BuilderCodec.builder(
             WrenchInteraction.class, WrenchInteraction::new, SimpleInteraction.CODEC
     ).build();
-
-    /// Whether the player is crouching, which is the modifier for "change mode, do not configure".
-    ///
-    /// Readable server-side from MovementStatesComponent -- the same source the vanilla
-    /// `Condition` interaction checks for its `Crouching` key.
-    private static boolean isCrouching(@Nonnull World world, @Nonnull Ref<EntityStore> playerRef) {
-        var movement = world.getEntityStore().getStore()
-                .getComponent(playerRef, MovementStatesComponent.getComponentType());
-        if (movement == null) return false;
-
-        var states = movement.getMovementStates();
-
-        return states != null && (states.crouching || states.forcedCrouching);
-    }
 
     private static void doBlockInteraction(
             @Nonnull InteractionSyncData clientState,
@@ -218,7 +203,7 @@ public class WrenchInteraction extends SimpleInteraction {
 
         // Crouching means "pick the resource", not "configure this face". Checked before the
         // target is considered, so it also works aiming at nothing.
-        if (isCrouching(world, playerRef)) {
+        if (HytechUtil.isCrouching(world, playerRef)) {
             var store = world.getEntityStore().getStore();
             var pageTarget = store.getComponent(playerRef, PlayerRef.getComponentType());
 

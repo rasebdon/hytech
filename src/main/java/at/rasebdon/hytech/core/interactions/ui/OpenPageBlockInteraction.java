@@ -2,9 +2,16 @@ package at.rasebdon.hytech.core.interactions.ui;
 
 import at.rasebdon.hytech.core.ui.HytechCustomPage;
 import at.rasebdon.hytech.core.ui.HytechPages;
+import at.rasebdon.hytech.core.util.HytechUtil;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.InteractionType;
+import com.hypixel.hytale.protocol.packets.interface_.Page;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.entity.entities.player.windows.ContainerWindow;
+import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHandler;
@@ -62,6 +69,18 @@ public abstract class OpenPageBlockInteraction extends SimpleBlockInteraction {
         var playerRef = store.getComponent(entityRef, PlayerRef.getComponentType());
         if (playerRef == null) return;
 
+        // A machine whose primary screen is its container -- the burner and its fuel slot --
+        // opens that instead of a custom page. It has to be one or the other: a window switches
+        // the client to the Bench page, which is what carries the player's inventory, and a
+        // custom page replaces that screen rather than sitting over it.
+        var container = primaryContainer(world, blockPos,
+                HytechUtil.isCrouching(world, entityRef));
+
+        if (container != null) {
+            openContainer(store, entityRef, container);
+            return;
+        }
+
         var page = createPage(world, blockPos, playerRef);
         if (page == null) return;
 
@@ -73,6 +92,30 @@ public abstract class OpenPageBlockInteraction extends SimpleBlockInteraction {
     protected abstract HytechCustomPage createPage(@NotNull World world,
                                                    @NotNull Vector3i blockPos,
                                                    @NotNull PlayerRef playerRef);
+
+    /// A container to open *instead of* the page, or null to open the page.
+    ///
+    /// `crouching` is the escape hatch: a machine that normally opens its container still needs
+    /// a way to reach its readouts and side configuration, so it returns null when crouching.
+    @Nullable
+    protected ItemContainer primaryContainer(@NotNull World world,
+                                             @NotNull Vector3i blockPos,
+                                             boolean crouching) {
+        return null;
+    }
+
+    private void openContainer(@NotNull Store<EntityStore> store,
+                               @NotNull Ref<EntityStore> entityRef,
+                               @NotNull ItemContainer container) {
+        var player = store.getComponent(entityRef, Player.getComponentType());
+        if (player == null) return;
+
+        var pageManager = player.getPageManager();
+        if (pageManager == null) return;
+
+        pageManager.setPageWithWindows(entityRef, store, Page.Bench, true,
+                new ContainerWindow(container));
+    }
 
     /* ---------------- Formatting shared by machine pages ---------------- */
 

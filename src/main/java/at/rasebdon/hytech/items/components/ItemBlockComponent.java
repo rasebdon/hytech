@@ -14,6 +14,7 @@ import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.component.Component;
+import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.inventory.container.SimpleItemContainer;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
@@ -31,6 +32,14 @@ public class ItemBlockComponent extends LogisticBlockComponent<HytechItemContain
                     .append(new KeyedCodec<>("ItemContainer", ItemContainer.CODEC),
                             (state, o) -> state.itemContainer = o,
                             (state) -> state.itemContainer).add()
+                    // Lets a block size its own container: a burner wants one fuel slot, a buffer
+                    // wants a chestful. Applied after the container is decoded, so an existing
+                    // world keeps whatever it saved.
+                    .append(new KeyedCodec<>("Slots", Codec.SHORT),
+                            (c, v) -> c.resize(v),
+                            (c) -> (short) c.getSlotCount())
+                    .addValidator(Validators.greaterThan((short) 0))
+                    .documentation("Number of item slots this block holds").add()
                     .append(new KeyedCodec<>("MaxTransfer", Codec.LONG),
                             (c, v) -> c.transferSpeed = v,
                             (c) -> c.transferSpeed)
@@ -40,6 +49,26 @@ public class ItemBlockComponent extends LogisticBlockComponent<HytechItemContain
 
     private ItemContainer itemContainer;
     private long transferSpeed;
+
+    /// Grows or shrinks the container to `slots`, keeping what fits.
+    ///
+    /// Shrinking drops the overflow rather than ejecting it: this only runs while an asset is being
+    /// decoded, so there is no world to eject into yet.
+    private void resize(short slots) {
+        if (slots <= 0 || this.itemContainer == null) return;
+        if (this.itemContainer.getCapacity() == slots) return;
+
+        var resized = SimpleItemContainer.getNewContainer(slots);
+
+        for (short slot = 0; slot < Math.min(slots, this.itemContainer.getCapacity()); slot++) {
+            var stack = this.itemContainer.getItemStack(slot);
+            if (!ItemStack.isEmpty(stack)) {
+                resized.addItemStack(stack, false, false, false);
+            }
+        }
+
+        this.itemContainer = resized;
+    }
 
     public ItemBlockComponent() {
         this(new BlockFaceConfig(), 0, false, 0L, SimpleItemContainer.getNewContainer(DEFAULT_SLOTS));
