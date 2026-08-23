@@ -59,26 +59,34 @@
           "IsExtracting": true,
           "BlockFaceConfig": {
             "None": [
-              "OUTPUT"
+              "OUTPUT",
+              "NONE"
             ],
             "Up": [
-              "OUTPUT"
+              "OUTPUT",
+              "NONE"
             ],
             "Down": [
-              "OUTPUT"
+              "OUTPUT",
+              "NONE"
             ],
             "North": [
-              "OUTPUT"
+              "OUTPUT",
+              "NONE"
             ],
             "South": [
-              "OUTPUT"
+              "OUTPUT",
+              "NONE"
             ],
             "East": [
-              "OUTPUT"
+              "OUTPUT",
+              "NONE"
             ],
             "West": [
-              "OUTPUT"
-            ]
+              "OUTPUT",
+              "NONE"
+            ],
+            "Default": "OUTPUT"
           }
         },
         "hytech:items:container": {
@@ -88,26 +96,34 @@
           "IsExtracting": false,
           "BlockFaceConfig": {
             "None": [
-              "INPUT"
+              "INPUT",
+              "NONE"
             ],
             "Up": [
-              "INPUT"
+              "INPUT",
+              "NONE"
             ],
             "Down": [
-              "INPUT"
+              "INPUT",
+              "NONE"
             ],
             "North": [
-              "INPUT"
+              "INPUT",
+              "NONE"
             ],
             "South": [
-              "INPUT"
+              "INPUT",
+              "NONE"
             ],
             "East": [
-              "INPUT"
+              "INPUT",
+              "NONE"
             ],
             "West": [
-              "INPUT"
-            ]
+              "INPUT",
+              "NONE"
+            ],
+            "Default": "INPUT"
           }
         }
       }

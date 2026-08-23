@@ -39,6 +39,15 @@ public class BlockFaceConfig implements Cloneable {
             builder.append(new KeyedCodec<>(face.name(), Codec.STRING_ARRAY),
                     (c, v) -> c.setAllowed(face, v), (c) -> c.getAllowed(face)).add();
         }
+        // Sets the starting state of every face *without* restricting what it may become.
+        //
+        // The per-face keys above are an allow-list: "Up": ["OUTPUT"] means OUTPUT is the only
+        // permitted state, so the wrench cannot cycle that side and the face overlay correctly
+        // shows nothing. A generator wants to *default* to output while still being configurable,
+        // which is what this expresses. Declared after the per-face keys so it is applied last.
+        builder.append(new KeyedCodec<>("Default", Codec.STRING),
+                (c, v) -> c.setAllFaces(v), (c) -> null).add();
+
         builder.append(new KeyedCodec<>("BlockFaceConfigBitmap", Codec.LONG),
                 (c, v) -> c.currentBitmap = v, (c) -> c.currentBitmap).add();
         CODEC = builder.build();
@@ -98,6 +107,25 @@ public class BlockFaceConfig implements Cloneable {
 
     public boolean isOutputOrBoth(BlockFace face) {
         return getType(face).isOutputOrBoth();
+    }
+
+    /// Points every face at `typeName`, leaving the allowed set alone.
+    ///
+    /// Ignores a value the face does not permit rather than throwing: an asset combining a
+    /// restrictive allow-list with a conflicting default is a mistake worth surviving.
+    private void setAllFaces(@Nonnull String typeName) {
+        BlockFaceConfigType type;
+        try {
+            type = BlockFaceConfigType.valueOf(typeName.trim().toUpperCase());
+        } catch (IllegalArgumentException error) {
+            return;
+        }
+
+        for (BlockFace face : BlockFace.VALUES) {
+            if (isAllowed(face, type, 0)) {
+                set(face, type, 0);
+            }
+        }
     }
 
     public boolean isAllowed(BlockFace face, BlockFaceConfigType type, int index) {

@@ -197,7 +197,14 @@ from `PipeConnectionStateSystem.cleanupSystem()`.
 
 ### Block Face Configuration
 
-Each face of a logistic block has a `BlockFaceConfig` (INPUT/OUTPUT/BOTH/DISABLED). This controls neighbor detection and
+Each face of a logistic block has a `BlockFaceConfig` (INPUT/OUTPUT/BOTH/DISABLED).
+
+**The per-face asset keys are an allow-list, not a default.** `"Up": ["OUTPUT"]` means OUTPUT is the
+*only* permitted state, so the wrench cannot cycle that side and the face overlay deliberately shows
+nothing on it -- which is what made the wrench look broken on generators. Use `"Default": "OUTPUT"`
+to set the starting state without restricting the face. Convention: give a functional side
+`[<state>, "NONE"]` plus that `Default`, so it can always be switched off but never set to something
+meaningless. This controls neighbor detection and
 flow direction. The Wrench interaction cycles face configs and fires `CHANGED` events.
 
 On a pipe the wrench targets an individual arm: it reads `InteractionSyncData.raycastHit`,

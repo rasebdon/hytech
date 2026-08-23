@@ -36,8 +36,8 @@ public class ItemBlockComponent extends LogisticBlockComponent<HytechItemContain
                     // wants a chestful. Applied after the container is decoded, so an existing
                     // world keeps whatever it saved.
                     .append(new KeyedCodec<>("Slots", Codec.SHORT),
-                            (c, v) -> c.resize(v),
-                            (c) -> (short) c.getSlotCount())
+                            (c, v) -> c.declaredSlots = v,
+                            (c) -> c.declaredSlots)
                     .addValidator(Validators.greaterThan((short) 0))
                     .documentation("Number of item slots this block holds").add()
                     .append(new KeyedCodec<>("MaxTransfer", Codec.LONG),
@@ -48,21 +48,34 @@ public class ItemBlockComponent extends LogisticBlockComponent<HytechItemContain
                     .build();
 
     private ItemContainer itemContainer;
+
+    /// Slot count the asset asks for, or 0 to keep whatever the container already has.
+    private short declaredSlots;
     private long transferSpeed;
 
-    /// Grows or shrinks the container to `slots`, keeping what fits.
+    /// Brings the container to the size the asset declares, keeping what fits.
     ///
-    /// Shrinking drops the overflow rather than ejecting it: this only runs while an asset is being
-    /// decoded, so there is no world to eject into yet.
-    private void resize(short slots) {
+    /// Enforced on read rather than only at decode, because the two do not coincide. A block placed
+    /// before `Slots` existed has a saved sixteen-slot container and no `Slots` key of its own, so a
+    /// decode-time resize would never run for it and the burner would keep showing sixteen slots.
+    /// Vanilla does the same thing for `ItemContainerBlock`, resizing to the asset capacity when the
+    /// block loads.
+    ///
+    /// Idempotent and a single comparison in the common case, so calling it from the accessor costs
+    /// nothing once the sizes agree.
+    private void ensureDeclaredCapacity() {
+        short slots = this.declaredSlots;
+
         if (slots <= 0 || this.itemContainer == null) return;
         if (this.itemContainer.getCapacity() == slots) return;
 
         var resized = SimpleItemContainer.getNewContainer(slots);
 
-        for (short slot = 0; slot < Math.min(slots, this.itemContainer.getCapacity()); slot++) {
+        for (short slot = 0; slot < this.itemContainer.getCapacity(); slot++) {
             var stack = this.itemContainer.getItemStack(slot);
             if (!ItemStack.isEmpty(stack)) {
+                // Overflow when shrinking is dropped: there is no world reference here to eject
+                // into, and the alternative is refusing to shrink at all.
                 resized.addItemStack(stack, false, false, false);
             }
         }
@@ -117,6 +130,8 @@ public class ItemBlockComponent extends LogisticBlockComponent<HytechItemContain
 
     @Override
     public ItemContainer getItemContainer() {
+        ensureDeclaredCapacity();
+
         return itemContainer;
     }
 

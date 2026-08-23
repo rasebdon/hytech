@@ -59,26 +59,34 @@
           "IsExtracting": false,
           "BlockFaceConfig": {
             "None": [
-              "INPUT"
+              "INPUT",
+              "NONE"
             ],
             "Up": [
-              "INPUT"
+              "INPUT",
+              "NONE"
             ],
             "Down": [
-              "INPUT"
+              "INPUT",
+              "NONE"
             ],
             "North": [
-              "INPUT"
+              "INPUT",
+              "NONE"
             ],
             "South": [
-              "INPUT"
+              "INPUT",
+              "NONE"
             ],
             "East": [
-              "INPUT"
+              "INPUT",
+              "NONE"
             ],
             "West": [
-              "INPUT"
-            ]
+              "INPUT",
+              "NONE"
+            ],
+            "Default": "INPUT"
           }
         },
         "hytech:core:creative_source": {
