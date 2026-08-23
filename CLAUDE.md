@@ -141,6 +141,12 @@ system instead of the shared pull/push one.
 | `ScalarNetworkSaveSystem` / typed variant | capacity-weighted persistence with remainder carry |
 | `AbstractBlockStateSystem` | drives a block's visual state from one of its components |
 
+**Validators are checked against a field's default at registration.** `BuilderCodec.validateDefaults`
+runs every validator over the value a *fresh* component instance holds, before any asset is read. So
+a bound the default cannot satisfy -- `greaterThan(0)` on a field defaulting to 0 -- fails component
+registration and takes the whole plugin down with a `CodecValidationException`, not just that one
+block. Either widen the bound or give the field a default that passes.
+
 **Codec key naming.** Capacity and transfer speed are spelled identically everywhere and live on
 the shared bases. The stored *amount* is per-subclass: energy keeps `Energy` and `SavedEnergy`
 because shipped assets and existing worlds use those keys, while new types use `Amount`. Renaming

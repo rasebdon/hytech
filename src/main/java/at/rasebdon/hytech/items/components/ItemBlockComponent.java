@@ -33,13 +33,17 @@ public class ItemBlockComponent extends LogisticBlockComponent<HytechItemContain
                             (state, o) -> state.itemContainer = o,
                             (state) -> state.itemContainer).add()
                     // Lets a block size its own container: a burner wants one fuel slot, a buffer
-                    // wants a chestful. Applied after the container is decoded, so an existing
-                    // world keeps whatever it saved.
+                    // wants a chestful. Enforced on read by ensureDeclaredCapacity rather than here,
+                    // so a block saved before this key existed is corrected when it loads.
                     .append(new KeyedCodec<>("Slots", Codec.SHORT),
                             (c, v) -> c.declaredSlots = v,
                             (c) -> c.declaredSlots)
-                    .addValidator(Validators.greaterThan((short) 0))
-                    .documentation("Number of item slots this block holds").add()
+                    // Zero, not one, is the floor: it is the documented "leave the container
+                    // alone" value and it is also what the field defaults to. BuilderCodec
+                    // validates a field's *default* at registration, so a stricter bound here
+                    // fails the whole component and takes the plugin down with it.
+                    .addValidator(Validators.greaterThanOrEqual((short) 0))
+                    .documentation("Number of item slots this block holds, or 0 to keep the current size").add()
                     .append(new KeyedCodec<>("MaxTransfer", Codec.LONG),
                             (c, v) -> c.transferSpeed = v,
                             (c) -> c.transferSpeed)
