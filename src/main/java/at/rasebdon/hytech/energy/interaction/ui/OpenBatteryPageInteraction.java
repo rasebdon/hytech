@@ -1,13 +1,12 @@
 package at.rasebdon.hytech.energy.interaction.ui;
 
-import at.rasebdon.hytech.core.interactions.ui.HytechPage;
 import at.rasebdon.hytech.core.interactions.ui.OpenPageBlockInteraction;
+import at.rasebdon.hytech.core.ui.HytechCustomPage;
+import at.rasebdon.hytech.core.ui.MachinePage;
 import at.rasebdon.hytech.core.util.HytechUtil;
 import at.rasebdon.hytech.energy.EnergyModule;
-import au.ellie.hyui.builders.PageBuilder;
-import au.ellie.hyui.html.TemplateProcessor;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
-import com.hypixel.hytale.server.core.entity.InteractionContext;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -15,6 +14,7 @@ import org.joml.Vector3i;
 
 import javax.annotation.Nonnull;
 
+/// An energy store: charge, flow, and its transfer limit.
 public class OpenBatteryPageInteraction extends OpenPageBlockInteraction {
 
     @Nonnull
@@ -27,29 +27,24 @@ public class OpenBatteryPageInteraction extends OpenPageBlockInteraction {
 
     @Override
     @Nullable
-    protected PageBuilder getPageBuilder(@NotNull InteractionContext context,
-                                         @NotNull World world,
-                                         @NotNull Vector3i blockPos) {
-        var containerComponent = HytechUtil.getBlockComponent(
-                world,
-                blockPos,
-                EnergyModule.get().getBlockComponentType());
+    protected HytechCustomPage createPage(@NotNull World world,
+                                          @NotNull Vector3i blockPos,
+                                          @NotNull PlayerRef playerRef) {
 
-        if (containerComponent == null || !containerComponent.isAvailable()) return null;
+        var component = HytechUtil.getBlockComponent(
+                world, blockPos, EnergyModule.get().getBlockComponentType());
+        if (component == null) return null;
 
-        var energy = containerComponent.getContainer();
+        return new MachinePage(playerRef, world, blockPos, null, (page, view) -> {
+            var energy = component.getContainer();
 
-        var template = new TemplateProcessor()
-                .setVariable("blockName", getBlockName(world, blockPos))
-                .setVariable("currentEnergy", energy::getAmount)
-                .setVariable("maxEnergy", energy::getTotalCapacity)
-                .setVariable("energyFillRatio", energy::getFillRatio)
-                .setVariable("fillPercent", () -> Math.round(energy.getFillRatio() * 100f))
-                .setVariable("transferSpeed", energy::getTransferSpeed)
-                .setVariable("energyDelta", energy::getDelta)
-                .setVariable("energyDeltaSymbol", () -> getPrefix(energy.getDelta()))
-                .setVariable("energyDeltaColor", () -> getValueColor(energy.getDelta()));
+            view.primary("Energy",
+                    String.format("%,d / %,d RF", energy.getAmount(), energy.getTotalCapacity()),
+                    energy.getFillRatio(),
+                    percent(energy.getFillRatio()) + "% charged");
 
-        return HytechPage.of("Energy/Storage/BatteryPage.html", template);
+            view.detail("Flow", signed(energy.getDelta()) + " RF/t");
+            view.detail("Max transfer", energy.getTransferSpeed() + " RF/t");
+        });
     }
 }

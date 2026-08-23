@@ -1,11 +1,14 @@
 package at.rasebdon.hytech.core.interactions.ui;
 
+import at.rasebdon.hytech.core.containers.ScalarContainer;
+import at.rasebdon.hytech.core.containers.TypedScalarContainer;
+import at.rasebdon.hytech.core.ui.HytechCustomPage;
+import at.rasebdon.hytech.core.ui.MachinePage;
+import at.rasebdon.hytech.core.ui.MachineView;
+import at.rasebdon.hytech.core.ui.SideConfigPage;
 import at.rasebdon.hytech.core.util.LogisticLookup;
-import au.ellie.hyui.builders.LabelBuilder;
-import au.ellie.hyui.builders.PageBuilder;
-import au.ellie.hyui.html.TemplateProcessor;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
-import com.hypixel.hytale.server.core.entity.InteractionContext;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -13,18 +16,11 @@ import org.joml.Vector3i;
 
 import javax.annotation.Nonnull;
 
-/// The default UI for any logistic block that has no bespoke page.
+/// The default page for a logistic block with no bespoke UI: tanks, buffers, the test blocks.
 ///
-/// Tanks, buffers and the creative test blocks all want the same thing: show what is inside, and
-/// offer the side configurator. Each component already describes itself through `toString`, so
-/// this reuses that rather than reimplementing per-resource formatting -- which also means a new
-/// resource type gets a working UI with no UI code at all.
+/// Reports the block's first scalar container as the headline and lists the rest as detail rows, so
+/// a new resource type gets a working page with no UI code at all.
 public class OpenLogisticContainerPageInteraction extends OpenPageBlockInteraction {
-
-    private static final String HTML = "Core/LogisticContainerPage.html";
-    /// Rows the HTML declares. A block with more containers than this shows the first few.
-    private static final int MAX_ROWS = 3;
-    private static final String ROW_ID_PREFIX = "container-row-";
 
     @Nonnull
     public static final BuilderCodec<OpenLogisticContainerPageInteraction> CODEC =
@@ -37,37 +33,65 @@ public class OpenLogisticContainerPageInteraction extends OpenPageBlockInteracti
 
     @Override
     @Nullable
-    protected PageBuilder getPageBuilder(@NotNull InteractionContext context,
-                                         @NotNull World world,
-                                         @NotNull Vector3i blockPos) {
+    protected HytechCustomPage createPage(@NotNull World world,
+                                          @NotNull Vector3i blockPos,
+                                          @NotNull PlayerRef playerRef) {
 
-        var components = LogisticLookup.allComponentsAt(world, blockPos);
-        if (components.isEmpty()) return null;
+        if (SideConfigPage.presentResources(world, blockPos).isEmpty()) return null;
 
-        var template = new TemplateProcessor()
-                .setVariable("blockName", getBlockName(world, blockPos));
+        return new MachinePage(playerRef, world, blockPos, null,
+                (page, view) -> fill(view, world, blockPos));
+    }
 
-        var page = HytechPage.of(HTML, template);
+    /// Reads live state on every refresh rather than closing over a snapshot, so a tank being
+    /// filled by a pipe updates while the page is open.
+    private static void fill(MachineView view, World world, Vector3i blockPos) {
+        var resources = SideConfigPage.presentResources(world, blockPos);
 
-        // Fixed rows, relabelled and hidden as needed. Rows created at runtime render but are
-        // never registered for events, and a nested container carrying its own layout-mode
-        // disconnects the client outright -- so the page declares its maximum and hides the rest.
-        for (int i = 0; i < MAX_ROWS; i++) {
-            String id = ROW_ID_PREFIX + i;
+        boolean headlineShown = false;
 
-            if (i >= components.size()) {
-                page.editById(id, LabelBuilder.class, label -> label.withVisible(false));
+        for (var resource : resources) {
+            var component = resource.blockAt(world, blockPos);
+            if (component == null) continue;
+
+            var container = component.getContainer();
+
+            if (!headlineShown && container instanceof ScalarContainer scalar) {
+                headlineShown = true;
+
+                view.primary(resource.label(), describe(scalar), scalar.getFillRatio(),
+                        percent(scalar.getFillRatio()) + "% full");
                 continue;
             }
 
-            // Each component already formats itself, so a new resource type gets a working page
-            // with no UI code at all.
-            String text = components.get(i).toString();
-
-            page.editById(id, LabelBuilder.class,
-                    label -> label.withVisible(true).withText(text));
+            // Anything past the headline, and anything not scalar (items), becomes a detail line.
+            // Each component already formats itself, which is why this needs no per-type code.
+            view.detail(resource.label(), summarise(component.getContainer()));
         }
 
-        return page;
+        if (!headlineShown) {
+            // A block with only slot-based containers still deserves a headline.
+            var first = LogisticLookup.allBlockComponentsAt(world, blockPos).stream().findFirst();
+            first.ifPresent(component -> view.primary("Contents",
+                    summarise(component.getContainer()), 0f, ""));
+        }
+    }
+
+    /// "1,200 / 8,000  Water" -- amount, capacity and, for a typed tank, what it holds.
+    private static String describe(ScalarContainer scalar) {
+        String amounts = String.format("%,d / %,d", scalar.getAmount(), scalar.getTotalCapacity());
+
+        if (scalar instanceof TypedScalarContainer<?> typed && typed.getResourceType() != null) {
+            return amounts + "  " + typed.getResourceType();
+        }
+
+        return amounts;
+    }
+
+    private static String summarise(@Nullable Object container) {
+        if (container instanceof ScalarContainer scalar) return describe(scalar);
+        if (container == null) return "-";
+
+        return container.toString();
     }
 }

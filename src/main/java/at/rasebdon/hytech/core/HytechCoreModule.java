@@ -8,6 +8,7 @@ import at.rasebdon.hytech.core.components.WrenchModeComponent;
 import at.rasebdon.hytech.core.interactions.ReadLogisticContainerInteraction;
 import at.rasebdon.hytech.core.interactions.ui.OpenLogisticContainerPageInteraction;
 import at.rasebdon.hytech.core.systems.CreativeSourceSystem;
+import at.rasebdon.hytech.core.ui.PageRefreshSystem;
 import at.rasebdon.hytech.core.interactions.WrenchInteraction;
 import at.rasebdon.hytech.core.systems.FaceConfigOverlaySystem;
 import at.rasebdon.hytech.core.systems.PipeConnectionStateSystem;
@@ -76,6 +77,9 @@ public class HytechCoreModule {
                 WrenchModeComponent.CODEC);
 
         entityStoreComponentRegistry.registerSystem(new FaceConfigOverlaySystem());
+        // Machine pages are built on Hytale's own custom-UI API now, so refreshing them is ours
+        // to drive; HyUI used to do this internally.
+        entityStoreComponentRegistry.registerSystem(new PageRefreshSystem());
 
         Interaction.CODEC.register(
                 "Wrench",

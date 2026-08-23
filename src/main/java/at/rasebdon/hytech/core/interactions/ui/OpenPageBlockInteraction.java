@@ -1,13 +1,10 @@
 package at.rasebdon.hytech.core.interactions.ui;
 
-import at.rasebdon.hytech.core.util.HytechUtil;
-import au.ellie.hyui.builders.HyUIPage;
-import au.ellie.hyui.builders.PageBuilder;
+import at.rasebdon.hytech.core.ui.HytechCustomPage;
+import at.rasebdon.hytech.core.ui.HytechPages;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.CommandBuffer;
-import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.InteractionType;
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHandler;
@@ -15,14 +12,19 @@ import com.hypixel.hytale.server.core.modules.interaction.interaction.config.cli
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.hypixel.hytale.server.core.util.MessageUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3i;
 
 import javax.annotation.Nonnull;
 
+/// Base for interactions that open a Hytech page on a block.
+///
+/// Subclasses only decide *which* page. Opening it -- including opening it with an inventory window
+/// when the page has a container -- is [HytechPages]' job, so every machine that shows item slots
+/// gets the player's inventory alongside without asking for it.
 public abstract class OpenPageBlockInteraction extends SimpleBlockInteraction {
+
     @Nonnull
     public static final BuilderCodec<OpenPageBlockInteraction> CODEC =
             BuilderCodec.abstractBuilder(OpenPageBlockInteraction.class, SimpleBlockInteraction.CODEC)
@@ -37,7 +39,7 @@ public abstract class OpenPageBlockInteraction extends SimpleBlockInteraction {
             @Nullable ItemStack item,
             @NotNull Vector3i blockPos,
             @NotNull CooldownHandler cooldownHandler) {
-        world.execute(() -> openUiInternal(context, world, blockPos));
+        world.execute(() -> openPage(context, world, blockPos));
     }
 
     @Override
@@ -47,90 +49,39 @@ public abstract class OpenPageBlockInteraction extends SimpleBlockInteraction {
             @Nullable ItemStack item,
             @NotNull World world,
             @NotNull Vector3i blockPos) {
-        world.execute(() -> openUiInternal(context, world, blockPos));
+        world.execute(() -> openPage(context, world, blockPos));
     }
 
-    private void openUiInternal(@NotNull InteractionContext context,
-                                @NotNull World world,
-                                @NotNull Vector3i blockPos) {
-        var entityStore = world.getEntityStore().getStore();
-        var playerRef = entityStore.getComponent(context.getEntity(), PlayerRef.getComponentType());
-        assert playerRef != null;
+    private void openPage(@NotNull InteractionContext context,
+                          @NotNull World world,
+                          @NotNull Vector3i blockPos) {
 
-        var pageBuilder = getPageBuilder(context, world, blockPos);
-        if (pageBuilder == null) return;
+        var store = world.getEntityStore().getStore();
+        var entityRef = context.getEntity();
 
-        wireSideConfig(pageBuilder, context, world, blockPos, playerRef, entityStore);
+        var playerRef = store.getComponent(entityRef, PlayerRef.getComponentType());
+        if (playerRef == null) return;
 
-        pageBuilder.open(playerRef, entityStore);
+        var page = createPage(world, blockPos, playerRef);
+        if (page == null) return;
+
+        HytechPages.open(store, entityRef, page);
     }
 
-    /// Gives every machine page the side configurator, without each page having to know about it.
-    ///
-    /// The button lives in the shared page chrome, so a new machine UI gets per-resource side
-    /// configuration for free as long as its HTML includes the button. Blocks with no logistic
-    /// container at all get nothing wired, and the configurator lists only the resources the
-    /// block actually carries -- so a battery shows one row and the burner shows two.
-    private void wireSideConfig(@NotNull PageBuilder pageBuilder,
-                                @NotNull InteractionContext context,
-                                @NotNull World world,
-                                @NotNull Vector3i blockPos,
-                                @NotNull PlayerRef playerRef,
-                                @NotNull Store<EntityStore> entityStore) {
-
-        if (SideConfigPage.presentResources(world, blockPos).isEmpty()) return;
-
-        HytechPage.onClick(pageBuilder, SideConfigPage.OPEN_BUTTON_ID, (_, ctx) -> {
-            var sideConfig = SideConfigPage.of(world, blockPos, getBlockName(world, blockPos));
-            if (sideConfig == null) return;
-
-            // Back reopens the machine page rather than leaving the player on nothing.
-            HytechPage.onClick(sideConfig, SideConfigPage.BACK_BUTTON_ID, (_, backCtx) -> {
-                backCtx.getPage().ifPresent(HyUIPage::close);
-                world.execute(() -> openUiInternal(context, world, blockPos));
-            });
-
-            ctx.getPage().ifPresent(HyUIPage::close);
-            sideConfig.open(playerRef, entityStore);
-        });
-    }
-
+    /// The page to open, or null when this block has nothing to show.
     @Nullable
-    protected abstract PageBuilder getPageBuilder(@NotNull InteractionContext context,
-                                                  @NotNull World world,
-                                                  @NotNull Vector3i blockPos);
+    protected abstract HytechCustomPage createPage(@NotNull World world,
+                                                   @NotNull Vector3i blockPos,
+                                                   @NotNull PlayerRef playerRef);
 
+    /* ---------------- Formatting shared by machine pages ---------------- */
 
-    protected String getBlockName(@NotNull World world, @NotNull Vector3i blockPos) {
-        var blockType = HytechUtil.getBlockType(world, blockPos);
-        assert blockType != null;
-
-        var blockItem = blockType.getItem();
-        assert blockItem != null;
-
-        var translationKey = blockItem.getTranslationProperties().getName();
-        assert translationKey != null;
-
-        return MessageUtil.toAnsiString(Message.translation(translationKey)).toString();
+    /// Signs a rate so a readout distinguishes gaining from losing at a glance.
+    protected static String signed(long value) {
+        return value > 0 ? "+" + value : String.valueOf(value);
     }
 
-    protected String getPrefix(long value) {
-        if (value < 0) {
-            return "-";
-        } else if (value > 0) {
-            return "+";
-        } else {
-            return "";
-        }
-    }
-
-    protected String getValueColor(long value) {
-        if (value < 0) {
-            return "#fc2e23";
-        } else if (value > 0) {
-            return "#23fc31";
-        } else {
-            return "#ffffff";
-        }
+    protected static int percent(float ratio) {
+        return Math.round(Math.max(0f, Math.min(1f, ratio)) * 100f);
     }
 }

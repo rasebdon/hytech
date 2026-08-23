@@ -16,14 +16,9 @@ repositories {
     maven("https://maven.hytale-modding.info/releases") {
         name = "HytaleModdingReleases"
     }
-    maven("https://www.cursemaven.com") {
-        name = "Cursemaven"
-    }
 }
 
 dependencies {
-    implementation("curse.maven:hyui-1431415:8363317")
-
     compileOnly(libs.jetbrains.annotations)
     compileOnly(libs.jspecify)
 

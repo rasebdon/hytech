@@ -6,7 +6,8 @@ import at.rasebdon.hytech.core.components.LogisticEntityProxyComponent;
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import at.rasebdon.hytech.core.util.BlockFaceUtil;
 import at.rasebdon.hytech.core.util.HytechUtil;
-import at.rasebdon.hytech.core.interactions.ui.WrenchModePage;
+import at.rasebdon.hytech.core.ui.HytechPages;
+import at.rasebdon.hytech.core.ui.WrenchModePage;
 import at.rasebdon.hytech.core.util.LogisticLookup;
 import at.rasebdon.hytech.core.LogisticResourceType;
 import at.rasebdon.hytech.core.util.PipeConnectionMask;
@@ -223,7 +224,8 @@ public class WrenchInteraction extends SimpleInteraction {
 
             if (pageTarget != null) {
                 var target = pageTarget;
-                world.execute(() -> WrenchModePage.open(store, playerRef, target));
+                world.execute(() -> HytechPages.open(store, playerRef,
+                        new WrenchModePage(target, playerRef)));
             }
             return;
         }

@@ -1,0 +1,51 @@
+// Shared styling for every Hytech machine page.
+//
+// Built on the game's own Common.ui rather than a private look, so a Hytech panel reads as part of
+// Hytale rather than bolted on: the same container chrome, the same button art, the same label
+// colours. Every construct here is one taken from a shipped vanilla page.
+$C = "../Common.ui";
+
+// Accent per resource, matching the pipe tints and the in-world face overlay, so a colour means
+// the same thing everywhere in the mod.
+@ColorEnergy = #e8a93b;
+@ColorItems  = #7a9cc6;
+@ColorFluid  = #5ca8d1;
+@ColorGas    = #7cb855;
+@ColorHeat   = #d18a5c;
+
+@ColorValue = #ffffff;
+@ColorMuted = #878e9c;
+
+@PanelWidth = 300;
+
+// Section heading: uppercase, spaced, the vanilla subtitle treatment.
+@HeadingStyle = LabelStyle(
+  FontSize: 14,
+  RenderUppercase: true,
+  RenderBold: true,
+  TextColor: #96a9be,
+  HorizontalAlignment: Center
+);
+
+// The big number a machine is mostly about.
+@ValueStyle = LabelStyle(
+  FontSize: 18,
+  TextColor: @ColorValue,
+  HorizontalAlignment: Center
+);
+
+// Supporting text under a value or bar.
+@CaptionStyle = LabelStyle(
+  FontSize: 13,
+  TextColor: @ColorMuted,
+  HorizontalAlignment: Center
+);
+
+// A label on the left and its value on the right, so a column of them lines up.
+@RowLabelStyle = LabelStyle(FontSize: 14, TextColor: #96a9be, VerticalAlignment: Center);
+@RowValueStyle = LabelStyle(
+  FontSize: 14,
+  TextColor: @ColorValue,
+  HorizontalAlignment: End,
+  VerticalAlignment: Center
+);

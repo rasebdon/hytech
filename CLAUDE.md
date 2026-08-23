@@ -232,46 +232,43 @@ the block states they replaced — are not identity-stable across lookups.
 - `BlockAccessor.getRotation`/`getRotationIndex` are deprecated for removal with no replacement
   exposed yet, so `HytechUtil.getBlockTransform` still emits one deprecation warning.
 
-### HyUI (machine UIs)
+### Machine UIs
 
-UIs are built with **HyUI** (`curse.maven:hyui-1431415`, group `Ellie`, declared in
-`manifest.json`). The source is worth cloning when touching UI code -- it answers questions the
-docs do not:
+Pages are built on Hytale's own custom-UI API. **HyUI was removed** -- it could not do two things
+this mod needs:
 
-```bash
-git clone --depth 1 https://github.com/Elliesaur/HyUI.git hyui-source   # gitignored
-```
+- `PageBuilder.open` always calls `openCustomPage`, and HyUI exposes no way to build a page without
+  opening it. So a page could never be opened *with* windows, and a machine could never show the
+  player's inventory.
+- It registers element ids when its HTML is parsed, so only statically declared elements can receive
+  events. Its own dynamic example adds cards with no ids and no listeners.
 
-Rules established by reading that source, each of which cost a round of broken UI:
+The native API has neither limit, and `.ui` gives access to the game's real design language --
+`$C.@DecoratedContainer`, the vanilla button art, the shared colour variables -- which HyUI's HTML
+dialect only approximated.
 
-- **Only statically declared elements can receive events.** `addEventListener` throws
-  `IllegalArgumentException` unless the id is in `elementRegistry`, and the registry is filled
-  when the HTML is parsed. HyUI's own dynamic example (`HyUIBountyCommand`) adds cards through
-  `ctx.editors().on("list", GroupBuilder.class, list -> list.addChild(card))` and gives them
-  **no ids and no listeners** -- dynamic content is for display only. So anything clickable is
-  declared in the HTML up front and only ever relabelled or hidden via `editById`.
-- **`addElement` registers but does not render where you want.** It sets
-  `inside("#HyUIRoot")`, and `PageBuilder.open` builds `getTopLevelElements()`, which is the
-  root group plus elements whose `parentSelector` is exactly `#HyUIRoot`. Calling `inside()`
-  afterwards to reparent therefore drops the subtree out of the built list entirely, so it
-  renders nowhere. Conversely `addChild` on a container renders (a parent's `build` overrides
-  each child's `parentSelector` to its own selector) but registers nothing.
-- **A nested `div` carrying its own `layout-mode` disconnects the client** with
-  "CustomUI Set command couldn't set value". Keep pages flat:
-  `page-overlay > container > container-contents` with plain `p`/`progress`/`button` children.
-- **Layout modes** are `Full/Left/Center/Right/Top/Middle/Bottom`, the `*Scrolling` variants,
-  `CenterMiddle`/`MiddleCenter` and `LeftCenterWrap`/`RightCenterWrap` -- *not* "Vertical" or
-  "Horizontal". A `Group` defaults to `Top` (vertical); `Left` or `LeftCenterWrap` gives a row,
-  and `withFlexWeight(n)` proportions children within it.
-- **A HyUI page is an overlay and never shows the player's inventory**, so nothing can be
-  dragged into an item grid from it. `ItemGridBuilder` is a rendered view plus events. For real
-  drag and drop use `PageManager.setPageWithWindows(ref, store, Page.Bench, true,
-  new ContainerWindow(container))` -- what vanilla's `OpenContainerInteraction` does for a chest
-  -- and do not close the HyUI page first, since that cancels the window.
-  `openCustomPageWithWindows` accepts a `CustomUIPage` and `HyUIPage` is one, so a single screen
-  with both is possible, but HyUI exposes no way to build a page without opening it.
-- `HytechPage.of` wires refresh and the Exit button; `HytechPage.onClick` wires a click only if
-  the element exists, because a throw while opening takes the whole page down.
+How it fits together:
+
+| Piece | Role |
+|---|---|
+| `core/ui/HytechCustomPage` | base: appends a `.ui` document, renders values, binds actions |
+| `core/ui/MachinePage` | the page every machine opens; sections are filled or hidden |
+| `core/ui/MachineView` | what a machine writes: primary bar, secondary bar, item slots, detail rows |
+| `core/ui/HytechPages` | opens a page, with a container window when it has one |
+| `core/ui/PageRefreshSystem` | pushes fresh values once a second (HyUI did this internally) |
+| `Common/UI/Custom/Hytech/*.ui` | the documents, built on the game's `Common.ui` |
+
+Things worth knowing:
+
+- **A page with item slots is opened with a window**, via `openCustomPageWithWindows`. Windows are
+  opened *before* the page is built, so `Window.getId()` is available during `render` and the
+  `ItemGrid` is bound to it through `InventorySectionId`. Without that binding the grid is only a
+  picture and a drag has nowhere to land.
+- **One decoded event arrives per page**, not per element, so each binding carries its action name as
+  a literal in its `EventData` and `onAction` switches on it.
+- `render` runs on open *and* on every refresh, so it must read live state and be safe to repeat.
+- A machine adds no UI document of its own: `MachinePage.ui` declares every section and
+  [MachineView] hides the ones the machine did not fill. A new resource type needs no UI code.
 
 ### Resource Assets
 

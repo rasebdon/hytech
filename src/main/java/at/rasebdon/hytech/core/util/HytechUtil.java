@@ -10,6 +10,7 @@ import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.util.MessageUtil;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -50,6 +51,31 @@ public class HytechUtil {
         return chunk.getBlockType(blockPosition);
     }
 
+
+    /// Translated display name of the block at `pos`, or a dash when there is nothing there.
+    ///
+    /// Pages want a name they can always print; the nullable variant is for callers that need to
+    /// distinguish "air" from "a block with no name".
+    @Nonnull
+    public static String getBlockDisplayName(@Nonnull World world, @Nonnull Vector3i pos) {
+        var name = getBlockDisplayNameOrNull(world, pos);
+
+        return name == null ? "-" : name;
+    }
+
+    @Nullable
+    public static String getBlockDisplayNameOrNull(@Nonnull World world, @Nonnull Vector3i pos) {
+        var blockType = getBlockType(world, pos);
+        if (blockType == null) return null;
+
+        var item = blockType.getItem();
+        if (item == null) return null;
+
+        var properties = item.getTranslationProperties();
+        if (properties == null || properties.getName() == null) return null;
+
+        return MessageUtil.toAnsiString(Message.translation(properties.getName())).toString();
+    }
 
     public static void sendPlayerMessage(@Nonnull Ref<EntityStore> entityRef, @Nonnull String text) {
         var playerRef = entityRef.getStore().getComponent(entityRef, PlayerRef.getComponentType());

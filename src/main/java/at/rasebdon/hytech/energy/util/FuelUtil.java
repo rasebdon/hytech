@@ -33,7 +33,6 @@ public final class FuelUtil {
         if (ItemStack.isEmpty(stack)) return 0d;
 
         var item = stack.getItem();
-        if (item == null) return 0d;
 
         var resourceTypes = item.getResourceTypes();
         if (resourceTypes == null) return 0d;
@@ -66,7 +65,7 @@ public final class FuelUtil {
             if (quality <= 0d) continue;
 
             var transaction = container.removeItemStackFromSlot(slot, 1);
-            if (transaction == null || !transaction.succeeded()) continue;
+            if (!transaction.succeeded()) continue;
 
             return quality;
         }

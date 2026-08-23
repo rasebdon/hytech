@@ -1,0 +1,74 @@
+// Per-resource side configuration.
+//
+// Six faces down the page, each a button showing its current mode and what is on that side. The
+// resource being edited is switched with the header buttons, so the page is a fixed size however
+// many resource types the mod grows to.
+$C = "../Common.ui";
+$H = "Hytech.ui";
+
+$C.@PageOverlay {
+  LayoutMode: Middle;
+
+  $C.@DecoratedContainer {
+    Anchor: (Width: 400, Height: 470);
+
+    #Title {
+      Label #TitleLabel {
+        Style: (FontSize: 18, TextColor: #b4c8c9, RenderBold: true,
+                HorizontalAlignment: Center, VerticalAlignment: Center);
+        Text: "";
+      }
+    }
+
+    #Content {
+      LayoutMode: Top;
+
+      // Resource selector. Hidden entirely when the block carries only one container.
+      Group #ResourceRow {
+        LayoutMode: Left;
+        Anchor: (Width: 340, Height: 32, Bottom: 10);
+
+        $C.@TextButton #ResourcePrev {
+          Anchor: (Width: 40, Height: 30);
+          Text: "<";
+        }
+
+        Group { FlexWeight: 1; }
+
+        Label #ResourceLabel {
+          Anchor: (Width: 200);
+          Style: (FontSize: 15, TextColor: #ffffff, RenderBold: true,
+                  HorizontalAlignment: Center, VerticalAlignment: Center);
+          Text: "";
+        }
+
+        Group { FlexWeight: 1; }
+
+        $C.@TextButton #ResourceNext {
+          Anchor: (Width: 40, Height: 30);
+          Text: ">";
+        }
+      }
+
+      Label #Hint {
+        Anchor: (Width: 340, Bottom: 8);
+        Style: $H.@CaptionStyle;
+        Text: "Click a side to cycle Both / In / Out / Off";
+      }
+
+      $C.@TextButton #FaceUp    { Anchor: (Width: 340, Height: 32, Bottom: 4); Text: "Up"; }
+      $C.@TextButton #FaceDown  { Anchor: (Width: 340, Height: 32, Bottom: 4); Text: "Down"; }
+      $C.@TextButton #FaceNorth { Anchor: (Width: 340, Height: 32, Bottom: 4); Text: "North"; }
+      $C.@TextButton #FaceSouth { Anchor: (Width: 340, Height: 32, Bottom: 4); Text: "South"; }
+      $C.@TextButton #FaceEast  { Anchor: (Width: 340, Height: 32, Bottom: 4); Text: "East"; }
+      $C.@TextButton #FaceWest  { Anchor: (Width: 340, Height: 32, Bottom: 4); Text: "West"; }
+
+      Group { FlexWeight: 1; }
+
+      $C.@CancelTextButton #BackButton {
+        Anchor: (Width: 340, Height: 34);
+        Text: "Back";
+      }
+    }
+  }
+}

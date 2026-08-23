@@ -11,8 +11,7 @@
   "Website": "${plugin_website}",
   "ServerVersion": "${server_version}",
   "Dependencies": {
-    "Hytale:LegacyModule": "*",
-    "Ellie:HyUI": "*"
+    "Hytale:LegacyModule": "*"
   },
   "OptionalDependencies": {},
   "DisabledByDefault": false,

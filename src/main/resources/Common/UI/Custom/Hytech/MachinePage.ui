@@ -1,0 +1,151 @@
+// One document for every Hytech machine, tank and container.
+//
+// Sections are declared once and hidden when a machine has nothing to put in them, so a battery, a
+// fluid tank and the burner generator all share this file and the server decides what is relevant.
+// The mod stays visually consistent for free, and a new resource type needs no new UI document.
+$C = "../Common.ui";
+$H = "Hytech.ui";
+
+$C.@PageOverlay {
+  LayoutMode: Middle;
+
+  $C.@DecoratedContainer {
+    Anchor: (Width: 360, Height: 470);
+
+    #Title {
+      Label #TitleLabel {
+        Style: (FontSize: 18, TextColor: #b4c8c9, RenderBold: true,
+                HorizontalAlignment: Center, VerticalAlignment: Center);
+        Text: "";
+      }
+    }
+
+    #Content {
+      LayoutMode: Top;
+
+      // ---- Primary readout: the resource this machine is mainly about ----
+      Group #PrimarySection {
+        LayoutMode: Top;
+        Anchor: (Bottom: 12);
+
+        Label #PrimaryHeading {
+          Anchor: (Width: $H.@PanelWidth, Bottom: 4);
+          Style: $H.@HeadingStyle;
+          Text: "";
+        }
+
+        Label #PrimaryValue {
+          Anchor: (Width: $H.@PanelWidth, Bottom: 6);
+          Style: $H.@ValueStyle;
+          Text: "";
+        }
+
+        Group {
+          Background: (TexturePath: "Common/ProgressBar.png", Border: 2);
+          Anchor: (Width: $H.@PanelWidth, Height: 14, Bottom: 6);
+          Padding: (Full: 4);
+
+          ProgressBar #PrimaryBar {
+            BarTexturePath: "Common/ProgressBarFill.png";
+          }
+        }
+
+        Label #PrimaryCaption {
+          Anchor: (Width: $H.@PanelWidth);
+          Style: $H.@CaptionStyle;
+          Text: "";
+        }
+      }
+
+      // ---- Secondary readout: burn progress, sunlight, altitude ----
+      Group #SecondarySection {
+        LayoutMode: Top;
+        Anchor: (Bottom: 12);
+
+        Label #SecondaryHeading {
+          Anchor: (Width: $H.@PanelWidth, Bottom: 4);
+          Style: $H.@HeadingStyle;
+          Text: "";
+        }
+
+        Group {
+          Background: (TexturePath: "Common/ProgressBar.png", Border: 2);
+          Anchor: (Width: $H.@PanelWidth, Height: 12, Bottom: 6);
+          Padding: (Full: 3);
+
+          ProgressBar #SecondaryBar {
+            BarTexturePath: "Common/ProgressBarFill.png";
+          }
+        }
+
+        Label #SecondaryCaption {
+          Anchor: (Width: $H.@PanelWidth);
+          Style: $H.@CaptionStyle;
+          Text: "";
+        }
+      }
+
+      // ---- Item slots. Shown only for machines that hold items, and the page is opened with a
+      //      container window when it is, which is what puts the player's inventory on screen.
+      Group #SlotsSection {
+        LayoutMode: Top;
+        Anchor: (Bottom: 12);
+
+        Label #SlotsHeading {
+          Anchor: (Width: $H.@PanelWidth, Bottom: 4);
+          Style: $H.@HeadingStyle;
+          Text: "";
+        }
+
+        ItemGrid #Slots {
+          Anchor: (Width: $H.@PanelWidth, Height: 72);
+          SlotsPerRow: 4;
+          AreItemsDraggable: true;
+          DisplayItemQuantity: true;
+        }
+      }
+
+      // ---- Detail lines ----
+      Group #DetailSection {
+        LayoutMode: Top;
+        Anchor: (Bottom: 12);
+
+        Group #Detail0 {
+          LayoutMode: Left;
+          Anchor: (Width: $H.@PanelWidth, Height: 20);
+
+          Label #Detail0Label { Anchor: (Width: 150); Style: $H.@RowLabelStyle; Text: ""; }
+          Label #Detail0Value { Anchor: (Width: 150); Style: $H.@RowValueStyle; Text: ""; }
+        }
+
+        Group #Detail1 {
+          LayoutMode: Left;
+          Anchor: (Width: $H.@PanelWidth, Height: 20);
+
+          Label #Detail1Label { Anchor: (Width: 150); Style: $H.@RowLabelStyle; Text: ""; }
+          Label #Detail1Value { Anchor: (Width: 150); Style: $H.@RowValueStyle; Text: ""; }
+        }
+
+        Group #Detail2 {
+          LayoutMode: Left;
+          Anchor: (Width: $H.@PanelWidth, Height: 20);
+
+          Label #Detail2Label { Anchor: (Width: 150); Style: $H.@RowLabelStyle; Text: ""; }
+          Label #Detail2Value { Anchor: (Width: 150); Style: $H.@RowValueStyle; Text: ""; }
+        }
+      }
+
+      Group { FlexWeight: 1; }
+
+      $C.@TextButton #ConfigureButton {
+        Anchor: (Width: $H.@PanelWidth, Height: 34, Bottom: 6);
+        Text: "Configure Sides";
+      }
+
+      $C.@CancelTextButton #CloseButton {
+        Anchor: (Width: $H.@PanelWidth, Height: 34);
+        Text: "Close";
+      }
+    }
+  }
+}

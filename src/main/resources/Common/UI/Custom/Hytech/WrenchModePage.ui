@@ -1,0 +1,46 @@
+// Picks the resource the wrench configures. Crouch and right-click with the wrench to open.
+//
+// One button per possible resource, hidden when unused, so the page never has to build elements at
+// runtime.
+$C = "../Common.ui";
+$H = "Hytech.ui";
+
+$C.@PageOverlay {
+  LayoutMode: Middle;
+
+  $C.@DecoratedContainer {
+    Anchor: (Width: 320, Height: 400);
+
+    #Title {
+      Label #TitleLabel {
+        Style: (FontSize: 18, TextColor: #b4c8c9, RenderBold: true,
+                HorizontalAlignment: Center, VerticalAlignment: Center);
+        Text: "Wrench Mode";
+      }
+    }
+
+    #Content {
+      LayoutMode: Top;
+
+      Label #Hint {
+        Anchor: (Width: 260, Bottom: 10);
+        Style: $H.@CaptionStyle;
+        Text: "Pick the resource the wrench configures.";
+      }
+
+      $C.@TextButton #Mode0 { Anchor: (Width: 260, Height: 34, Bottom: 4); Text: ""; }
+      $C.@TextButton #Mode1 { Anchor: (Width: 260, Height: 34, Bottom: 4); Text: ""; }
+      $C.@TextButton #Mode2 { Anchor: (Width: 260, Height: 34, Bottom: 4); Text: ""; }
+      $C.@TextButton #Mode3 { Anchor: (Width: 260, Height: 34, Bottom: 4); Text: ""; }
+      $C.@TextButton #Mode4 { Anchor: (Width: 260, Height: 34, Bottom: 4); Text: ""; }
+      $C.@TextButton #Mode5 { Anchor: (Width: 260, Height: 34, Bottom: 4); Text: ""; }
+
+      Group { FlexWeight: 1; }
+
+      $C.@CancelTextButton #CloseButton {
+        Anchor: (Width: 260, Height: 34);
+        Text: "Close";
+      }
+    }
+  }
+}
