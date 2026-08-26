@@ -14,6 +14,7 @@ python scripts/generate-pipe-assets.py --check
 python scripts/generate-pipe-tints.py --check
 python scripts/generate-overlay-assets.py --check
 python scripts/generate-burner-assets.py --check
+python scripts/generate-machine-assets.py --check
 python scripts/generate-icons.py --check
 
 ./gradlew build && ./gradlew server
@@ -99,6 +100,39 @@ For each of the three, and note that **none of this has ever been observed**:
 - Click a slot to withdraw fuel back to your inventory.
 - Feed the burner by **item pipe** as well as by hand — the fuel lives in a
   `hytech:items:container` precisely so pipes can fill it.
+
+### Machines — the crusher and the electric smelter
+
+Both are in the creative library under Technic → Machines; copper and iron dust are under
+Technic → Materials.
+
+- [ ] Place a **Basic Crusher**, wire a solar panel or burner into any face. The page shows the
+      energy filling and `Idle`.
+- [ ] Put `Ore_Copper` in the first slot (the Slots button opens the window). It processes: the
+      front texture lights, the progress bar climbs, **two** `Copper Dust` land in the result slots
+      and the buffer drains 20 RF/t.
+- [ ] Feed the dust to a **Basic Electric Smelter** — one bar out per dust, so ore routed through
+      the crusher first yields twice what the vanilla furnace gives.
+- [ ] Cut the power mid-operation. Progress holds where it is, nothing is consumed, and it resumes
+      when power comes back rather than restarting.
+- [ ] Fill the result slots. Processing stops with `Blocked` and picks up again once they are
+      emptied — nothing is destroyed.
+- [ ] Pipe test: chest → item pipe → an INPUT face, and an OUTPUT face → item pipe → chest. The
+      pipe must feed only the ingredient slots and collect only the results; it must never carry
+      the unprocessed ore back out.
+- [ ] Wrench each face, then read the machine with the Multimeter: it reports both its energy and
+      its item container.
+- [ ] Break the machine mid-operation and reload the world. The saved recipe and progress come
+      back rather than restarting from zero.
+- [ ] The page shows the slot contents as **item icons with quantities**, and a sixteen-slot buffer
+      shows the first six plus `(+N more)`.
+- [ ] **Push Items: On/Off** toggles on the page. With it on and a chest against an OUTPUT face, the
+      results leave on their own; with it off they stay put. A machine carrying both items and
+      energy shows one row per resource.
+- [ ] Auto-push into a pipe run with nothing on the far end moves nothing — the results stay in the
+      machine rather than loading the pipes and hitting the floor three seconds later.
+- [ ] Wrench a machine face that has an **item pipe** against it: it cycles In / Out / Off rather
+      than sticking on Off after one click. Same check on the burner and a battery with a cable.
 
 ### UIs
 

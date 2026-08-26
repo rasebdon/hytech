@@ -81,4 +81,30 @@ public class ItemNetwork extends LogisticNetwork<HytechItemContainer> implements
     public long getTransferSpeed() {
         return transferSpeed;
     }
+
+    /// A run with nowhere to deliver cannot accept anything.
+    ///
+    /// Item pipes are a conduit, not storage: the transfer system refuses to draw into them
+    /// without a sink, and this says the same thing to everyone *else* who might insert -- a
+    /// machine with auto-push on, or a block pushing to its neighbours. Without it, switching
+    /// auto-push on next to a dead-end pipe would load the run and
+    /// [at.rasebdon.hytech.items.systems.ItemPipeEjectSystem] would put the contents on the floor
+    /// three seconds later.
+    @Override
+    public boolean isFull() {
+        return !hasReachableSink() || HytechItemContainer.super.isFull();
+    }
+
+    /// Whether any push target could take something. Targets never include pipes, so this asks
+    /// the blocks and wrapped containers at the ends of the run and cannot recurse.
+    private boolean hasReachableSink() {
+        for (var target : getPushTargets()) {
+            if (!target.isAvailable()) continue;
+
+            var container = target.getContainer();
+            if (container != null && !container.isFull()) return true;
+        }
+
+        return false;
+    }
 }

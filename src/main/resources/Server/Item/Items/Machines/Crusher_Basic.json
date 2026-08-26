@@ -1,0 +1,180 @@
+{
+  "TranslationProperties": {
+    "Name": "server.items.Crusher_Basic.name"
+  },
+  "ItemLevel": 600,
+  "Categories": [
+    "Technic.Machines"
+  ],
+  "PlayerAnimationsId": "Block",
+  "Set": "Machine",
+  "Tags": {
+    "Type": [
+      "Machine"
+    ]
+  },
+  "ItemSoundSetId": "ISS_Blocks_Stone",
+  "IconProperties": {
+    "Scale": 0.58823,
+    "Rotation": [
+      22.5,
+      45,
+      22.5
+    ],
+    "Translation": [
+      0,
+      -13.5
+    ]
+  },
+  "BlockType": {
+    "Material": "Solid",
+    "DrawType": "Cube",
+    "Group": "Props",
+    "Textures": [
+      {
+        "Sides": "BlockTextures/Machines/Machine_Casing.png",
+        "UpDown": "BlockTextures/Machines/Machine_Casing.png",
+        "North": "BlockTextures/Machines/Crusher_Front.png",
+        "Weight": 1
+      }
+    ],
+    "Gathering": {
+      "Breaking": {
+        "GatherType": "Rocks"
+      }
+    },
+    "BlockEntity": {
+      "Components": {
+        "hytech:machine:processor": {
+          "RecipeGroup": "Hytech_Crusher",
+          "EnergyPerTick": 20,
+          "SpeedMultiplier": 1.0,
+          "ParallelOperations": 1
+        },
+        "hytech:energy:container": {
+          "MaxTransfer": 100,
+          "TransferPriority": 50,
+          "TotalCapacity": 10000,
+          "IsExtracting": false,
+          "BlockFaceConfig": {
+            "None": [
+              "INPUT",
+              "NONE"
+            ],
+            "Up": [
+              "INPUT",
+              "NONE"
+            ],
+            "Down": [
+              "INPUT",
+              "NONE"
+            ],
+            "North": [
+              "INPUT",
+              "NONE"
+            ],
+            "South": [
+              "INPUT",
+              "NONE"
+            ],
+            "East": [
+              "INPUT",
+              "NONE"
+            ],
+            "West": [
+              "INPUT",
+              "NONE"
+            ],
+            "Default": "INPUT"
+          }
+        },
+        "hytech:items:container": {
+          "MaxTransfer": 8,
+          "InputSlots": 1,
+          "OutputSlots": 2,
+          "TransferPriority": 25,
+          "IsExtracting": true,
+          "BlockFaceConfig": {
+            "None": [
+              "INPUT",
+              "OUTPUT",
+              "NONE"
+            ],
+            "Up": [
+              "INPUT",
+              "OUTPUT",
+              "NONE"
+            ],
+            "Down": [
+              "INPUT",
+              "OUTPUT",
+              "NONE"
+            ],
+            "North": [
+              "INPUT",
+              "OUTPUT",
+              "NONE"
+            ],
+            "South": [
+              "INPUT",
+              "OUTPUT",
+              "NONE"
+            ],
+            "East": [
+              "INPUT",
+              "OUTPUT",
+              "NONE"
+            ],
+            "West": [
+              "INPUT",
+              "OUTPUT",
+              "NONE"
+            ],
+            "Default": "INPUT"
+          }
+        }
+      }
+    },
+    "VariantRotation": "NESW",
+    "BlockParticleSetId": "Metal",
+    "ParticleColor": "#55575F",
+    "Flags": {
+      "IsUsable": true
+    },
+    "Interactions": {
+      "Use": {
+        "Interactions": [
+          {
+            "Type": "OpenMachinePage"
+          }
+        ]
+      }
+    },
+    "BlockSoundSetId": "Metal",
+    "State": {
+      "Definitions": {
+        "Idle": {
+          "Textures": [
+            {
+              "Sides": "BlockTextures/Machines/Machine_Casing.png",
+              "UpDown": "BlockTextures/Machines/Machine_Casing.png",
+              "North": "BlockTextures/Machines/Crusher_Front.png",
+              "Weight": 1
+            }
+          ]
+        },
+        "Processing": {
+          "Textures": [
+            {
+              "Sides": "BlockTextures/Machines/Machine_Casing.png",
+              "UpDown": "BlockTextures/Machines/Machine_Casing.png",
+              "North": "BlockTextures/Machines/Crusher_Front_Active.png",
+              "Weight": 1
+            }
+          ]
+        }
+      }
+    }
+  },
+  "Icon": "Icons/ItemsGenerated/Crusher_Basic.png"
+}

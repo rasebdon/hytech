@@ -45,6 +45,19 @@ BURNER_CASING = (0x4A, 0x4A, 0x52)
 BURNER_EMBER = (0xFF, 0xA5, 0x2B)
 BURNER_GRATE = (0x2E, 0x2E, 0x34)
 
+# Electric machine casing and working faces, matching generate-machine-assets.py.
+MACHINE_CASING = (0x55, 0x57, 0x60)
+MACHINE_RECESS = (0x1E, 0x1F, 0x24)
+MACHINE_STEEL = (0x8A, 0x8E, 0x99)
+MACHINE_SPARK = (0x5C, 0xD6, 0xF2)
+MACHINE_COIL = (0xFF, 0xA5, 0x2B)
+
+# Dust piles. Metal-ish rather than literal: an icon has to read at 16 pixels on a hotbar.
+DUSTS = {
+    "Copper": ((0xB5, 0x6B, 0x38), (0xE2, 0x93, 0x5A)),
+    "Iron": ((0x8E, 0x8E, 0x96), (0xBD, 0xBD, 0xC6)),
+}
+
 
 def pipe_icon(body: tuple[int, int, int], highlight: tuple[int, int, int]) -> bytes:
     """A horizontal pipe run with a hub, drawn on the diagonal-ish axis the block icons use."""
@@ -98,6 +111,50 @@ def burner_icon() -> bytes:
     return pnglib.encode(SIZE, SIZE, px)
 
 
+def machine_icon(working: tuple[int, int, int], coil: bool) -> bytes:
+    """A cased machine seen face-on, its working face either toothed or wound.
+
+    Deliberately the same silhouette as the burner's icon so the machines read as one family,
+    with the face doing the distinguishing.
+    """
+    px = pnglib.blank(SIZE, SIZE)
+
+    pnglib.rect(px, SIZE, 8, 8, 55, 55, OUTLINE)
+    pnglib.rect(px, SIZE, 10, 10, 53, 53, MACHINE_CASING)
+
+    pnglib.rect(px, SIZE, 18, 20, 45, 47, OUTLINE)
+    pnglib.rect(px, SIZE, 20, 22, 43, 45, MACHINE_RECESS)
+
+    if coil:
+        # Three windings, the lowest one hottest, as on the smelter's front texture.
+        for offset, y in enumerate(range(26, 44, 6)):
+            pnglib.rect(px, SIZE, 22, y, 41, y + 2, working if offset == 2 else MACHINE_STEEL)
+    else:
+        # Interlocking jaws either side of a charged gap.
+        pnglib.rect(px, SIZE, 22, 24, 41, 31, MACHINE_STEEL)
+        pnglib.rect(px, SIZE, 22, 36, 41, 43, MACHINE_STEEL)
+        pnglib.rect(px, SIZE, 22, 32, 41, 35, working)
+
+    return pnglib.encode(SIZE, SIZE, px)
+
+
+def dust_icon(body: tuple[int, int, int], highlight: tuple[int, int, int]) -> bytes:
+    """A heaped pile, so a dust never reads as an ingot or a nugget."""
+    px = pnglib.blank(SIZE, SIZE)
+
+    # Stepped heap: widest at the base, and none of it touching the icon's edge.
+    for step, y in enumerate(range(44, 20, -4)):
+        half = 20 - step * 3
+        pnglib.rect(px, SIZE, 32 - half - 1, y - 4, 32 + half + 1, y, OUTLINE)
+        pnglib.rect(px, SIZE, 32 - half, y - 3, 32 + half, y - 1, body)
+
+    # A couple of glints so the pile has a top rather than a flat cap.
+    pnglib.rect(px, SIZE, 28, 24, 33, 27, highlight)
+    pnglib.rect(px, SIZE, 38, 32, 43, 35, highlight)
+
+    return pnglib.encode(SIZE, SIZE, px)
+
+
 def source_icon(body: tuple[int, int, int], highlight: tuple[int, int, int], voiding: bool) -> bytes:
     """Creative source and void share a shape, distinguished by the arrow direction."""
     px = pnglib.blank(SIZE, SIZE)
@@ -134,6 +191,15 @@ def main() -> int:
 
     pnglib.write_if_changed(ICON_DIR / "Burner_Generator.png", burner_icon(), args.check, stale)
 
+    pnglib.write_if_changed(ICON_DIR / "Crusher_Basic.png",
+                            machine_icon(MACHINE_SPARK, False), args.check, stale)
+    pnglib.write_if_changed(ICON_DIR / "Electric_Smelter_Basic.png",
+                            machine_icon(MACHINE_COIL, True), args.check, stale)
+
+    for metal, (body, highlight) in DUSTS.items():
+        pnglib.write_if_changed(ICON_DIR / f"Hytech_Dust_{metal}.png",
+                                dust_icon(body, highlight), args.check, stale)
+
     if args.check:
         if stale:
             print("Stale generated icons:", file=sys.stderr)
@@ -144,7 +210,7 @@ def main() -> int:
         print("Generated icons are up to date.")
         return 0
 
-    print(f"Wrote {len(PALETTE) * 4 + 1} icons")
+    print(f"Wrote {len(PALETTE) * 4 + 3 + len(DUSTS)} icons")
     return 0
 
 

@@ -6,6 +6,7 @@ import at.rasebdon.hytech.fluid.FluidModule;
 import at.rasebdon.hytech.gas.GasModule;
 import at.rasebdon.hytech.heat.HeatModule;
 import at.rasebdon.hytech.items.ItemModule;
+import at.rasebdon.hytech.machines.MachineModule;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
@@ -35,5 +36,9 @@ public final class HytechPlugin extends JavaPlugin {
         HeatModule.init(chunkStoreRegistry, eventRegistry);
         FluidModule.init(chunkStoreRegistry, eventRegistry);
         GasModule.init(chunkStoreRegistry, eventRegistry);
+
+        // Machines last: they own neither slots nor a buffer, they read the item and energy
+        // components of the block they sit on, so both those modules have to exist first.
+        MachineModule.init(chunkStoreRegistry);
     }
 }

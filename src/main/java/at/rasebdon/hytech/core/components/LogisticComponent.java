@@ -83,8 +83,15 @@ public abstract class LogisticComponent<TContainer>
         this.reloadNeighborHolder(face);
     }
 
-    /// True when the neighbour on this face is another pipe rather than a container.
+    /// True when *both* sides of this face are pipes.
+    ///
+    /// Both halves matter. Testing only the neighbour made every machine face with a pipe on it
+    /// toggle-only: a crusher side permitted INPUT, OUTPUT and NONE but not BOTH, so toggling took
+    /// it to NONE and then had nowhere to go, and the side looked stuck off. The same was true of
+    /// the burner and of any battery with a cable against it.
     private boolean isPipeToPipe(BlockFace face) {
+        if (!(this instanceof LogisticPipeComponent<?>)) return false;
+
         var neighbor = getNeighbor(face);
         return neighbor != null && neighbor.getHolder() instanceof LogisticPipeComponent<?>;
     }

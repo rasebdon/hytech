@@ -116,6 +116,16 @@ public interface HytechItemContainer extends LogisticContainer {
         return true;
     }
 
+    /// Whether the network may draw items out of this slot.
+    ///
+    /// A plain container says yes to every slot. A machine says no to its input slots: a pipe on
+    /// an OUTPUT face is there to collect results, and without this it would cheerfully carry the
+    /// unprocessed ore straight back out again. Insertion needs no such hook -- the vanilla
+    /// container's own `ADD` filters already refuse the output slots.
+    default boolean canExtractFrom(short slot) {
+        return true;
+    }
+
     /// Moves up to `maxItems` items into `target`, returning how many actually moved.
     /// Stack merging and destination slot choice are the vanilla container's job.
     @Override
@@ -132,6 +142,8 @@ public interface HytechItemContainer extends LogisticContainer {
         long moved = 0L;
 
         for (short slot = 0; slot < from.getCapacity() && moved < maxItems; slot++) {
+            if (!canExtractFrom(slot)) continue;
+
             var stack = from.getItemStack(slot);
             if (ItemStack.isEmpty(stack)) continue;
 

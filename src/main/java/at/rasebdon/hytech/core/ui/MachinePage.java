@@ -30,6 +30,10 @@ public final class MachinePage extends HytechCustomPage {
     private static final String ACTION_CONFIGURE = "configure";
     private static final String ACTION_CONTAINER = "container";
     private static final String ACTION_CLOSE = "close";
+    private static final String ACTION_PUSH = "push:";
+
+    /// Auto-push rows the document declares, matching `MachineView`.
+    private static final int PUSH_ROWS = 5;
 
     private final World world;
     private final Vector3i blockPos;
@@ -72,10 +76,21 @@ public final class MachinePage extends HytechCustomPage {
     protected String render(@Nonnull UICommandBuilder commands) {
         var view = new MachineView(commands);
 
+        var resources = SideConfigPage.presentResources(this.world, this.blockPos);
+
         view.title(HytechUtil.getBlockDisplayName(this.world, this.blockPos));
-        view.configurable(!SideConfigPage.presentResources(this.world, this.blockPos).isEmpty());
+        view.configurable(!resources.isEmpty());
 
         this.content.accept(this, view);
+
+        // Written after the machine has had its say, so the toggles always sit in the same place
+        // whatever sections the machine filled.
+        for (var resource : resources) {
+            var block = resource.blockAt(this.world, this.blockPos);
+            if (block == null) continue;
+
+            view.autoPush(resource.label(), block.isExtracting());
+        }
 
         view.finish();
 
@@ -87,12 +102,24 @@ public final class MachinePage extends HytechCustomPage {
         onClick(events, "#ConfigureButton", ACTION_CONFIGURE);
         onClick(events, "#ContainerButton", ACTION_CONTAINER);
         onClick(events, "#CloseButton", ACTION_CLOSE);
+
+        // Bound once, for every row the document has: binding happens on open, while which rows
+        // are *visible* is decided on every render.
+        for (int row = 0; row < PUSH_ROWS; row++) {
+            onClick(events, "#Push" + row + "Button", ACTION_PUSH + row);
+        }
     }
 
     @Override
     protected void onAction(@Nonnull String action,
                             @Nonnull Ref<EntityStore> ref,
                             @Nonnull Store<EntityStore> store) {
+        if (action.startsWith(ACTION_PUSH)) {
+            toggleAutoPush(action.substring(ACTION_PUSH.length()));
+            refresh();
+            return;
+        }
+
         switch (action) {
             case ACTION_CLOSE -> close();
             case ACTION_CONFIGURE -> openSideConfig(ref, store);
@@ -100,6 +127,28 @@ public final class MachinePage extends HytechCustomPage {
             default -> {
             }
         }
+    }
+
+    /// Flips one resource's auto-push, addressed by its row on the page.
+    ///
+    /// The row indexes the resources this block carries, re-read here rather than remembered: a
+    /// page can outlive a change to the block it describes, and a stale index would toggle the
+    /// wrong container.
+    private void toggleAutoPush(String row) {
+        int index;
+        try {
+            index = Integer.parseInt(row);
+        } catch (NumberFormatException error) {
+            return;
+        }
+
+        var resources = SideConfigPage.presentResources(this.world, this.blockPos);
+        if (index < 0 || index >= resources.size()) return;
+
+        var block = resources.get(index).blockAt(this.world, this.blockPos);
+        if (block == null) return;
+
+        block.setExtracting(!block.isExtracting());
     }
 
     /// Hands the machine's container to a real inventory window.

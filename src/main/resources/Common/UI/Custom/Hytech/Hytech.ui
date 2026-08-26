@@ -41,6 +41,14 @@ $C = "../Common.ui";
   HorizontalAlignment: Center
 );
 
+// The quantity under an item icon. Small, centred, and bold enough to read over the icon art.
+@SlotCountStyle = LabelStyle(
+  FontSize: 12,
+  TextColor: @ColorValue,
+  RenderBold: true,
+  HorizontalAlignment: Center
+);
+
 // A label on the left and its value on the right, so a column of them lines up.
 @RowLabelStyle = LabelStyle(FontSize: 14, TextColor: #96a9be, VerticalAlignment: Center);
 @RowValueStyle = LabelStyle(

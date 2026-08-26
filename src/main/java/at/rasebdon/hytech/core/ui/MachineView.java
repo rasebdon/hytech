@@ -18,6 +18,13 @@ public final class MachineView {
     /// Detail rows the document declares.
     private static final int DETAIL_ROWS = 3;
 
+    /// Item cells the document declares. A sixteen-slot buffer shows the first few and says how
+    /// many more there are, which is what a glance at a page is for.
+    private static final int SLOT_CELLS = 6;
+
+    /// Auto-push rows the document declares: one per registered resource type.
+    private static final int PUSH_ROWS = 5;
+
     private final UICommandBuilder commands;
 
     /// Everything written this pass, so the page can skip an update that would change nothing.
@@ -28,6 +35,7 @@ public final class MachineView {
     private boolean secondaryShown;
     private boolean slotsShown;
     private int detailsUsed;
+    private int pushRowsUsed;
 
     MachineView(@Nonnull UICommandBuilder commands) {
         this.commands = commands;
@@ -92,6 +100,38 @@ public final class MachineView {
 
         set("#SlotsHeading.Text", heading);
         set("#SlotsSummary.Text", summarise(container, incompatible));
+
+        fillCells(container);
+    }
+
+    /// Draws the first [#SLOT_CELLS] occupied slots as item icons with their quantities.
+    ///
+    /// Values only -- the cells exist in the document and are hidden when unused. Clearing and
+    /// re-appending children would restructure the page on every refresh, and a page that keeps
+    /// sending structural updates is a page whose button clicks get dropped.
+    private void fillCells(@Nonnull ItemContainer container) {
+        int cell = 0;
+
+        for (short slot = 0; slot < container.getCapacity() && cell < SLOT_CELLS; slot++) {
+            var stack = container.getItemStack(slot);
+            if (ItemStack.isEmpty(stack)) continue;
+
+            set("#Slot" + cell + "Cell.Visible", true);
+            set("#Slot" + cell + "Icon.ItemId", stack.getItemId());
+            // No `.Quantity`: the client rejects it on a page-hosted slot with a
+            // "CustomUI Set command error". Only a real window slot counts its own items, which
+            // is why vanilla's DroppedItemSlot draws the number in a label of its own -- and why
+            // this one does too.
+            set("#Slot" + cell + "Count.Text", String.valueOf(stack.getQuantity()));
+
+            cell++;
+        }
+
+        set("#SlotsGrid.Visible", cell > 0);
+
+        for (int empty = cell; empty < SLOT_CELLS; empty++) {
+            set("#Slot" + empty + "Cell.Visible", false);
+        }
     }
 
     /// "12 charcoal" / "Empty" / "8 items (unusable)".
@@ -100,11 +140,13 @@ public final class MachineView {
                                     @Nullable Predicate<ItemStack> incompatible) {
         int total = 0;
         int unusable = 0;
+        int occupied = 0;
 
         for (short slot = 0; slot < container.getCapacity(); slot++) {
             var stack = container.getItemStack(slot);
             if (ItemStack.isEmpty(stack)) continue;
 
+            occupied++;
             total += stack.getQuantity();
 
             if (incompatible != null && incompatible.test(stack)) {
@@ -114,12 +156,16 @@ public final class MachineView {
 
         if (total == 0) return "Empty";
 
+        // The cells only show the first few, so a fuller container says how much it is hiding
+        // rather than looking like it holds six things.
+        String hidden = occupied > SLOT_CELLS ? String.format(" (+%d more)", occupied - SLOT_CELLS) : "";
+
         // Naming the unusable portion is the point: otherwise a full machine that is not running
         // looks broken rather than mis-loaded.
-        if (unusable == total) return total + " items (unusable)";
-        if (unusable > 0) return String.format("%d items (%d unusable)", total, unusable);
+        if (unusable == total) return total + " items (unusable)" + hidden;
+        if (unusable > 0) return String.format("%d items (%d unusable)%s", total, unusable, hidden);
 
-        return total + " items";
+        return total + " items" + hidden;
     }
 
     /// One label/value line. Extra calls beyond what the document declares are ignored rather than
@@ -133,6 +179,21 @@ public final class MachineView {
         set("#Detail" + row + "Value.Text", value);
     }
 
+    /// One auto-push row: the resource, and whether the block is currently ejecting it.
+    ///
+    /// Rows are filled in the order the page offers them, which is the resource registration
+    /// order -- the same order the side configurator walks, so the two pages agree about which
+    /// resource is which.
+    public void autoPush(@Nonnull String resource, boolean pushing) {
+        if (this.pushRowsUsed >= PUSH_ROWS) return;
+
+        int row = this.pushRowsUsed++;
+
+        set("#Push" + row + "Button.Text",
+                String.format("Push %s: %s", resource, pushing ? "On" : "Off"));
+        set("#Push" + row + "Button.Visible", true);
+    }
+
     /// Whether a Configure Sides button makes sense for this block.
     public void configurable(boolean canConfigure) {
         set("#ConfigureButton.Visible", canConfigure);
@@ -144,6 +205,11 @@ public final class MachineView {
         set("#SecondarySection.Visible", this.secondaryShown);
         set("#SlotsSection.Visible", this.slotsShown);
         set("#DetailSection.Visible", this.detailsUsed > 0);
+        set("#PushSection.Visible", this.pushRowsUsed > 0);
+
+        for (int row = this.pushRowsUsed; row < PUSH_ROWS; row++) {
+            set("#Push" + row + "Button.Visible", false);
+        }
 
         for (int row = this.detailsUsed; row < DETAIL_ROWS; row++) {
             set("#Detail" + row + ".Visible", false);

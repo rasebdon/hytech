@@ -78,6 +78,11 @@ sources from Maven if you need them.
 2. `ItemModule` — item network, transfer, vanilla container wrapping
 3. `EnergyModule` — energy network, transfer, generation, UIs
 4. `HeatModule`, `FluidModule`, `GasModule` — network, transfer, persistence
+5. `MachineModule` — the processing engine behind the crusher and electric smelter
+
+Machines come **last**: a machine owns no container of its own, it reads the
+`hytech:items:container` and `hytech:energy:container` of the block it sits on, so both those
+modules have to be registered first.
 
 Items must come **before** energy: the burner generator reads its fuel from a
 `hytech:items:container` so item pipes can feed it, which makes energy the module with the
@@ -213,9 +218,32 @@ to set the starting state without restricting the face. Convention: give a funct
 meaningless. This controls neighbor detection and
 flow direction. The Wrench interaction cycles face configs and fires `CHANGED` events.
 
+The pipe-to-pipe shortcut — direction is meaningless between two pipes, so such a face only
+toggles between connected and off — requires **both** sides to be pipes. Testing only the neighbour
+made every block face with a pipe against it toggle-only: a crusher side permitting INPUT, OUTPUT and
+NONE has no BOTH to toggle to, so the side went to NONE and stuck there, and the same was true of the
+burner and of a battery with a cable on it.
+
 On a pipe the wrench targets an individual arm: it reads `InteractionSyncData.raycastHit`,
 converts it to block-local coordinates and asks `PipeConnectionMask.faceAt` which arm box
 contains the point, falling back to `blockFace` when the client sends no hit point.
+
+### Auto-push
+
+`MachinePage` carries a **Push ‹resource›: On/Off** row for every resource the block participates in,
+which flips `isExtracting` on that resource's block component. Only the block-push phase of
+`AbstractTransferSystem` reads that flag — a pipe wrenched to pull from a face draws whether or not
+the block is extracting — so the toggle is what saves a player from wrenching every pipe that
+collects a machine's output.
+
+Rows index `SideConfigPage.presentResources`, the same registration-ordered list the side
+configurator walks, and the index is re-resolved on click rather than remembered: a page can outlive
+a change to the block it describes.
+
+`ItemNetwork.isFull()` is what stops this being a footgun. An item run with no reachable sink reports
+itself full, so a machine with auto-push on next to a dead-end pipe pushes nothing instead of loading
+the run for `ItemPipeEjectSystem` to drop on the floor three seconds later. Pipes are a conduit, not
+storage, and that is the one place the aggregate container has to say so out loud.
 
 ### Neighbor Management
 
@@ -285,8 +313,14 @@ Things worth knowing:
   "Failed to gather CustomUI event binding".
 - **One decoded event arrives per page**, not per element, so each binding carries its action name as
   a static literal in its `EventData` and `onAction` switches on it.
-- The documented slot element is `ItemSlot`, and it belongs to window content rather than a custom
-  page. `ItemGrid` in a custom page renders nothing.
+- `ItemSlot` **renders** on a custom page and is how a machine shows its contents: set
+  `#Selector.ItemId` and `#Selector.Quantity` on it, as vanilla's own `RespawnPage` does for the
+  items a player dropped. What a custom page cannot do is let anyone *drag* one, so moving items
+  still means a `ContainerWindow`. `ItemGrid` in a custom page renders nothing.
+- **Declare the cells, set the values.** `MachinePage.ui` carries a fixed six item cells and five
+  auto-push rows, hidden when unused, rather than `clear` + `append` per refresh. A structural
+  update every second is a page that keeps dropping its own clicks (see the acknowledgment rule
+  above).
 - `render` runs on open *and* on every refresh, so it must read live state and be safe to repeat.
   It returns a **change signature**, and `refresh` skips the update when it matches the last one.
   That is not an optimisation: `updateCustomPage` increments an outstanding-acknowledgment counter,
@@ -306,6 +340,58 @@ Things worth knowing:
 - A machine adds no UI document of its own: `MachinePage.ui` declares every section and
   [MachineView] hides the ones the machine did not fill. A new resource type needs no UI code.
 
+### Electric Machines
+
+A machine is three components on one block: `hytech:machine:processor` for the rules,
+`hytech:items:container` for the slots, `hytech:energy:container` for the buffer. There is one
+component and one system for every machine — a crusher and an electric smelter differ only in the
+numbers their assets carry, which is what makes a later factory tier a JSON edit rather than a
+class.
+
+| Piece | Role |
+|---|---|
+| `machines/components/MachineProcessorComponent` | `RecipeGroup`, `EnergyPerTick`, `SpeedMultiplier`, `ParallelOperations`, plus the saved operation |
+| `machines/systems/MachineProcessingSystem` | resolve a recipe, spend energy, consume ingredients, write results |
+| `machines/MachineRecipes` | index of which recipes belong to which machine |
+| `machines/MachineSlots` | the ingredient/result halves of one container |
+| `machines/interaction/ui/OpenMachinePageInteraction` | the machine's page, on the shared `MachinePage` |
+
+**Recipes are ordinary vanilla assets.** `AssetRegistryLoader` registers `CraftingRecipe` against
+`Item/Recipes`, so a machine recipe is a standalone JSON under `Server/Item/Recipes/Hytech/` with a
+`BenchRequirement` naming the machine — `{"Type": "Processing", "Id": "Hytech_Crusher"}`. That id
+belongs to no bench block, which vanilla is content with: `CraftingPlugin.onRecipeLoad` creates a
+registry for whatever id a recipe names. So Hytech gets the whole authoring format (item or resource
+type inputs, several outputs, `TimeSeconds`) and the game's own validation, and `MachineRecipes`
+only has to bucket them by id. The index is built lazily and rebuilt when the asset count changes,
+because assets load on their own schedule and a machine may tick before the recipe pack is in.
+
+Matching still goes through vanilla: `CraftingManager.getInputMaterials`, `getOutputItemStacks` and
+`matches` are the same calls `BenchSystems.ProcessingBenchTick` makes, so a Hytech machine reads a
+recipe exactly as a vanilla bench does.
+
+**Energy is per tick**, matching generation in `EnergyGenerationSystem`. A machine that cannot
+afford the current tick simply does not advance — progress is held rather than lost, and nothing is
+consumed while it waits.
+
+**One container, split into halves.** A block can hold only one `hytech:items:container`
+(`ComponentRegistry` keys by class), so a machine declares `InputSlots` and `OutputSlots` on it: the
+leading slots take ingredients, the trailing ones hold results. Both default to 0, which means
+"undivided" — what the burner's fuel slot and the item buffer want. Two things enforce the split,
+and both are needed:
+
+- `SlotFilter.DENY` on `FilterActionType.ADD` for every output slot, applied by
+  `ItemBlockComponent`. Pipes and players both insert through the container's filtered path, so one
+  filter closes both; the machine writes its own results with filtering off. Filters are not part of
+  the codec, so they are re-applied whenever the component decodes or resizes.
+- `HytechItemContainer.canExtractFrom(slot)`, consulted by `moveTo`. Removal has to stay open for
+  the player, so a filter cannot do this job: without the hook a pipe on an OUTPUT face would carry
+  the unprocessed ore straight back out again.
+
+`MachineSlots` owns the slot arithmetic that follows from the split — how many whole sets of
+ingredients are present, how many sets of results will fit, and the consume/insert pair. Vanilla's
+container helpers work on a whole container, and a crusher must not count the dust in its output as
+an ingredient.
+
 ### Resource Assets
 
 - `src/main/resources/Common/` — client-side (textures, block models, UI, icons)
@@ -321,6 +407,8 @@ Things worth knowing:
 | `core/containers/LogisticContainer.java`                | The contract that makes the framework generic   |
 | `core/systems/AbstractTransferSystem.java`              | The whole transfer algorithm, once               |
 | `heat/HeatModule.java`                                  | Smallest complete resource type; copy this       |
+| `machines/MachineModule.java`                           | Machines: one engine for every processing block  |
+| `machines/systems/MachineProcessingSystem.java`         | Recipe, energy and progress in one place        |
 | `energy/EnergyModule.java`                              | Richest module: generation, UIs, block states    |
 | `core/components/ContainerHolder.java`                  | Neighbor tracking base                          |
 | `core/networks/LogisticNetwork.java`                    | Network graph structure                         |
@@ -331,7 +419,18 @@ Things worth knowing:
 ## Current Development
 
 Branch `feat/item-system`. Five resource modules are live — `energy`, `items`, `fluid`, `gas`,
-`heat` — plus a Burner Generator that turns any vanilla `Fuel` item into energy.
+`heat` — plus a Burner Generator that turns any vanilla `Fuel` item into energy, and a `machines`
+module with a Basic Crusher and a Basic Electric Smelter.
+
+Machines, materials and tiers are being built in phases (the plan lives outside the repo):
+
+1. **The processing engine** — done: the processor component, both machines at their basic tier, and
+   a starter recipe set (copper and iron ore → dust → vanilla bars, so crushing first doubles an ore).
+2. **Materials and progression** — dust and plate for all eleven vanilla metals, a Hytech steel
+   chain, wire, coils, circuits and machine frames, with recipes anchored on vanilla ores and bars.
+3. **Five tiers** — `Basic`, `Advanced`, `Elite`, `Ultimate`, `Quantum` across the pipes and the
+   machines, from one balance table, with tier N crafted from tier N-1 plus that tier's circuit and
+   frame.
 
 Module init order is **core → items → energy → heat → fluid → gas**. Items must precede energy
 because the burner reads its fuel from a `hytech:items:container`, so item pipes can feed it. The

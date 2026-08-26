@@ -39,4 +39,20 @@ public abstract class LogisticBlockComponent<TContainer> extends LogisticCompone
     public boolean isExtracting() {
         return this.isExtracting;
     }
+
+    /// Turns auto-push on or off for this container.
+    ///
+    /// Only the block-push phase of [at.rasebdon.hytech.core.systems.AbstractTransferSystem] reads
+    /// this: a pipe wrenched to pull from a face draws whether or not the block is extracting,
+    /// while a block pushing into its own neighbours needs a positive decision. That decision is
+    /// what the machine page's Auto-push toggle sets, per resource.
+    public void setExtracting(boolean extracting) {
+        if (this.isExtracting == extracting) return;
+
+        this.isExtracting = extracting;
+
+        // Same event the wrench fires: the transfer system re-reads its targets and any block
+        // state that depends on the container follows.
+        reload();
+    }
 }

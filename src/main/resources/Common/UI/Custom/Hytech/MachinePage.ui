@@ -10,7 +10,9 @@ $C.@PageOverlay {
   LayoutMode: Middle;
 
   $C.@DecoratedContainer {
-    Anchor: (Width: 360, Height: 470);
+    // Tall enough for the worst case: two bars, a contents grid, the auto-push rows for a
+    // machine carrying both items and energy, and three detail lines.
+    Anchor: (Width: 360, Height: 560);
 
     #Title {
       Label #TitleLabel {
@@ -73,12 +75,13 @@ $C.@PageOverlay {
         }
       }
 
-      // ---- Contents summary, plus a button to the real container.
+      // ---- Contents, plus a button to the real container.
       //
-      // No item slots here on purpose. Windows are a separate system from custom pages: a window
+      // The icons here are read-only. Windows are a separate system from custom pages: a window
       // switches the client to the Bench page, which is the screen carrying the player's own
-      // inventory, and a custom page *replaces* that screen rather than layering over it. So slots
-      // embedded here would have nothing to drag from. The button hands over to a ContainerWindow.
+      // inventory, and a custom page *replaces* that screen rather than layering over it. So
+      // nothing on this page can be dragged, however much it looks like a slot -- moving items
+      // still means the button below.
       Group #SlotsSection {
         LayoutMode: Top;
         Anchor: (Bottom: 12);
@@ -95,10 +98,142 @@ $C.@PageOverlay {
           Text: "";
         }
 
+        // What is actually in the slots, as icons rather than a sentence.
+        //
+        // ItemSlot renders perfectly well on a custom page -- vanilla's own RespawnPage lists the
+        // items a player dropped this way. What a custom page cannot do is let anyone *drag* one,
+        // which is why the button below still hands over to a real ContainerWindow. The cells are
+        // declared statically and hidden when unused, so a refresh only ever sets values: an
+        // update that cleared and re-appended children would be a structural change on every
+        // tick of the refresh timer.
+        Group #SlotsGrid {
+          LayoutMode: Left;
+          Anchor: (Width: $H.@PanelWidth, Height: 52, Bottom: 6);
+
+          Group #Slot0Cell {
+            LayoutMode: Top;
+            Anchor: (Width: 44, Height: 52);
+
+            ItemSlot #Slot0Icon {
+              Anchor: (Width: 40, Height: 40);
+              ShowQualityBackground: true;
+              ShowQuantity: false;
+            }
+
+            Label #Slot0Count {
+              Anchor: (Width: 44);
+              Style: $H.@SlotCountStyle;
+              Text: "";
+            }
+          }
+
+          Group #Slot1Cell {
+            LayoutMode: Top;
+            Anchor: (Width: 44, Height: 52);
+
+            ItemSlot #Slot1Icon {
+              Anchor: (Width: 40, Height: 40);
+              ShowQualityBackground: true;
+              ShowQuantity: false;
+            }
+
+            Label #Slot1Count {
+              Anchor: (Width: 44);
+              Style: $H.@SlotCountStyle;
+              Text: "";
+            }
+          }
+
+          Group #Slot2Cell {
+            LayoutMode: Top;
+            Anchor: (Width: 44, Height: 52);
+
+            ItemSlot #Slot2Icon {
+              Anchor: (Width: 40, Height: 40);
+              ShowQualityBackground: true;
+              ShowQuantity: false;
+            }
+
+            Label #Slot2Count {
+              Anchor: (Width: 44);
+              Style: $H.@SlotCountStyle;
+              Text: "";
+            }
+          }
+
+          Group #Slot3Cell {
+            LayoutMode: Top;
+            Anchor: (Width: 44, Height: 52);
+
+            ItemSlot #Slot3Icon {
+              Anchor: (Width: 40, Height: 40);
+              ShowQualityBackground: true;
+              ShowQuantity: false;
+            }
+
+            Label #Slot3Count {
+              Anchor: (Width: 44);
+              Style: $H.@SlotCountStyle;
+              Text: "";
+            }
+          }
+
+          Group #Slot4Cell {
+            LayoutMode: Top;
+            Anchor: (Width: 44, Height: 52);
+
+            ItemSlot #Slot4Icon {
+              Anchor: (Width: 40, Height: 40);
+              ShowQualityBackground: true;
+              ShowQuantity: false;
+            }
+
+            Label #Slot4Count {
+              Anchor: (Width: 44);
+              Style: $H.@SlotCountStyle;
+              Text: "";
+            }
+          }
+
+          Group #Slot5Cell {
+            LayoutMode: Top;
+            Anchor: (Width: 44, Height: 52);
+
+            ItemSlot #Slot5Icon {
+              Anchor: (Width: 40, Height: 40);
+              ShowQualityBackground: true;
+              ShowQuantity: false;
+            }
+
+            Label #Slot5Count {
+              Anchor: (Width: 44);
+              Style: $H.@SlotCountStyle;
+              Text: "";
+            }
+          }
+        }
+
         $C.@TextButton #ContainerButton {
           Anchor: (Width: $H.@PanelWidth, Height: 32);
           Text: "Open Inventory";
         }
+      }
+
+      // ---- Auto-push, one row per resource this block carries ----
+      //
+      // A block pushes into its neighbours only when its container is extracting, and that is a
+      // per-resource decision: a crusher ejects its results while still drawing power in on the
+      // same face. Five rows because five resource types are registered; the page hides the ones
+      // this block has nothing to say about.
+      Group #PushSection {
+        LayoutMode: Top;
+        Anchor: (Bottom: 12);
+
+        $C.@TextButton #Push0Button { Anchor: (Width: $H.@PanelWidth, Height: 30, Bottom: 4); Text: ""; }
+        $C.@TextButton #Push1Button { Anchor: (Width: $H.@PanelWidth, Height: 30, Bottom: 4); Text: ""; }
+        $C.@TextButton #Push2Button { Anchor: (Width: $H.@PanelWidth, Height: 30, Bottom: 4); Text: ""; }
+        $C.@TextButton #Push3Button { Anchor: (Width: $H.@PanelWidth, Height: 30, Bottom: 4); Text: ""; }
+        $C.@TextButton #Push4Button { Anchor: (Width: $H.@PanelWidth, Height: 30, Bottom: 4); Text: ""; }
       }
 
       // ---- Detail lines ----
