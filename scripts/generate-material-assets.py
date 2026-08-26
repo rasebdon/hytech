@@ -15,7 +15,14 @@ What it writes:
     Server/Languages/en-US/materials.lang  every generated item's name
 
 Player crafting hangs off each item's own `Recipe` block; only the machine recipes are standalone
-assets, because only they need a Hytech bench id.
+assets, because only they need a Hytech bench id. That includes the hand-authored blocks -- pipes,
+tanks, generators, the machines themselves -- whose `Recipe` key this script owns and whose every
+other key it leaves alone, so the whole crafting ladder is reviewable in one table.
+
+Names live in `materials.lang`, and the key a translation is looked up by is
+`<file name>.<key in file>` -- `I18nModule.getPrefix` builds it that way. So a name in
+`materials.lang` is `materials.items.X.name`, not `server.items.X.name`, and the item definitions
+this script writes ask for exactly that.
 
 Icons are `generate-icons.py`'s job -- and they are not optional: a missing `Icon` is a fatal
 validation error for that item.
@@ -40,6 +47,7 @@ import hytech_materials as table  # noqa: E402  (deliberate: needs the sys.path 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RESOURCES = REPO_ROOT / "src" / "main" / "resources"
 
+ITEMS_DIR = RESOURCES / "Server/Item/Items"
 MATERIALS_DIR = RESOURCES / "Server/Item/Items/Materials"
 COMPONENTS_DIR = RESOURCES / "Server/Item/Items/Components"
 CRUSHER_DIR = RESOURCES / "Server/Item/Recipes/Hytech/Crusher"
@@ -58,7 +66,9 @@ def item(item_id: str, category: str, level: int, model: str, texture: str,
          recipe: dict | None, scale: float, translation: list[float]) -> dict:
     """The shape every generated item shares."""
     definition = {
-        "TranslationProperties": {"Name": f"server.items.{item_id}.name"},
+        # `materials.` rather than `server.`: a language key is prefixed with the file it came
+        # from, and these names live in materials.lang.
+        "TranslationProperties": {"Name": f"materials.items.{item_id}.name"},
         "Categories": [category],
         "ItemLevel": level,
         "MaxStack": 100,
@@ -81,11 +91,15 @@ def item(item_id: str, category: str, level: int, model: str, texture: str,
     return definition
 
 
-def bench_recipe(inputs: list[tuple[str, int]], quantity: int, seconds: float) -> dict:
+def bench_recipe(inputs: list[tuple[str, int]], quantity: int, seconds: float,
+                 category: str) -> dict:
     """A player crafting recipe on the item's own definition. Output is the item itself."""
+    requirement = (table.VANILLA_WORKBENCH if category == "Workbench_Crafting"
+                   else table.bench(category))
+
     return {
         "Input": [{"ItemId": ingredient, "Quantity": count} for ingredient, count in inputs],
-        "BenchRequirement": table.WORKBENCH,
+        "BenchRequirement": requirement,
         "OutputQuantity": quantity,
         "TimeSeconds": seconds,
     }
@@ -121,7 +135,8 @@ def build() -> tuple[dict[Path, str], dict[str, str]]:
         # ---- plate: pressed from a bar at the bench, until a press machine exists ----
         write(MATERIALS_DIR / f"{metal.plate}.json",
               item(metal.plate, "Technic.Materials", 14, INGOT_MODEL, INGOT_TEXTURE,
-                   bench_recipe([(metal.bar, 1)], 1, 2), 1, [0, -3]))
+                   bench_recipe([(metal.bar, 1)], 1, 2, table.CATEGORY_MATERIALS),
+                   1, [0, -3]))
         names[metal.plate] = f"{metal.name} Plate"
 
         # ---- the one bar vanilla does not have ----
@@ -163,11 +178,34 @@ def build() -> tuple[dict[Path, str], dict[str, str]]:
         write(COMPONENTS_DIR / f"{component.id}.json",
               item(component.id, "Technic.Components", component.item_level,
                    INGOT_MODEL, INGOT_TEXTURE,
-                   bench_recipe(component.inputs, component.output_quantity, component.seconds),
+                   bench_recipe(component.inputs, component.output_quantity,
+                                component.seconds, table.CATEGORY_COMPONENTS),
                    1, [0, -3]))
         names[component.id] = component.name
 
     return files, names
+
+
+def block_recipes() -> dict[Path, str]:
+    """The hand-authored block definitions, with only their `Recipe` key rewritten.
+
+    Read-modify-write rather than generate: these files carry models, block states and component
+    configuration that no table should own. Only the recipe comes from here.
+    """
+    files: dict[Path, str] = {}
+
+    for entry in table.BLOCK_RECIPES:
+        path = ITEMS_DIR / entry.path
+        if not path.exists():
+            raise SystemExit(f"BLOCK_RECIPES names a file that does not exist: {entry.path}")
+
+        definition = json.loads(path.read_text(encoding="utf-8"))
+        definition["Recipe"] = bench_recipe(entry.inputs, entry.output_quantity,
+                                            entry.seconds, entry.category)
+
+        files[path] = json.dumps(definition, indent=2) + "\n"
+
+    return files
 
 
 def lang(names: dict[str, str]) -> str:
@@ -185,6 +223,7 @@ def main() -> int:
 
     files, names = build()
     files[LANG_FILE] = lang(names)
+    files.update(block_recipes())
 
     owned = {MATERIALS_DIR, COMPONENTS_DIR, CRUSHER_DIR, SMELTER_DIR}
 
@@ -207,9 +246,11 @@ def main() -> int:
             print("Run: python scripts/generate-material-assets.py", file=sys.stderr)
             return 1
 
-        print(f"Generated material assets are up to date ({len(files)} files).")
+        print(f"Generated material assets are up to date ({len(files)} files, "
+              f"{len(table.BLOCK_RECIPES)} of them block recipes).")
         return 0
 
+    # Only the fully generated folders are cleared; the block definitions are edited in place.
     for folder in owned:
         if folder.exists():
             shutil.rmtree(folder)
@@ -219,7 +260,8 @@ def main() -> int:
         path.write_text(payload, encoding="utf-8")
 
     print(f"Wrote {len(files)} files: {len(names)} items, "
-          f"{len(files) - len(names) - 1} machine recipes, 1 language file")
+          f"{len(files) - len(names) - 1 - len(table.BLOCK_RECIPES)} machine recipes, "
+          f"{len(table.BLOCK_RECIPES)} block recipes, 1 language file")
     return 0
 
 

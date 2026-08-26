@@ -1,0 +1,107 @@
+{
+  "TranslationProperties": {
+    "Name": "server.items.Hytech_Workbench.name"
+  },
+  "ItemLevel": 20,
+  "Categories": [
+    "Technic.General"
+  ],
+  "PlayerAnimationsId": "Block",
+  "Set": "Machine",
+  "Tags": {
+    "Type": [
+      "Bench"
+    ]
+  },
+  "MaxStack": 1,
+  "ItemSoundSetId": "ISS_Blocks_Stone",
+  "IconProperties": {
+    "Scale": 0.58823,
+    "Rotation": [
+      22.5,
+      45,
+      22.5
+    ],
+    "Translation": [
+      0,
+      -13.5
+    ]
+  },
+  "BlockType": {
+    "Material": "Solid",
+    "DrawType": "Cube",
+    "Group": "Props",
+    "Textures": [
+      {
+        "Sides": "BlockTextures/Machines/Machine_Casing.png",
+        "UpDown": "BlockTextures/Machines/Machine_Casing.png",
+        "North": "BlockTextures/Machines/Workbench_Front.png",
+        "Weight": 1
+      }
+    ],
+    "Gathering": {
+      "Breaking": {
+        "GatherType": "Benches"
+      }
+    },
+    "Bench": {
+      "Type": "Crafting",
+      "Id": "Hytech_Workbench",
+      "Categories": [
+        {
+          "Id": "Hytech_Materials",
+          "Name": "server.benchCategories.hytech.materials",
+          "Icon": "Icons/CraftingCategories/Workbench/Processing.png"
+        },
+        {
+          "Id": "Hytech_Components",
+          "Name": "server.benchCategories.hytech.components",
+          "Icon": "Icons/CraftingCategories/Workbench/Tools.png"
+        },
+        {
+          "Id": "Hytech_Logistics",
+          "Name": "server.benchCategories.hytech.logistics",
+          "Icon": "Icons/CraftingCategories/Workbench/Deco_Target.png"
+        },
+        {
+          "Id": "Hytech_Machines",
+          "Name": "server.benchCategories.hytech.machines",
+          "Icon": "Icons/CraftingCategories/Workbench/WeaponsCrude.png"
+        }
+      ]
+    },
+    "BlockEntity": {
+      "Components": {
+        "BenchBlock": {}
+      }
+    },
+    "VariantRotation": "NESW",
+    "BlockParticleSetId": "Metal",
+    "ParticleColor": "#55575F",
+    "BlockSoundSetId": "Metal"
+  },
+  "Icon": "Icons/ItemsGenerated/Hytech_Workbench.png",
+  "Recipe": {
+    "Input": [
+      {
+        "ItemId": "Ingredient_Bar_Iron",
+        "Quantity": 4
+      },
+      {
+        "ItemId": "Ingredient_Bar_Copper",
+        "Quantity": 2
+      }
+    ],
+    "BenchRequirement": [
+      {
+        "Type": "Crafting",
+        "Id": "Workbench",
+        "Categories": [
+          "Workbench_Crafting"
+        ]
+      }
+    ],
+    "OutputQuantity": 1,
+    "TimeSeconds": 5
+  }
+}

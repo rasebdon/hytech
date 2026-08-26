@@ -16,21 +16,21 @@
   "Recipe": {
     "Input": [
       {
-        "ResourceTypeId": "Rock_Stone_Brick",
-        "Quantity": 1
+        "ItemId": "Hytech_Plate_Bronze",
+        "Quantity": 6
       }
     ],
     "BenchRequirement": [
       {
-        "Id": "Builders",
-        "Type": "StructuralCrafting",
+        "Type": "Crafting",
+        "Id": "Hytech_Workbench",
         "Categories": [
-          "Beam"
+          "Hytech_Logistics"
         ]
       }
     ],
-    "OutputQuantity": 2,
-    "TimeSeconds": 0
+    "OutputQuantity": 8,
+    "TimeSeconds": 4
   },
   "BlockType": {
     "Material": "Solid",

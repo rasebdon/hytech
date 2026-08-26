@@ -190,9 +190,96 @@ COMPONENTS = [
     _frame("Quantum", [("Hytech_Frame_Ultimate", 1), ("Hytech_Plate_Adamantite", 4)], 64),
 ]
 
-# Where player crafting happens. The same bench and category vanilla's own Bench_Furnace recipe
-# uses, so Hytech parts appear in a list players already know.
-WORKBENCH = [{"Type": "Crafting", "Id": "Workbench", "Categories": ["Workbench_Crafting"]}]
+# Every Hytech recipe is crafted at Hytech's own bench, so a player looks in one place rather than
+# hunting four vanilla category tabs for parts that have nothing to do with them. The bench itself
+# is the exception -- it is built at the vanilla workbench out of vanilla bars, which is what keeps
+# the whole tree reachable from a fresh world.
+BENCH_ID = "Hytech_Workbench"
+
+CATEGORY_MATERIALS = "Hytech_Materials"
+CATEGORY_COMPONENTS = "Hytech_Components"
+CATEGORY_LOGISTICS = "Hytech_Logistics"
+CATEGORY_MACHINES = "Hytech_Machines"
+
+BENCH_CATEGORIES = [
+    (CATEGORY_MATERIALS, "Materials", "Icons/CraftingCategories/Workbench/Processing.png"),
+    (CATEGORY_COMPONENTS, "Components", "Icons/CraftingCategories/Workbench/Tools.png"),
+    (CATEGORY_LOGISTICS, "Logistics", "Icons/CraftingCategories/Workbench/Deco_Target.png"),
+    (CATEGORY_MACHINES, "Machines", "Icons/CraftingCategories/Workbench/WeaponsCrude.png"),
+]
+
+VANILLA_WORKBENCH = [{"Type": "Crafting", "Id": "Workbench", "Categories": ["Workbench_Crafting"]}]
+
+
+def bench(category: str) -> list[dict]:
+    """The bench requirement for a Hytech recipe, in one of the bench's own tabs."""
+    return [{"Type": "Crafting", "Id": BENCH_ID, "Categories": [category]}]
+
+
+@dataclass(frozen=True)
+class BlockRecipe:
+    """A recipe for a block that already has a hand-authored item definition.
+
+    The generator owns only the `Recipe` key of these files, leaving their models, components and
+    block states alone. Keeping the costs here rather than scattered across fifteen JSON files is
+    the same argument as for the materials: the ladder should be readable in one place.
+    """
+
+    path: str
+    category: str
+    inputs: list[tuple[str, int]]
+    output_quantity: int = 1
+    seconds: float = 4
+
+
+BLOCK_RECIPES = [
+    # ---- tools: the first two things a player needs, so they cost plates and nothing rarer ----
+    BlockRecipe("Wrench.json", CATEGORY_COMPONENTS, [("Hytech_Plate_Iron", 2)], seconds=2),
+    BlockRecipe("Multimeter.json", CATEGORY_COMPONENTS,
+                [("Hytech_Plate_Copper", 1), ("Hytech_Circuit_Basic", 1)], seconds=2),
+
+    # ---- logistics: eight pipes a craft, since a run eats them by the dozen ----
+    BlockRecipe("Pipes/Energy/Pipe_Energy.json", CATEGORY_LOGISTICS,
+                [("Hytech_Plate_Copper", 6), ("Hytech_Wire_Copper", 2)], output_quantity=8),
+    BlockRecipe("Pipes/Items/Pipe_Items.json", CATEGORY_LOGISTICS,
+                [("Hytech_Plate_Iron", 6)], output_quantity=8),
+    BlockRecipe("Pipes/Fluid/Pipe_Fluid.json", CATEGORY_LOGISTICS,
+                [("Hytech_Plate_Bronze", 6)], output_quantity=8),
+    BlockRecipe("Pipes/Gas/Pipe_Gas.json", CATEGORY_LOGISTICS,
+                [("Hytech_Plate_Silver", 6)], output_quantity=8),
+    BlockRecipe("Pipes/Heat/Pipe_Heat.json", CATEGORY_LOGISTICS,
+                [("Hytech_Plate_Steel", 6)], output_quantity=8),
+
+    BlockRecipe("Storage.Items/Item_Buffer.json", CATEGORY_LOGISTICS,
+                [("Hytech_Casing", 1), ("Hytech_Plate_Iron", 4)]),
+    BlockRecipe("Storage.Tanks/Fluid_Tank.json", CATEGORY_LOGISTICS,
+                [("Hytech_Casing", 1), ("Hytech_Plate_Bronze", 4)]),
+    BlockRecipe("Storage.Tanks/Gas_Tank.json", CATEGORY_LOGISTICS,
+                [("Hytech_Casing", 1), ("Hytech_Plate_Silver", 4)]),
+    BlockRecipe("Storage.Tanks/Heat_Tank.json", CATEGORY_LOGISTICS,
+                [("Hytech_Casing", 1), ("Hytech_Plate_Steel", 4)]),
+    BlockRecipe("Storage.Batteries/Battery_Tier_1.json", CATEGORY_LOGISTICS,
+                [("Hytech_Casing", 1), ("Hytech_Wire_Copper", 4), ("Hytech_Circuit_Basic", 2)]),
+
+    # ---- machines ----
+    BlockRecipe("Generators/Burner_Generator.json", CATEGORY_MACHINES,
+                [("Hytech_Casing", 1), ("Hytech_Plate_Copper", 2)]),
+    BlockRecipe("Generators/Solar_Panel_Tier_1.json", CATEGORY_MACHINES,
+                [("Hytech_Casing", 1), ("Hytech_Circuit_Basic", 1), ("Hytech_Plate_Silver", 2)]),
+    BlockRecipe("Machines/Crusher_Basic.json", CATEGORY_MACHINES,
+                [("Hytech_Frame_Basic", 1), ("Hytech_Circuit_Basic", 2), ("Hytech_Plate_Steel", 4)],
+                seconds=6),
+    BlockRecipe("Machines/Electric_Smelter_Basic.json", CATEGORY_MACHINES,
+                [("Hytech_Frame_Basic", 1), ("Hytech_Circuit_Basic", 2), ("Hytech_Coil", 2)],
+                seconds=6),
+
+    # ---- the bench itself: vanilla bars only, so it is reachable before any of the above ----
+    BlockRecipe("Hytech_Workbench.json", "Workbench_Crafting",
+                [("Ingredient_Bar_Iron", 4), ("Ingredient_Bar_Copper", 2)], seconds=5),
+]
+
+# Creative-only test blocks keep whatever recipe they shipped with; they are a debugging aid, not
+# part of the progression. See TESTING.md.
 
 # The two machine recipe groups, matching the RecipeGroup on each machine's processor component.
 CRUSHER_GROUP = "Hytech_Crusher"

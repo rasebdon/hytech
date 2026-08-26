@@ -16,21 +16,25 @@
   "Recipe": {
     "Input": [
       {
-        "ResourceTypeId": "Rock_Stone_Brick",
+        "ItemId": "Hytech_Casing",
+        "Quantity": 1
+      },
+      {
+        "ItemId": "Hytech_Plate_Steel",
         "Quantity": 4
       }
     ],
     "BenchRequirement": [
       {
-        "Id": "Builders",
-        "Type": "StructuralCrafting",
+        "Type": "Crafting",
+        "Id": "Hytech_Workbench",
         "Categories": [
-          "Beam"
+          "Hytech_Logistics"
         ]
       }
     ],
     "OutputQuantity": 1,
-    "TimeSeconds": 0
+    "TimeSeconds": 4
   },
   "BlockType": {
     "Material": "Solid",

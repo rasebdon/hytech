@@ -169,5 +169,28 @@
       }
     }
   },
-  "Icon": "Icons/ItemsGenerated/Burner_Generator.png"
+  "Icon": "Icons/ItemsGenerated/Burner_Generator.png",
+  "Recipe": {
+    "Input": [
+      {
+        "ItemId": "Hytech_Casing",
+        "Quantity": 1
+      },
+      {
+        "ItemId": "Hytech_Plate_Copper",
+        "Quantity": 2
+      }
+    ],
+    "BenchRequirement": [
+      {
+        "Type": "Crafting",
+        "Id": "Hytech_Workbench",
+        "Categories": [
+          "Hytech_Machines"
+        ]
+      }
+    ],
+    "OutputQuantity": 1,
+    "TimeSeconds": 4
+  }
 }

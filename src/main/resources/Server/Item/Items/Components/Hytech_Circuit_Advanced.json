@@ -1,6 +1,6 @@
 {
   "TranslationProperties": {
-    "Name": "server.items.Hytech_Circuit_Advanced.name"
+    "Name": "materials.items.Hytech_Circuit_Advanced.name"
   },
   "Categories": [
     "Technic.Components"
@@ -47,9 +47,9 @@
     "BenchRequirement": [
       {
         "Type": "Crafting",
-        "Id": "Workbench",
+        "Id": "Hytech_Workbench",
         "Categories": [
-          "Workbench_Crafting"
+          "Hytech_Components"
         ]
       }
     ],

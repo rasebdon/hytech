@@ -280,6 +280,10 @@ def main() -> int:
 
     pnglib.write_if_changed(ICON_DIR / "Burner_Generator.png", burner_icon(), args.check, stale)
 
+    # The bench shares the machines' silhouette with a tool board for a face, since it is one of
+    # them as far as a player is concerned.
+    pnglib.write_if_changed(ICON_DIR / "Hytech_Workbench.png",
+                            machine_icon(MACHINE_STEEL, False), args.check, stale)
     pnglib.write_if_changed(ICON_DIR / "Crusher_Basic.png",
                             machine_icon(MACHINE_SPARK, False), args.check, stale)
     pnglib.write_if_changed(ICON_DIR / "Electric_Smelter_Basic.png",
@@ -329,7 +333,7 @@ def main() -> int:
         print("Generated icons are up to date.")
         return 0
 
-    print(f"Wrote {len(PALETTE) * 4 + 3 + icons} icons")
+    print(f"Wrote {len(PALETTE) * 4 + 4 + icons} icons")
     return 0
 
 

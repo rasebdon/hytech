@@ -1,6 +1,6 @@
 {
   "TranslationProperties": {
-    "Name": "server.items.Hytech_Plate_Adamantite.name"
+    "Name": "materials.items.Hytech_Plate_Adamantite.name"
   },
   "Categories": [
     "Technic.Materials"
@@ -39,9 +39,9 @@
     "BenchRequirement": [
       {
         "Type": "Crafting",
-        "Id": "Workbench",
+        "Id": "Hytech_Workbench",
         "Categories": [
-          "Workbench_Crafting"
+          "Hytech_Materials"
         ]
       }
     ],

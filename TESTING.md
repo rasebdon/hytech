@@ -147,8 +147,16 @@ bar, Technic → Components for wire, coils, circuits, casings and frames.
       iron one — this is the "most ingredients wins" rule doing its job. Copper dust ×3 + silver
       dust ×1 gives four bronze bars, which vanilla has no other recipe for.
 - [ ] Crush a bar back to dust — the only way an alloy gets a dust at all.
-- [ ] Walk the ladder at a workbench: bar → plate → wire → coil → Basic Circuit → Machine Casing →
-      Basic Machine Frame → **Basic Crusher**. Every step should appear in the workbench list.
+- [ ] Build a **Tech Bench** at the vanilla workbench (4 iron bars + 2 copper bars) — the one
+      Hytech recipe that is not on the Tech Bench itself, so a fresh world can reach it.
+- [ ] Walk the ladder at the Tech Bench: bar → plate → wire → coil → Basic Circuit → Machine
+      Casing → Basic Machine Frame → **Basic Crusher**. Each step should appear under its tab:
+      Materials, Components, Logistics, Machines.
+- [ ] Pipes, tanks, the buffer, the wrench, the multimeter, the burner, the solar panel and the
+      battery are all craftable there too — none of them had a recipe on the Tech Bench before, and
+      several had none anywhere.
+- [ ] **Names, not identifiers.** Every Hytech item shows a real name in the inventory and in the
+      bench list. A raw `materials.items.X.name` means a language key lost its file prefix.
 - [ ] Higher circuits and frames each consume the tier below, so no tier can be skipped.
 - [ ] `/recipe` lists the Hytech recipes if you need to confirm one registered.
 

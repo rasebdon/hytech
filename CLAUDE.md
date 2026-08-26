@@ -420,9 +420,27 @@ Two things about generated assets:
   alone smelts to a bar; iron dust *and* charcoal is steel, and a player who loaded both meant the
   alloy. Without the sort that choice fell out of asset iteration order.
 
-Player crafting hangs off each item's own `Recipe` block at the vanilla workbench — the same bench
-and category `Bench_Furnace` uses — so only machine recipes need to be standalone assets. Plates are
-pressed at the bench for now; a dedicated press is a machine for later.
+**Everything Hytech is crafted at the Tech Bench** (`Hytech_Workbench`), an ordinary vanilla
+`Bench` of type `Crafting` with four tabs — Materials, Components, Logistics, Machines. It needs no
+code: a `Bench` block declaring `BenchBlock` in its `BlockEntity` is opened by the game's own bench
+handling, and `Bench_WorkBench` itself declares no `Use` interaction either.
+
+The bench is the one exception to its own rule: it is built at the *vanilla* workbench out of
+vanilla bars, which is what keeps the whole tree reachable from a fresh world. Everything else —
+plates, components, pipes, tanks, generators, machines — moved onto it, including the blocks that
+had no recipe at all before (wrench, multimeter, burner, solar panel, battery).
+
+Player crafting hangs off each item's own `Recipe` block, so only machine recipes need to be
+standalone assets. For hand-authored blocks the generator owns **only the `Recipe` key** and leaves
+models, block states and components alone, which is what lets the crafting ladder live in the table
+next to the materials. Plates are pressed at the bench for now; a dedicated press is a machine for
+later.
+
+**A translation key is prefixed with the file it came from.** `I18nModule.getPrefix` builds every
+key as `<file name>.<key in file>`, folding in subdirectories — which is why `server.lang` holds
+`items.X.name` and assets ask for `server.items.X.name`. Generated names live in `materials.lang`,
+so those items ask for `materials.items.X.name`. Getting this wrong is silent: the client shows the
+raw identifier and nothing is logged.
 
 `check-asset-refs.py` has a second pass for this: every `ItemId` a recipe names must exist. That
 failure is quiet in a way a missing texture is not — the recipe loads, validates, and then never
@@ -465,7 +483,7 @@ Machines, materials and tiers are being built in phases (the plan lives outside 
    a starter recipe set (copper and iron ore → dust → vanilla bars, so crushing first doubles an ore).
 2. **Materials and progression** — done: dust and plate for twelve metals, a steel chain, a bronze
    recipe, wire, coils, five circuit tiers, a casing and five machine frames, all from one table,
-   plus crafting recipes for both machines.
+   plus a Tech Bench that every Hytech recipe now lives on.
 3. **Five tiers** — `Basic`, `Advanced`, `Elite`, `Ultimate`, `Quantum` across the pipes and the
    machines, from one balance table, with tier N crafted from tier N-1 plus that tier's circuit and
    frame.

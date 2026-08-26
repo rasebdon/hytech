@@ -104,6 +104,27 @@ def crusher_front(active: bool) -> Rows:
     return out
 
 
+def workbench_front() -> Rows:
+    """A tool board: the bench has no working state, so it needs only the one face."""
+    out = casing()
+
+    top, bottom = 4, SIZE - 4
+    left, right = 3, SIZE - 4
+    window(out, top, bottom, left, right)
+
+    # A wrench and a plate hung on the board, in the machines' own steel.
+    for y in range(top + 2, bottom - 1):
+        out[y][left + 3] = STEEL
+    out[top + 2][left + 2] = STEEL
+    out[top + 2][left + 4] = STEEL
+
+    for y in range(top + 3, top + 7):
+        for x in range(right - 5, right - 1):
+            out[y][x] = STEEL
+
+    return out
+
+
 def smelter_front(active: bool) -> Rows:
     """An induction coil of three bars, glowing hotter toward the base when running."""
     out = casing()
@@ -148,6 +169,7 @@ def main() -> int:
         "Crusher_Front_Active.png": crusher_front(True),
         "Smelter_Front.png": smelter_front(False),
         "Smelter_Front_Active.png": smelter_front(True),
+        "Workbench_Front.png": workbench_front(),
     }
 
     for name, rows in textures.items():

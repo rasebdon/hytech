@@ -38,5 +38,24 @@
     ]
   },
   "ItemSoundSetId": "ISS_Weapons_Blunt_Small",
-  "Icon": "Icons/ItemsGenerated/Wrench.png"
+  "Icon": "Icons/ItemsGenerated/Wrench.png",
+  "Recipe": {
+    "Input": [
+      {
+        "ItemId": "Hytech_Plate_Iron",
+        "Quantity": 2
+      }
+    ],
+    "BenchRequirement": [
+      {
+        "Type": "Crafting",
+        "Id": "Hytech_Workbench",
+        "Categories": [
+          "Hytech_Components"
+        ]
+      }
+    ],
+    "OutputQuantity": 1,
+    "TimeSeconds": 2
+  }
 }

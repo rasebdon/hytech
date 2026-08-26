@@ -38,5 +38,28 @@
       "Tool"
     ]
   },
-  "ItemSoundSetId": "ISS_Weapons_Wood"
+  "ItemSoundSetId": "ISS_Weapons_Wood",
+  "Recipe": {
+    "Input": [
+      {
+        "ItemId": "Hytech_Plate_Copper",
+        "Quantity": 1
+      },
+      {
+        "ItemId": "Hytech_Circuit_Basic",
+        "Quantity": 1
+      }
+    ],
+    "BenchRequirement": [
+      {
+        "Type": "Crafting",
+        "Id": "Hytech_Workbench",
+        "Categories": [
+          "Hytech_Components"
+        ]
+      }
+    ],
+    "OutputQuantity": 1,
+    "TimeSeconds": 2
+  }
 }

@@ -124,5 +124,32 @@
       }
     }
   },
-  "Icon": "Icons/ItemsGenerated/Battery_Tier_1.png"
+  "Icon": "Icons/ItemsGenerated/Battery_Tier_1.png",
+  "Recipe": {
+    "Input": [
+      {
+        "ItemId": "Hytech_Casing",
+        "Quantity": 1
+      },
+      {
+        "ItemId": "Hytech_Wire_Copper",
+        "Quantity": 4
+      },
+      {
+        "ItemId": "Hytech_Circuit_Basic",
+        "Quantity": 2
+      }
+    ],
+    "BenchRequirement": [
+      {
+        "Type": "Crafting",
+        "Id": "Hytech_Workbench",
+        "Categories": [
+          "Hytech_Logistics"
+        ]
+      }
+    ],
+    "OutputQuantity": 1,
+    "TimeSeconds": 4
+  }
 }
