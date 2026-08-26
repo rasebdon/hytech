@@ -56,7 +56,7 @@ public class EnergyGenerationSystem extends EntityTickingSystem<ChunkStore> {
         if (blockTransform == null) return;
 
         long currentRate = calculateCurrentRate(
-                gen, archetypeChunk, index, store, new Vector3i(blockTransform.worldPos()), dt);
+                gen, container, archetypeChunk, index, store, new Vector3i(blockTransform.worldPos()), dt);
 
         gen.setCurrentRate(currentRate);
 
@@ -67,6 +67,7 @@ public class EnergyGenerationSystem extends EntityTickingSystem<ChunkStore> {
 
     private long calculateCurrentRate(
             EnergyGeneratorComponent gen,
+            EnergyBlockComponent container,
             ArchetypeChunk<ChunkStore> archetypeChunk,
             int index,
             Store<ChunkStore> store,
@@ -76,7 +77,7 @@ public class EnergyGenerationSystem extends EntityTickingSystem<ChunkStore> {
         return switch (gen.getGeneratorType()) {
             case SOLAR -> generateSolar(gen, store);
             case WIND -> generateWind(gen, pos);
-            case FUEL_SOLID -> generateSolidFuel(gen, archetypeChunk, index, dt);
+            case FUEL_SOLID -> generateSolidFuel(gen, container, archetypeChunk, index, dt);
             // Liquid fuel needs the fluid module, which does not exist yet. Returning 0
             // rather than falling through to the solid path keeps a mis-declared block inert
             // instead of silently burning items.
@@ -124,6 +125,7 @@ public class EnergyGenerationSystem extends EntityTickingSystem<ChunkStore> {
     /// so an item pipe can feed the generator exactly as it would feed a chest.
     private long generateSolidFuel(
             EnergyGeneratorComponent gen,
+            EnergyBlockComponent container,
             ArchetypeChunk<ChunkStore> archetypeChunk,
             int index,
             float dt
@@ -131,8 +133,13 @@ public class EnergyGenerationSystem extends EntityTickingSystem<ChunkStore> {
         var burner = archetypeChunk.getComponent(index, burnerType);
         if (burner == null) return 0L;
 
-        if (!burner.isBurning() && !ignite(burner, fuelContainer(archetypeChunk, index))) {
-            return 0L;
+        // A full buffer must not take another item out of the fuel slot: the energy it made
+        // would be discarded by the clamp in `add`. The item already alight is a different
+        // matter -- it was spent the moment it was lit -- so it burns down as normal and only
+        // ignition waits for room.
+        if (!burner.isBurning()) {
+            if (container.isFull()) return 0L;
+            if (!ignite(burner, fuelContainer(archetypeChunk, index))) return 0L;
         }
 
         // Scaled by how much of the tick was actually fuelled, so the last partial tick of an

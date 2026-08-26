@@ -8,11 +8,11 @@ import at.rasebdon.hytech.items.components.ItemPipeComponent;
 import at.rasebdon.hytech.items.networks.ItemNetworkSystem;
 import at.rasebdon.hytech.items.systems.ItemBlockStateRegistrationSystem;
 import at.rasebdon.hytech.items.systems.ItemComponentRegistrationSystem;
+import at.rasebdon.hytech.items.systems.ItemPipeEjectSystem;
 import at.rasebdon.hytech.items.systems.ItemTransferSystem;
 import com.hypixel.hytale.component.ComponentRegistryProxy;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.event.IEventRegistry;
-import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
 public final class ItemModule extends AbstractLogisticModule<
@@ -54,6 +54,11 @@ public final class ItemModule extends AbstractLogisticModule<
     protected void registerAdditionalSystems(ComponentRegistryProxy<ChunkStore> registry, IEventRegistry eventRegistry) {
         var itemBlockStateRegistrationSystem = new ItemBlockStateRegistrationSystem(registrationSystem);
         registry.registerSystem(itemBlockStateRegistrationSystem);
+
+        // Nothing may sit in a pipe indefinitely: the transfer system only pulls when it has
+        // a sink, and this catches the rest -- a target broken mid-run, a pipe loaded from a
+        // world saved under the old rules -- by dropping the stranded stacks in the world.
+        registry.registerSystem(new ItemPipeEjectSystem(pipeComponentType));
 
         // No save system here on purpose: unlike energy, item pipes own their buffers and
         // those containers are part of ItemPipeComponent's codec, so contents persist with

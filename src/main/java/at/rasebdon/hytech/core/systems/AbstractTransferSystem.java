@@ -42,7 +42,7 @@ public abstract class AbstractTransferSystem<TContainer extends LogisticContaine
     }
 
     /// The slower end of a pair sets the pace.
-    private static long maxRate(LogisticContainer from, LogisticContainer to) {
+    protected static long maxRate(LogisticContainer from, LogisticContainer to) {
         return Math.min(from.getTransferSpeed(), to.getTransferSpeed());
     }
 
@@ -93,7 +93,10 @@ public abstract class AbstractTransferSystem<TContainer extends LogisticContaine
     }
 
     /// Draws from every source the network is allowed to pull from.
-    private void pullIntoNetwork(LogisticNetwork<TContainer> network) {
+    ///
+    /// Overridable because a network is not a buffer for every resource: items must not be
+    /// parked in a pipe, so the item module replaces this with a direct source-to-sink move.
+    protected void pullIntoNetwork(LogisticNetwork<TContainer> network) {
         if (!network.isAvailable()) return;
 
         var buffer = network.getContainer();
@@ -128,7 +131,7 @@ public abstract class AbstractTransferSystem<TContainer extends LogisticContaine
                 .toList();
     }
 
-    private List<TContainer> collectSinkTargets(LogisticNetwork<TContainer> network) {
+    protected List<TContainer> collectSinkTargets(LogisticNetwork<TContainer> network) {
         if (!network.isAvailable()) return List.of();
 
         return network.getPushTargets().stream()

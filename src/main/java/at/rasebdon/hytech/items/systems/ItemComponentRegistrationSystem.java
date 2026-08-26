@@ -9,7 +9,9 @@ import at.rasebdon.hytech.core.util.BlockFaceUtil;
 import at.rasebdon.hytech.core.util.HytechUtil;
 import at.rasebdon.hytech.items.HytechItemContainer;
 import at.rasebdon.hytech.items.components.HytechItemContainerWrapper;
+import at.rasebdon.hytech.items.components.ItemPipeComponent;
 import at.rasebdon.hytech.items.events.ItemContainerChangedEvent;
+import at.rasebdon.hytech.items.utils.ItemEjector;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.event.IEventRegistry;
 import com.hypixel.hytale.math.vector.Vector3iUtil;
@@ -18,6 +20,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import org.joml.Vector3i;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -87,7 +90,31 @@ public class ItemComponentRegistrationSystem
             detachAdjacentWrappers(component, ref, store);
         }
 
+        ejectBrokenPipeContents(component, reason, ref, store);
+
         super.onEntityRemove(ref, reason, store, commandBuffer);
+    }
+
+    /// Drops what a broken pipe was carrying, rather than deleting it with the block.
+    ///
+    /// Vanilla's break only drops the pipe item itself, and the buffer lives in the pipe
+    /// component's codec -- so it went with the block. Restricted to [RemoveReason#REMOVE]:
+    /// `UNLOAD` fires on every chunk unload, where the items are meant to be saved and are
+    /// still exactly where the player left them, and `BUILDER_TOOLS_UNDO` is undoing a
+    /// placement rather than breaking anything.
+    private void ejectBrokenPipeContents(
+            @Nullable LogisticComponent<HytechItemContainer> component,
+            RemoveReason reason,
+            Ref<ChunkStore> ref,
+            Store<ChunkStore> store
+    ) {
+        if (reason != RemoveReason.REMOVE) return;
+        if (!(component instanceof ItemPipeComponent pipe) || pipe.isEmpty()) return;
+
+        var transform = HytechUtil.getBlockTransform(ref, store);
+        if (transform == null) return;
+
+        ItemEjector.ejectAt(pipe.getItemContainer(), store, transform.worldPos());
     }
 
     private void attachWrapperToAdjacentComponents(

@@ -89,12 +89,31 @@ public interface HytechItemContainer extends LogisticContainer {
         return isFull() ? 0L : Long.MAX_VALUE;
     }
 
-    /// Full in the sense that matters for routing: no free slot left. Partially filled
-    /// stacks may still accept more of their own item, which the move call discovers.
+    /// Full only when every slot holds a stack that is itself at its item's max stack size.
+    ///
+    /// "Every slot occupied" is not the same test, and using it starved single-slot machines:
+    /// the transfer system filters full targets out before calling [#moveTo], so a burner
+    /// whose one slot held 8 of a 64-stack coal counted as full and took nothing more until a
+    /// player emptied it by hand -- which is why fuel arrived in 8-item dribbles.
     @Override
     default boolean isFull() {
-        int slots = getSlotCount();
-        return slots > 0 && getUsedSlots() >= slots;
+        var container = getItemContainer();
+        if (container == null) return false;
+
+        short capacity = container.getCapacity();
+        if (capacity <= 0) return false;
+
+        for (short slot = 0; slot < capacity; slot++) {
+            var stack = container.getItemStack(slot);
+            if (ItemStack.isEmpty(stack)) return false;
+
+            // An unknown item resolves to Item.UNKNOWN, whose max stack can be 0; treat such
+            // a slot as closed rather than as infinitely deep.
+            int maxStack = stack.getItem().getMaxStack();
+            if (stack.getQuantity() < Math.max(1, maxStack)) return false;
+        }
+
+        return true;
     }
 
     /// Moves up to `maxItems` items into `target`, returning how many actually moved.
