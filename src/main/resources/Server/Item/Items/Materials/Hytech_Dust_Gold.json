@@ -1,0 +1,32 @@
+{
+  "TranslationProperties": {
+    "Name": "server.items.Hytech_Dust_Gold.name"
+  },
+  "Categories": [
+    "Technic.Materials"
+  ],
+  "ItemLevel": 10,
+  "MaxStack": 100,
+  "Model": "Resources/Ingredients/Spore_Bag.blockymodel",
+  "Texture": "Resources/Ingredients/Spore_Bag_Boomshroom_Texture.png",
+  "Icon": "Icons/ItemsGenerated/Hytech_Dust_Gold.png",
+  "PlayerAnimationsId": "Item",
+  "IconProperties": {
+    "Scale": 0.7,
+    "Translation": [
+      0.6,
+      -9.6
+    ],
+    "Rotation": [
+      22.5,
+      45,
+      22.5
+    ]
+  },
+  "Tags": {
+    "Type": [
+      "Ingredient"
+    ]
+  },
+  "DropOnDeath": true
+}

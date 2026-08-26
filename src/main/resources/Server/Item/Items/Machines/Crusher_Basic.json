@@ -176,5 +176,32 @@
       }
     }
   },
-  "Icon": "Icons/ItemsGenerated/Crusher_Basic.png"
+  "Icon": "Icons/ItemsGenerated/Crusher_Basic.png",
+  "Recipe": {
+    "Input": [
+      {
+        "ItemId": "Hytech_Frame_Basic",
+        "Quantity": 1
+      },
+      {
+        "ItemId": "Hytech_Circuit_Basic",
+        "Quantity": 2
+      },
+      {
+        "ItemId": "Hytech_Plate_Steel",
+        "Quantity": 4
+      }
+    ],
+    "BenchRequirement": [
+      {
+        "Type": "Crafting",
+        "Id": "Workbench",
+        "Categories": [
+          "Workbench_Crafting"
+        ]
+      }
+    ],
+    "OutputQuantity": 1,
+    "TimeSeconds": 6
+  }
 }

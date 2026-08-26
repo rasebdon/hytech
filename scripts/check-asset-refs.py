@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Verifies every asset path our JSON references actually resolves.
+Verifies every asset path our JSON references actually resolves, and every item a recipe names
+actually exists.
 
 A missing `Icon` or texture is a *fatal* validation error for that item at load time, and the
 server reports it as a wall of SEVERE lines rather than failing the build -- so it is easy to
@@ -68,6 +69,65 @@ def collect(node: object, out: list[str]) -> None:
             collect(value, out)
 
 
+def item_ids(vanilla: set[str]) -> set[str]:
+    """Every item id the server will know: the game's, plus ours.
+
+    An item's id is its file name, which is how `AssetBuilderCodec` keys the store.
+    """
+    known = {
+        name.split("/")[-1][:-5]
+        for name in vanilla
+        if name.startswith("Server/Item/Items/") and name.endswith(".json")
+    }
+
+    known.update(path.stem for path in (RESOURCES / "Server/Item/Items").rglob("*.json"))
+
+    return known
+
+
+def collect_items(node: object, out: list[str]) -> None:
+    """Every `ItemId` under a recipe: inputs, outputs, upgrade materials."""
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if key == "ItemId" and isinstance(value, str):
+                out.append(value)
+            else:
+                collect_items(value, out)
+    elif isinstance(node, list):
+        for value in node:
+            collect_items(value, out)
+
+
+def check_recipes(vanilla: set[str]) -> list[tuple[Path, str]]:
+    """Recipes naming an item that does not exist.
+
+    Worth its own pass because the failure is quiet in a different way from a missing texture: the
+    recipe loads, validates, and then simply never matches anything, so a machine sits idle with no
+    log line to explain why. Generated recipes make this cheap to get wrong at scale.
+    """
+    known = item_ids(vanilla)
+    missing: list[tuple[Path, str]] = []
+
+    for path in sorted(RESOURCES.rglob("*.json")):
+        if path.name == "manifest.json":
+            continue
+
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue  # already reported by the asset pass
+
+        references: list[str] = []
+        for key in ("Recipe", "Input", "Output", "PrimaryOutput"):
+            collect_items(payload.get(key), references)
+
+        for reference in references:
+            if reference not in known:
+                missing.append((path, reference))
+
+    return missing
+
+
 def main() -> int:
     vanilla = game_assets()
 
@@ -108,6 +168,18 @@ def main() -> int:
         return 1
 
     print("All referenced assets resolve, in our tree or in the game's Assets.zip.")
+
+    unknown = check_recipes(vanilla)
+    if unknown:
+        print(f"\n{len(unknown)} recipe references name an item that does not exist:",
+              file=sys.stderr)
+        for path, reference in unknown:
+            print(f"  {path.relative_to(RESOURCES)}  ->  {reference}", file=sys.stderr)
+        print("\nSuch a recipe loads and then never matches, with nothing in the log.",
+              file=sys.stderr)
+        return 1
+
+    print("All recipe item references exist.")
     return 0
 
 

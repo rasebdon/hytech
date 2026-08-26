@@ -1,0 +1,29 @@
+{
+  "Input": [
+    {
+      "ItemId": "Hytech_Dust_Iron",
+      "Quantity": 1
+    },
+    {
+      "ItemId": "Ingredient_Charcoal",
+      "Quantity": 1
+    }
+  ],
+  "PrimaryOutput": {
+    "ItemId": "Hytech_Bar_Steel",
+    "Quantity": 1
+  },
+  "Output": [
+    {
+      "ItemId": "Hytech_Bar_Steel",
+      "Quantity": 1
+    }
+  ],
+  "BenchRequirement": [
+    {
+      "Type": "Processing",
+      "Id": "Hytech_Smelter"
+    }
+  ],
+  "TimeSeconds": 12
+}

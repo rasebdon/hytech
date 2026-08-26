@@ -1,0 +1,51 @@
+{
+  "TranslationProperties": {
+    "Name": "server.items.Hytech_Plate_Mithril.name"
+  },
+  "Categories": [
+    "Technic.Materials"
+  ],
+  "ItemLevel": 14,
+  "MaxStack": 100,
+  "Model": "Resources/Materials/Ingot.blockymodel",
+  "Texture": "Resources/Materials/Ingot_Textures/Copper.png",
+  "Icon": "Icons/ItemsGenerated/Hytech_Plate_Mithril.png",
+  "PlayerAnimationsId": "Item",
+  "IconProperties": {
+    "Scale": 1,
+    "Translation": [
+      0,
+      -3
+    ],
+    "Rotation": [
+      22.5,
+      45,
+      22.5
+    ]
+  },
+  "Tags": {
+    "Type": [
+      "Ingredient"
+    ]
+  },
+  "DropOnDeath": true,
+  "Recipe": {
+    "Input": [
+      {
+        "ItemId": "Ingredient_Bar_Mithril",
+        "Quantity": 1
+      }
+    ],
+    "BenchRequirement": [
+      {
+        "Type": "Crafting",
+        "Id": "Workbench",
+        "Categories": [
+          "Workbench_Crafting"
+        ]
+      }
+    ],
+    "OutputQuantity": 1,
+    "TimeSeconds": 2
+  }
+}

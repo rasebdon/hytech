@@ -1,0 +1,25 @@
+{
+  "Input": [
+    {
+      "ItemId": "Ore_Cobalt",
+      "Quantity": 1
+    }
+  ],
+  "PrimaryOutput": {
+    "ItemId": "Hytech_Dust_Cobalt",
+    "Quantity": 2
+  },
+  "Output": [
+    {
+      "ItemId": "Hytech_Dust_Cobalt",
+      "Quantity": 2
+    }
+  ],
+  "BenchRequirement": [
+    {
+      "Type": "Processing",
+      "Id": "Hytech_Crusher"
+    }
+  ],
+  "TimeSeconds": 4
+}

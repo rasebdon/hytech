@@ -1,0 +1,29 @@
+{
+  "Input": [
+    {
+      "ItemId": "Hytech_Dust_Copper",
+      "Quantity": 3
+    },
+    {
+      "ItemId": "Hytech_Dust_Silver",
+      "Quantity": 1
+    }
+  ],
+  "PrimaryOutput": {
+    "ItemId": "Ingredient_Bar_Bronze",
+    "Quantity": 4
+  },
+  "Output": [
+    {
+      "ItemId": "Ingredient_Bar_Bronze",
+      "Quantity": 4
+    }
+  ],
+  "BenchRequirement": [
+    {
+      "Type": "Processing",
+      "Id": "Hytech_Smelter"
+    }
+  ],
+  "TimeSeconds": 10
+}

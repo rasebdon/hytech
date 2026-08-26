@@ -6,6 +6,7 @@ import com.hypixel.hytale.server.core.asset.type.item.config.CraftingRecipe;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +64,13 @@ public final class MachineRecipes {
                 built.computeIfAbsent(requirement.id, _ -> new ArrayList<>()).add(recipe);
             }
         }
+
+        // Most ingredients first, so the more specific recipe wins when several match. Iron dust
+        // alone smelts to a bar, but iron dust *and* charcoal is steel -- and a player who loaded
+        // both meant the alloy. Without this the choice would fall out of asset iteration order.
+        built.values().forEach(recipes -> recipes.sort(
+                Comparator.comparingInt((CraftingRecipe recipe) ->
+                        recipe.getInput() == null ? 0 : recipe.getInput().length).reversed()));
 
         byGroup = Map.copyOf(built);
         indexedAssetCount = assets.size();

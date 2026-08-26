@@ -15,6 +15,7 @@ python scripts/generate-pipe-tints.py --check
 python scripts/generate-overlay-assets.py --check
 python scripts/generate-burner-assets.py --check
 python scripts/generate-machine-assets.py --check
+python scripts/generate-material-assets.py --check
 python scripts/generate-icons.py --check
 
 ./gradlew build && ./gradlew server
@@ -133,6 +134,23 @@ Technic → Materials.
       machine rather than loading the pipes and hitting the floor three seconds later.
 - [ ] Wrench a machine face that has an **item pipe** against it: it cycles In / Out / Off rather
       than sticking on Off after one click. Same check on the burner and a battery with a cable.
+
+### Materials and the crafting ladder
+
+Everything below is creative-library reachable: Technic → Materials for dusts, plates and the steel
+bar, Technic → Components for wire, coils, circuits, casings and frames.
+
+- [ ] Crush `Ore_Copper`, `Ore_Iron` and one late-game ore (`Ore_Mithril`) — two dust each.
+- [ ] Smelt each dust back to its vanilla bar, and confirm the ore → bar slow path also works at
+      1:1 rather than doubling.
+- [ ] **Alloys**: iron dust + `Ingredient_Charcoal` in the smelter gives a **Steel Bar**, not an
+      iron one — this is the "most ingredients wins" rule doing its job. Copper dust ×3 + silver
+      dust ×1 gives four bronze bars, which vanilla has no other recipe for.
+- [ ] Crush a bar back to dust — the only way an alloy gets a dust at all.
+- [ ] Walk the ladder at a workbench: bar → plate → wire → coil → Basic Circuit → Machine Casing →
+      Basic Machine Frame → **Basic Crusher**. Every step should appear in the workbench list.
+- [ ] Higher circuits and frames each consume the tier below, so no tier can be skipped.
+- [ ] `/recipe` lists the Hytech recipes if you need to confirm one registered.
 
 ### UIs
 

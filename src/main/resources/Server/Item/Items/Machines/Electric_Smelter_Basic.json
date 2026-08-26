@@ -176,5 +176,32 @@
       }
     }
   },
-  "Icon": "Icons/ItemsGenerated/Electric_Smelter_Basic.png"
+  "Icon": "Icons/ItemsGenerated/Electric_Smelter_Basic.png",
+  "Recipe": {
+    "Input": [
+      {
+        "ItemId": "Hytech_Frame_Basic",
+        "Quantity": 1
+      },
+      {
+        "ItemId": "Hytech_Circuit_Basic",
+        "Quantity": 2
+      },
+      {
+        "ItemId": "Hytech_Coil",
+        "Quantity": 2
+      }
+    ],
+    "BenchRequirement": [
+      {
+        "Type": "Crafting",
+        "Id": "Workbench",
+        "Categories": [
+          "Workbench_Crafting"
+        ]
+      }
+    ],
+    "OutputQuantity": 1,
+    "TimeSeconds": 6
+  }
 }

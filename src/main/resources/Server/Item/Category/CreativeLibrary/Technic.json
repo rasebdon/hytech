@@ -15,6 +15,11 @@
       "Id": "Materials",
       "Name": "server.ui.itemcategory.technic.materials",
       "Icon": "Icons/ItemCategories/Items-Tools.png"
+    },
+    {
+      "Id": "Components",
+      "Name": "server.ui.itemcategory.technic.components",
+      "Icon": "Icons/ItemCategories/Items-Tools.png"
     }
   ],
   "Order": 5

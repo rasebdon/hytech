@@ -1,0 +1,25 @@
+{
+  "Input": [
+    {
+      "ItemId": "Ore_Gold",
+      "Quantity": 1
+    }
+  ],
+  "PrimaryOutput": {
+    "ItemId": "Hytech_Dust_Gold",
+    "Quantity": 2
+  },
+  "Output": [
+    {
+      "ItemId": "Hytech_Dust_Gold",
+      "Quantity": 2
+    }
+  ],
+  "BenchRequirement": [
+    {
+      "Type": "Processing",
+      "Id": "Hytech_Crusher"
+    }
+  ],
+  "TimeSeconds": 4
+}

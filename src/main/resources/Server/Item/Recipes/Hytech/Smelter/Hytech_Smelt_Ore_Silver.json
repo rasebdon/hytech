@@ -1,0 +1,25 @@
+{
+  "Input": [
+    {
+      "ItemId": "Ore_Silver",
+      "Quantity": 1
+    }
+  ],
+  "PrimaryOutput": {
+    "ItemId": "Ingredient_Bar_Silver",
+    "Quantity": 1
+  },
+  "Output": [
+    {
+      "ItemId": "Ingredient_Bar_Silver",
+      "Quantity": 1
+    }
+  ],
+  "BenchRequirement": [
+    {
+      "Type": "Processing",
+      "Id": "Hytech_Smelter"
+    }
+  ],
+  "TimeSeconds": 8
+}

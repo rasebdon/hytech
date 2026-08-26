@@ -25,3 +25,4 @@ items.Electric_Smelter_Basic.name=Basic Electric Smelter
 items.Hytech_Dust_Copper.name=Copper Dust
 items.Hytech_Dust_Iron.name=Iron Dust
 ui.itemcategory.technic.materials=Materials
+ui.itemcategory.technic.components=Components

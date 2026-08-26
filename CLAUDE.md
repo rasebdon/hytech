@@ -392,6 +392,42 @@ ingredients are present, how many sets of results will fit, and the consume/inse
 container helpers work on a whole container, and a crusher must not count the dust in its output as
 an ingredient.
 
+### Materials and the Progression
+
+The whole material chain is one table: `scripts/hytech_materials.py`. `generate-material-assets.py`
+turns it into item definitions, recipes and a language file, and `generate-icons.py` draws it, so a
+balance change is one edit rather than forty files.
+
+```
+vanilla ore --(crusher)--> 2 dust --(smelter)--> 1 vanilla bar --(bench)--> 1 plate
+plate --> wire, coils, circuits, casings, frames --> machines
+```
+
+Anchored on vanilla throughout: Hytech crushes the game's own ores and smelts its dusts back into
+the game's own `Ingredient_Bar_*`, so the two economies feed each other. Crushing first is what
+doubles an ore — vanilla's furnace smelts ore 1:1 and that recipe is untouched. Twelve metals carry
+a dust and a plate; **steel** is the one bar Hytech ships, because vanilla has none, and **bronze**
+gets the recipe vanilla forgot to give it (its bar exists with no way to make it).
+
+Alloys are smelted from two dusts, which is the whole reason the electric smelter has two ingredient
+slots and Hytech needs no separate mixer.
+
+Two things about generated assets:
+
+- **The generated folders are owned outright.** `--check` fails on an orphan as well as on a stale
+  file: a renamed material would otherwise leave a live item behind with no recipe and no icon.
+- **Most ingredients wins.** `MachineRecipes` sorts each group by input count, descending. Iron dust
+  alone smelts to a bar; iron dust *and* charcoal is steel, and a player who loaded both meant the
+  alloy. Without the sort that choice fell out of asset iteration order.
+
+Player crafting hangs off each item's own `Recipe` block at the vanilla workbench — the same bench
+and category `Bench_Furnace` uses — so only machine recipes need to be standalone assets. Plates are
+pressed at the bench for now; a dedicated press is a machine for later.
+
+`check-asset-refs.py` has a second pass for this: every `ItemId` a recipe names must exist. That
+failure is quiet in a way a missing texture is not — the recipe loads, validates, and then never
+matches, so a machine just sits there.
+
 ### Resource Assets
 
 - `src/main/resources/Common/` — client-side (textures, block models, UI, icons)
@@ -408,6 +444,7 @@ an ingredient.
 | `core/systems/AbstractTransferSystem.java`              | The whole transfer algorithm, once               |
 | `heat/HeatModule.java`                                  | Smallest complete resource type; copy this       |
 | `machines/MachineModule.java`                           | Machines: one engine for every processing block  |
+| `scripts/hytech_materials.py`                           | The material and component table, and the balance |
 | `machines/systems/MachineProcessingSystem.java`         | Recipe, energy and progress in one place        |
 | `energy/EnergyModule.java`                              | Richest module: generation, UIs, block states    |
 | `core/components/ContainerHolder.java`                  | Neighbor tracking base                          |
@@ -426,8 +463,9 @@ Machines, materials and tiers are being built in phases (the plan lives outside 
 
 1. **The processing engine** — done: the processor component, both machines at their basic tier, and
    a starter recipe set (copper and iron ore → dust → vanilla bars, so crushing first doubles an ore).
-2. **Materials and progression** — dust and plate for all eleven vanilla metals, a Hytech steel
-   chain, wire, coils, circuits and machine frames, with recipes anchored on vanilla ores and bars.
+2. **Materials and progression** — done: dust and plate for twelve metals, a steel chain, a bronze
+   recipe, wire, coils, five circuit tiers, a casing and five machine frames, all from one table,
+   plus crafting recipes for both machines.
 3. **Five tiers** — `Basic`, `Advanced`, `Elite`, `Ultimate`, `Quantum` across the pipes and the
    machines, from one balance table, with tier N crafted from tier N-1 plus that tier's circuit and
    frame.
