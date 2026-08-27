@@ -10,7 +10,8 @@
 // One rule to keep in mind here: a `UIPath` resolves **relative to the file it is written in**, and
 // this file lives in `Hytech/`. Vanilla's own `"Common/ContainerPanelPatch.png"` therefore does not
 // work when copied here -- it looks for `Hytech/Common/...`, finds nothing, and the client draws a
-// white missing-texture cross. Anything from vanilla needs `../`.
+// white missing-texture cross. Anything from vanilla needs `../`, as vanilla's own pages one
+// directory deep already do.
 $C = "../Common.ui";
 
 // ---------------------------------------------------------------------------------------------
@@ -38,15 +39,18 @@ $C = "../Common.ui";
 
 // ---------------------------------------------------------------------------------------------
 // Metrics
+//
+// These are mirrored by `MachineView.Metrics`, which adds up what it drew and sets each container's
+// height to fit. Change a number here and change it there, or a battery's panel grows a gap at the
+// bottom. The duplication buys the thing that matters: a page sized to the machine rather than to
+// the worst case, so a solar panel is not a mostly-empty crusher.
 // ---------------------------------------------------------------------------------------------
 
-@PanelWidth = 284;   // matches the vanilla @ProgressBar width, so bars and labels align
+@BarWidth = 284;     // the vanilla @ProgressBar width, which cannot be overridden through @Anchor
 
-@SlotSize = 40;
+@SlotSize = 52;
 @SlotGap  = 4;
 @SlotPitch = @SlotSize + @SlotGap;
-// Width of a two-column slot grid, spelled out rather than computed at the use site so the page
-// never has to do arithmetic across a document reference.
 @SlotPitchDouble = @SlotPitch * 2;
 
 @FaceSize = 60;
@@ -55,13 +59,13 @@ $C = "../Common.ui";
 
 @ToggleSize = 34;
 
-@SidesWidth = 268;
+@MainWidth  = 760;
+@SidesWidth = 300;
 
 // ---------------------------------------------------------------------------------------------
 // Text styles
 // ---------------------------------------------------------------------------------------------
 
-// Section heading: uppercase, spaced, the vanilla subtitle treatment.
 @HeadingStyle = LabelStyle(
   FontSize: 14,
   RenderUppercase: true,
@@ -70,22 +74,19 @@ $C = "../Common.ui";
   HorizontalAlignment: Center
 );
 
-// The big number a machine is mostly about.
 @ValueStyle = LabelStyle(
   FontSize: 18,
   TextColor: @ColorValue,
   HorizontalAlignment: Center
 );
 
-// Supporting text under a value or bar.
 @CaptionStyle = LabelStyle(
   FontSize: 13,
   TextColor: @ColorMuted,
   HorizontalAlignment: Center
 );
 
-// The quantity in the corner of an item cell. Small, bold enough to read over the icon art, and
-// bottom-right so it never covers the icon's silhouette.
+// The quantity in the corner of an item cell.
 @SlotCountStyle = LabelStyle(
   FontSize: 12,
   TextColor: @ColorValue,
@@ -125,12 +126,11 @@ $C = "../Common.ui";
 // Constructs
 // ---------------------------------------------------------------------------------------------
 
-// A titled column. The page is built out of these rather than bare Groups so every panel gets the
-// same inset, the same header rule and the same padding without repeating it four times.
-@Section = Group {
+// An inner panel: background, hairline, padding. No title of its own -- every panel that wants a
+// heading declares its own label with a unique id, so the server can set or hide any of them
+// without reaching through a template for an id that four instances share.
+@Panel = Group {
   @Anchor = ();
-  @Text = "";
-  @BodyLayout = Top;
 
   LayoutMode: Top;
   Anchor: (...@Anchor);
@@ -138,25 +138,6 @@ $C = "../Common.ui";
   OutlineColor: @ColorPanelBorder;
   OutlineSize: 1;
   Padding: (Full: 10);
-
-  Label #SectionTitle {
-    Style: (RenderBold: true, RenderUppercase: true, FontSize: 13, TextColor: #afc2c3);
-    Anchor: (Height: 20, Bottom: 2);
-    Text: @Text;
-  }
-
-  Group {
-    Background: @ColorPanelBorder;
-    Anchor: (Height: 1, Bottom: 8);
-  }
-
-  // Scrolling is opt-in per panel: the status column can outgrow its height on a machine that
-  // carries every resource, while the side configurator is a fixed size by construction.
-  Group #Body {
-    LayoutMode: @BodyLayout;
-    ScrollbarStyle: $C.@TranslucentScrollbarStyle;
-    FlexWeight: 1;
-  }
 };
 
 // One item cell.
@@ -192,7 +173,7 @@ $C = "../Common.ui";
   // with a "CustomUI Set command error", which is also why vanilla's own DroppedItemSlot carries
   // a label of its own.
   Label #Count {
-    Anchor: (Right: 4, Bottom: 1);
+    Anchor: (Right: 5, Bottom: 2);
     Style: @SlotCountStyle;
     Text: "";
   }

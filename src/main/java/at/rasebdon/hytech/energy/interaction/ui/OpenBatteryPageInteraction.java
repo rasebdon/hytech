@@ -38,7 +38,7 @@ public class OpenBatteryPageInteraction extends OpenPageBlockInteraction {
         return new MachinePage(playerRef, world, blockPos, null, (page, view) -> {
             var energy = component.getContainer();
 
-            view.primary("Energy",
+            view.primary(
                     String.format("%,d / %,d RF", energy.getAmount(), energy.getTotalCapacity()),
                     energy.getFillRatio(),
                     percent(energy.getFillRatio()) + "% charged");

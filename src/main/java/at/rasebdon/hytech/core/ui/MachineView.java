@@ -2,6 +2,8 @@ package at.rasebdon.hytech.core.ui;
 
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
+import com.hypixel.hytale.server.core.ui.Anchor;
+import com.hypixel.hytale.server.core.ui.Value;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 
 import javax.annotation.Nonnull;
@@ -36,6 +38,37 @@ public final class MachineView {
     /// Player inventory cells: thirty-six storage, then nine hotbar.
     private static final int STORAGE_CELLS = 36;
     private static final int HOTBAR_CELLS = 9;
+
+    /// Pixel metrics, mirroring `Hytech.ui`.
+    ///
+    /// The page is sized by the server rather than by intrinsic height: the two containers sit in a
+    /// horizontal stack, and a child of a horizontal stack stretches to its parent on the cross
+    /// axis, so "as tall as its content" is not something the layout will work out on its own.
+    /// Adding up what was actually drawn is what makes a solar panel's page short and a smelter's
+    /// tall, instead of every block paying for the worst case.
+    ///
+    /// Kept together and named so the arithmetic below reads as a layout rather than as constants.
+    private static final int SLOT_PITCH = 56;
+    private static final int PANEL_CHROME = 20;      // @Panel's padding, top and bottom
+    private static final int HEADING = 28;           // a panel heading and its gap
+    private static final int PRIMARY_BLOCK = 66;     // value, bar, caption
+    private static final int SECONDARY_BLOCK = 68;   // heading, bar, caption
+    private static final int DETAIL_ROW = 22;
+    private static final int PROGRESS_BLOCK = 36;    // bar and caption
+    private static final int SECTION_GAP = 14;
+    private static final int SLOT_GRID_GAP = 10;
+    private static final int INVENTORY_ROWS = 5;
+    private static final int INVENTORY_EXTRAS = 37;  // hint, separator and their gaps
+    private static final int CONTAINER_CHROME = 72;  // title bar plus #Content padding
+    private static final int FOOTER = 44;
+    private static final int PANEL_GAP = 10;
+
+    /// Restated from `Hytech.ui`, because writing an anchor replaces the one the markup declared.
+    private static final int MAIN_WIDTH = 760;
+    private static final int CONTAINER_GAP = 14;
+
+    /// Cells per row in the undivided grid, at the width the contents panel gets.
+    private static final int FLAT_PER_ROW = 6;
 
     /// Cell backgrounds. Duplicated from `Hytech.ui`, which paints the same values on open --
     /// the document owns the resting look, and this owns it from the first refresh onwards.
@@ -82,6 +115,7 @@ public final class MachineView {
     private boolean slotsShown;
     private boolean splitShown;
     private boolean flatShown;
+    private int flatCellsShown;
     private boolean progressShown;
     private boolean inventoryShown;
     private int detailsUsed;
@@ -92,34 +126,6 @@ public final class MachineView {
         this.commands = commands;
         this.transfer = transfer;
         this.previouslyHeld = previouslyHeld;
-    }
-
-    /// "12 items" / "Empty" / "8 items (unusable)".
-    @Nonnull
-    private static String summarise(@Nonnull ItemContainer container,
-                                    @Nullable Predicate<ItemStack> incompatible) {
-        int total = 0;
-        int unusable = 0;
-
-        for (short slot = 0; slot < container.getCapacity(); slot++) {
-            var stack = container.getItemStack(slot);
-            if (ItemStack.isEmpty(stack)) continue;
-
-            total += stack.getQuantity();
-
-            if (incompatible != null && incompatible.test(stack)) {
-                unusable += stack.getQuantity();
-            }
-        }
-
-        if (total == 0) return "Empty";
-
-        // Naming the unusable portion is the point: otherwise a full machine that is not running
-        // looks broken rather than mis-loaded.
-        if (unusable == total) return total + " items (unusable)";
-        if (unusable > 0) return String.format("%d items (%d unusable)", total, unusable);
-
-        return total + " items";
     }
 
     // -------------------------------------------------------------------------------------------
@@ -137,6 +143,22 @@ public final class MachineView {
     }
 
     public void write(@Nonnull String selector, float value) {
+        this.commands.set(selector, value);
+        this.signature.append(selector).append('=').append(value).append(';');
+    }
+
+    /// "8.4s", "1m 05s". Seconds under a minute keep a decimal, because a crusher operation is
+    /// often shorter than the second a whole number would round it to.
+    @Nonnull
+    public static String formatSeconds(float seconds) {
+        if (seconds < 60f) return String.format("%.1fs", seconds);
+
+        int whole = (int) seconds;
+
+        return String.format("%dm %02ds", whole / 60, whole % 60);
+    }
+
+    public void write(@Nonnull String selector, int value) {
         this.commands.set(selector, value);
         this.signature.append(selector).append('=').append(value).append(';');
     }
@@ -184,24 +206,44 @@ public final class MachineView {
     // Readouts
     // -------------------------------------------------------------------------------------------
 
+    /// Replaces an element's whole anchor.
+    ///
+    /// `.Anchor.Height` looks like it should work -- style objects nest that way, and
+    /// `#Button.Style.Default.Background` is exactly how the faces are recoloured -- but the client
+    /// rejects it with "selector doesn't match a markup property". Only `Anchor` as a whole is
+    /// settable, which is what vanilla's own MemoriesPage does. It *replaces* rather than merges,
+    /// so every field the markup declared has to be restated, not just the one being changed.
+    ///
+    /// Takes the fields rather than a built `Anchor` because `Anchor` exposes setters and no
+    /// getters, so a built one cannot be summarised for the change signature afterwards -- and a
+    /// signature entry that came out as an identity hash would differ on every pass and defeat the
+    /// skip that keeps the page's own clicks alive.
+    private void writeAnchor(@Nonnull String selector, @Nullable Integer width, int height,
+                             @Nullable Integer right, @Nullable Integer bottom) {
+        var anchor = new Anchor();
+
+        anchor.setHeight(Value.of(height));
+        if (width != null) anchor.setWidth(Value.of(width));
+        if (right != null) anchor.setRight(Value.of(right));
+        if (bottom != null) anchor.setBottom(Value.of(bottom));
+
+        this.commands.setObject(selector + ".Anchor", anchor);
+        this.signature.append(selector).append(".Anchor=")
+                .append(width).append(',').append(height).append(',')
+                .append(right).append(',').append(bottom).append(';');
+    }
+
     /// The machine's headline number: what it holds, and how full.
-    public void primary(@Nonnull String heading, @Nonnull String value, float ratio,
-                        @Nonnull String caption) {
+    ///
+    /// No heading of its own -- the panel is called Status and the value says what it is ("12,400 /
+    /// 50,000 RF"), so a third line reading "Energy" was telling the player something they had just
+    /// read.
+    public void primary(@Nonnull String value, float ratio, @Nonnull String caption) {
         this.primaryShown = true;
 
-        write("#PrimaryHeading.Text", heading);
         write("#PrimaryValue.Text", value);
         write("#PrimaryBar.Value", clamp(ratio));
         write("#PrimaryCaption.Text", caption);
-    }
-
-    /// A second bar: burn progress, sunlight, altitude. Omit and the section disappears.
-    public void secondary(@Nonnull String heading, float ratio, @Nonnull String caption) {
-        this.secondaryShown = true;
-
-        write("#SecondaryHeading.Text", heading);
-        write("#SecondaryBar.Value", clamp(ratio));
-        write("#SecondaryCaption.Text", caption);
     }
 
     /// One label/value line. Extra calls beyond what the document declares are ignored rather than
@@ -224,6 +266,16 @@ public final class MachineView {
     // Contents
     // -------------------------------------------------------------------------------------------
 
+    /// A second bar for a *level*: sunlight, wind exposure. Anything with a duration is
+    /// [#progress] instead, which lives beside the slots it is working on.
+    public void secondary(@Nonnull String heading, float ratio, @Nonnull String caption) {
+        this.secondaryShown = true;
+
+        write("#SecondaryHeading.Text", heading);
+        write("#SecondaryBar.Value", clamp(ratio));
+        write("#SecondaryCaption.Text", caption);
+    }
+
     /// The machine's own slots.
     ///
     /// A machine that declares an ingredient half and a result half gets the split view: inputs,
@@ -237,21 +289,11 @@ public final class MachineView {
 
         this.incompatible = incompatible;
 
-        write("#SlotsHeading.Text", heading);
-
-        if (container == null) {
-            // The panel stays: a battery with the middle column missing leaves a hole in the
-            // layout, and "no item storage" is a more useful thing to say than nothing at all.
-            write("#SlotsSummary.Text", "This block has no item storage.");
-            hideCells("#InSlot", 0, SPLIT_CELLS);
-            hideCells("#OutSlot", 0, SPLIT_CELLS);
-            hideCells("#FlatSlot", 0, FLAT_CELLS);
-            return;
-        }
+        if (container == null) return;
 
         this.slotsShown = true;
 
-        write("#SlotsSummary.Text", summarise(container, incompatible));
+        write("#SlotsHeading.Text", heading);
 
         boolean split = inputSlots > 0 && outputSlots > 0
                 && container.getCapacity() >= inputSlots + outputSlots;
@@ -273,6 +315,7 @@ public final class MachineView {
             this.flatShown = true;
 
             int shown = Math.min(container.getCapacity(), FLAT_CELLS);
+            this.flatCellsShown = shown;
 
             // Undivided: every slot takes what goes in, so every cell is an ingredient cell.
             // That is what makes the burner refuse a non-fuel through the same path.
@@ -284,12 +327,22 @@ public final class MachineView {
         }
     }
 
-    /// How far through the current operation the machine is, drawn between the two halves.
-    public void progress(float ratio, @Nonnull String caption) {
+    /// How far through whatever it is doing the block is, and how long is left.
+    ///
+    /// One call for every kind of timed operation the mod has -- a recipe in a crusher, a lump of
+    /// charcoal in a burner -- so they are worded and drawn identically and the reading transfers
+    /// between them. Drawn under the slots rather than in the status column: an operation in flight
+    /// belongs next to the things it is consuming.
+    ///
+    /// `secondsRemaining` of zero or less prints no countdown, which is the honest rendering of a
+    /// machine that is idle or blocked.
+    public void progress(float ratio, float secondsRemaining, @Nonnull String status) {
         this.progressShown = true;
 
         write("#ProgressBar.Value", clamp(ratio));
-        write("#ProgressCaption.Text", caption);
+        write("#ProgressCaption.Text", secondsRemaining > 0f
+                ? status + "  -  " + formatSeconds(secondsRemaining) + " left"
+                : status);
     }
 
     /// The player's own inventory along the bottom of the page.
@@ -371,7 +424,7 @@ public final class MachineView {
         write("#SecondarySection.Visible", this.secondaryShown);
         write("#SplitSlots.Visible", this.splitShown);
         write("#FlatSlots.Visible", this.flatShown);
-        write("#ProgressColumn.Visible", this.progressShown);
+        write("#ProgressRow.Visible", this.progressShown);
         write("#DetailSection.Visible", this.detailsUsed > 0);
 
         // The contents column and the inventory stand or fall together. A battery has nothing you
@@ -385,6 +438,48 @@ public final class MachineView {
         }
 
         repaintSelection();
+        resize();
+    }
+
+    /// Sizes both containers to what was drawn.
+    ///
+    /// Writing an anchor *replaces* the one the markup declared, so each call restates every field
+    /// that element was given -- the width and gaps included, not just the height being changed.
+    private void resize() {
+        int status = HEADING
+                + (this.primaryShown ? PRIMARY_BLOCK + SECTION_GAP : 0)
+                + (this.secondaryShown ? SECONDARY_BLOCK + SECTION_GAP : 0)
+                + this.detailsUsed * DETAIL_ROW;
+
+        int contents = 0;
+        if (this.slotsShown) {
+            int rows = this.splitShown
+                    ? 2
+                    : Math.max(1, (this.flatCellsShown + FLAT_PER_ROW - 1) / FLAT_PER_ROW);
+
+            contents = HEADING
+                    + rows * SLOT_PITCH + SLOT_GRID_GAP
+                    + (this.progressShown ? PROGRESS_BLOCK : 0);
+        }
+
+        int columns = Math.max(status, contents) + PANEL_CHROME;
+
+        int inventory = this.slotsShown && this.inventoryShown
+                ? INVENTORY_ROWS * SLOT_PITCH + INVENTORY_EXTRAS + PANEL_CHROME
+                : 0;
+
+        // Every box whose height would otherwise have to be inferred gets told. `#Columns` is a
+        // horizontal stack, and a horizontal stack's own height is exactly the quantity its
+        // children are waiting on to know theirs -- so left alone the whole row can resolve to
+        // nothing. Writing it breaks the circle.
+        int container = CONTAINER_CHROME + columns + PANEL_GAP
+                + (inventory > 0 ? inventory + PANEL_GAP : 0) + FOOTER;
+
+        // Every field the markup gives these three is restated here, because setting an anchor
+        // replaces it rather than merging into it.
+        writeAnchor("#Columns", null, columns, null, PANEL_GAP);
+        writeAnchor("#InventorySection", null, inventory, null, PANEL_GAP);
+        writeAnchor("#MainContainer", MAIN_WIDTH, container, CONTAINER_GAP, null);
     }
 
     // -------------------------------------------------------------------------------------------

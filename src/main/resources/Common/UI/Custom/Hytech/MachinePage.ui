@@ -1,23 +1,25 @@
 // One document for every Hytech machine, tank and container.
 //
-// Three columns under a wide container: what the block is doing on the left, what it is
-// processing in the middle, and -- when asked for -- its side configuration on the right, beside
-// the machine rather than instead of it. The player's own inventory runs along the bottom.
+// Two containers side by side: the machine, and -- only when asked for -- its side
+// configuration. A separate container rather than a third column, because the side panel was
+// crowding a row that already had to hold the readouts and the slots, and because a panel that
+// appears *beside* the machine leaves the machine exactly where it was.
 //
-// Sections are declared once and hidden when a machine has nothing to put in them, so a battery,
-// a fluid tank and the burner generator all share this file and the server decides what is
-// relevant. A block with no item storage loses the middle column and the inventory outright, and
-// the remaining columns flex to take the space back.
+// Both containers are sized by the server. `MachineView` adds up what it actually drew and
+// writes `.Anchor.Height`, so a solar panel gets a short panel and a smelter a tall one instead
+// of every block paying for the worst case. Intrinsic height would be neater, but a child of a
+// horizontal stack stretches to its parent on the cross axis, and these sit side by side.
 $C = "../Common.ui";
 $H = "Hytech.ui";
 $INV = "InventoryPanel.ui";
 
 $C.@PageOverlay {
-  LayoutMode: Middle;
+  LayoutMode: CenterMiddle;
 
-  $C.@DecoratedContainer {
+  // ================================ the machine ================================
+  $C.@DecoratedContainer #MainContainer {
     @CloseButton = true;
-    Anchor: (Width: 980, Height: 860);
+    Anchor: (Width: $H.@MainWidth, Height: 600, Right: 14);
 
     #Title {
       Label #TitleLabel {
@@ -29,347 +31,230 @@ $C.@PageOverlay {
     #Content {
       LayoutMode: Top;
 
-      // ======== upper half: the panels, side by side ========
+      // ---- the two panels that describe the block ----
       Group #Columns {
         LayoutMode: Left;
-        FlexWeight: 1;
         Anchor: (Bottom: 10);
 
-        // ---- Status: the bars and the numbers ----
-        //
-        // Flexes rather than sitting at a fixed width: on a battery, where there is no contents
-        // column and no inventory, this is the only panel left and a 312px column in a 946px row
-        // would look like a bug.
-        $H.@Section #ReadoutPanel {
+        // ---- Status: the bars and the numbers. No progress bar here: an operation in flight
+        // belongs next to the slots it is consuming, and having it in both places meant reading
+        // the same number twice.
+        $H.@Panel #ReadoutPanel {
           @Anchor = (Right: 10);
-          @Text = "Status";
-          @BodyLayout = TopScrolling;
           FlexWeight: 1;
 
-          #Body {
-            // Primary readout: the resource this machine is mainly about.
-            Group #PrimarySection {
-              LayoutMode: Top;
-              Anchor: (Bottom: 14);
+          Label #ReadoutHeading {
+            Anchor: (Height: 20, Bottom: 8);
+            Style: $H.@HeadingStyle;
+            Text: "Status";
+          }
 
-              Label #PrimaryHeading {
-                Anchor: (Height: 18, Bottom: 4);
-                Style: $H.@HeadingStyle;
-                Text: "";
-              }
+          Group #PrimarySection {
+            LayoutMode: Top;
+            Anchor: (Bottom: 14);
 
-              Label #PrimaryValue {
-                Anchor: (Height: 24, Bottom: 6);
-                Style: $H.@ValueStyle;
-                Text: "";
-              }
-
-              // The vanilla bar is a fixed 284 wide and cannot be talked out of it, so it is
-              // centred inside the flexing column rather than stretched to fill it.
-              Group {
-                LayoutMode: CenterMiddle;
-                Anchor: (Height: 14, Bottom: 4);
-
-                $C.@ProgressBar #PrimaryBar {}
-              }
-
-              Label #PrimaryCaption {
-                Anchor: (Height: 18);
-                Style: $H.@CaptionStyle;
-                Text: "";
-              }
+            Label #PrimaryValue {
+              Anchor: (Height: 24, Bottom: 6);
+              Style: $H.@ValueStyle;
+              Text: "";
             }
 
-            // Secondary readout: burn progress, sunlight, altitude.
-            Group #SecondarySection {
-              LayoutMode: Top;
-              Anchor: (Bottom: 14);
+            // The vanilla bar is a fixed 284 wide and cannot be talked out of it, so it is
+            // centred inside the flexing column rather than stretched to fill it.
+            Group {
+              LayoutMode: CenterMiddle;
+              Anchor: (Height: 14, Bottom: 4);
 
-              Label #SecondaryHeading {
-                Anchor: (Height: 18, Bottom: 4);
-                Style: $H.@HeadingStyle;
-                Text: "";
-              }
-
-              Group {
-                LayoutMode: CenterMiddle;
-                Anchor: (Height: 14, Bottom: 4);
-
-                $C.@ProgressBar #SecondaryBar {}
-              }
-
-              Label #SecondaryCaption {
-                Anchor: (Height: 18);
-                Style: $H.@CaptionStyle;
-                Text: "";
-              }
+              $C.@ProgressBar #PrimaryBar {}
             }
 
-            // Detail lines.
-            Group #DetailSection {
-              LayoutMode: Top;
-
-              Group #Detail0 {
-                LayoutMode: Left;
-                Anchor: (Height: 22);
-
-                Label #Detail0Label { FlexWeight: 1; Style: $H.@RowLabelStyle; Text: ""; }
-                Label #Detail0Value { Anchor: (Width: 130); Style: $H.@RowValueStyle; Text: ""; }
-              }
-
-              Group #Detail1 {
-                LayoutMode: Left;
-                Anchor: (Height: 22);
-
-                Label #Detail1Label { FlexWeight: 1; Style: $H.@RowLabelStyle; Text: ""; }
-                Label #Detail1Value { Anchor: (Width: 130); Style: $H.@RowValueStyle; Text: ""; }
-              }
-
-              Group #Detail2 {
-                LayoutMode: Left;
-                Anchor: (Height: 22);
-
-                Label #Detail2Label { FlexWeight: 1; Style: $H.@RowLabelStyle; Text: ""; }
-                Label #Detail2Value { Anchor: (Width: 130); Style: $H.@RowValueStyle; Text: ""; }
-              }
-
-              Group #Detail3 {
-                LayoutMode: Left;
-                Anchor: (Height: 22);
-
-                Label #Detail3Label { FlexWeight: 1; Style: $H.@RowLabelStyle; Text: ""; }
-                Label #Detail3Value { Anchor: (Width: 130); Style: $H.@RowValueStyle; Text: ""; }
-              }
-
-              Group #Detail4 {
-                LayoutMode: Left;
-                Anchor: (Height: 22);
-
-                Label #Detail4Label { FlexWeight: 1; Style: $H.@RowLabelStyle; Text: ""; }
-                Label #Detail4Value { Anchor: (Width: 130); Style: $H.@RowValueStyle; Text: ""; }
-              }
-
-              Group #Detail5 {
-                LayoutMode: Left;
-                Anchor: (Height: 22);
-
-                Label #Detail5Label { FlexWeight: 1; Style: $H.@RowLabelStyle; Text: ""; }
-                Label #Detail5Value { Anchor: (Width: 130); Style: $H.@RowValueStyle; Text: ""; }
-              }
-
+            Label #PrimaryCaption {
+              Anchor: (Height: 18);
+              Style: $H.@CaptionStyle;
+              Text: "";
             }
           }
-        }
 
-        // ---- Contents: what is going in, what is coming out ----
-        $H.@Section #ProcessPanel {
-          @Anchor = (Right: 10);
-          @Text = "Contents";
-          FlexWeight: 1;
-          Visible: false;
+          // A level rather than a countdown: sunlight, wind. Anything with a *duration* is a
+          // progress bar and lives in Contents.
+          Group #SecondarySection {
+            LayoutMode: Top;
+            Anchor: (Bottom: 14);
 
-          #Body {
-            // The machine's own word for what is in here -- "Processing", "Fuel". A label of its
-            // own rather than the section's title: `#SectionTitle` belongs to the @Section
-            // template and there are three of those on this page, so addressing one of them means
-            // relying on descendant resolution for something a unique id gives outright.
-            Label #SlotsHeading {
-              Anchor: (Height: 20, Bottom: 8);
+            Label #SecondaryHeading {
+              Anchor: (Height: 18, Bottom: 4);
               Style: $H.@HeadingStyle;
               Text: "";
             }
 
-            // Split view: a machine that declares ingredient and result halves.
-            //
-            // The grids wrap rather than being laid out as fixed rows: a hidden cell is skipped
-            // by layout entirely, so a crusher with one ingredient slot draws one cell instead
-            // of one cell and three holes.
-            Group #SplitSlots {
-              LayoutMode: CenterMiddle;
-              Anchor: (Bottom: 12);
-
-              // Ingredients.
-              Group #InGrid {
-                LayoutMode: LeftCenterWrap;
-                Anchor: (Width: $H.@SlotPitchDouble, Height: 88, Right: 8);
-
-                $H.@SlotCell #InSlot0 {}
-                $H.@SlotCell #InSlot1 {}
-                $H.@SlotCell #InSlot2 {}
-                $H.@SlotCell #InSlot3 {}
-              }
-
-              // The arrow between the halves, and how far along the operation is.
-              Group #ProgressColumn {
-                LayoutMode: MiddleCenter;
-                Anchor: (Width: 110, Height: 88, Right: 8);
-
-                Label #ProgressArrow {
-                  Anchor: (Height: 26);
-                  Style: (FontSize: 22, TextColor: $H.@ColorLabel, HorizontalAlignment: Center);
-                  Text: ">>>";
-                }
-
-                // Anchor set outright rather than through @Anchor: the template spreads the
-                // caller's anchor and *then* applies Width: 284, so a narrower bar can only be
-                // had by replacing the property.
-                $C.@ProgressBar #ProgressBar {
-                  Anchor: (Width: 100, Height: 6, Top: 6, Bottom: 6);
-                }
-
-                Label #ProgressCaption {
-                  Anchor: (Height: 18, Width: 110);
-                  Style: $H.@CaptionStyle;
-                  Text: "";
-                }
-              }
-
-              // Results.
-              Group #OutGrid {
-                LayoutMode: LeftCenterWrap;
-                Anchor: (Width: $H.@SlotPitchDouble, Height: 88);
-
-                $H.@SlotCell #OutSlot0 {}
-                $H.@SlotCell #OutSlot1 {}
-                $H.@SlotCell #OutSlot2 {}
-                $H.@SlotCell #OutSlot3 {}
-              }
-            }
-
-            // Flat view: an undivided container -- the burner's fuel slot, an item buffer.
-            Group #FlatSlots {
-              LayoutMode: LeftCenterWrap;
-              Anchor: (Height: 132, Bottom: 12);
-
-              $H.@SlotCell #FlatSlot0 {}
-              $H.@SlotCell #FlatSlot1 {}
-              $H.@SlotCell #FlatSlot2 {}
-              $H.@SlotCell #FlatSlot3 {}
-              $H.@SlotCell #FlatSlot4 {}
-              $H.@SlotCell #FlatSlot5 {}
-              $H.@SlotCell #FlatSlot6 {}
-              $H.@SlotCell #FlatSlot7 {}
-              $H.@SlotCell #FlatSlot8 {}
-              $H.@SlotCell #FlatSlot9 {}
-              $H.@SlotCell #FlatSlot10 {}
-              $H.@SlotCell #FlatSlot11 {}
-            }
-
-            Label #SlotsSummary {
-              Anchor: (Height: 20, Bottom: 10);
-              Style: $H.@CaptionStyle;
-              Text: "";
-            }
-
-            Group { FlexWeight: 1; }
-
-            // Real item movement still lives in a window: a custom page cannot host a draggable
-            // slot. The cells above are clickable instead, and this is the escape hatch.
             Group {
               LayoutMode: CenterMiddle;
-              Anchor: (Height: 34);
+              Anchor: (Height: 14, Bottom: 4);
 
-              $C.@TextButton #ContainerButton {
-                @Anchor = (Width: 220);
-                @Text = "Open Inventory Window";
-              }
-            }
-          }
-        }
-
-        // ---- Side configuration, beside the machine rather than instead of it ----
-        //
-        // A plus: the four horizontal faces around a centre, Up above and Down tucked into the
-        // corner opposite it. Each cell shows only the neighbouring block's icon -- position
-        // already says which side, and the button's own colour says the mode, in the same shades
-        // the wrench paints on the block in world. No legend, because the player has already
-        // learned these colours from the wrench.
-        $H.@Section #SidesPanel {
-          @Anchor = (Width: $H.@SidesWidth);
-          @Text = "Side Configuration";
-          Visible: false;
-
-          #Body {
-            // Auto-push, then one tab per resource this block carries. Both are per-resource and
-            // both are about which way a resource leaves the block, so they share a row.
-            Group #SidesToolbar {
-              LayoutMode: Left;
-              Anchor: (Height: $H.@ToggleSize, Bottom: 12);
-
-              $H.@PushToggle #PushToggle { @Anchor = (Right: 12); }
-
-              $H.@ResourceTab #Res0 { @Anchor = (Right: 4); }
-              $H.@ResourceTab #Res1 { @Anchor = (Right: 4); }
-              $H.@ResourceTab #Res2 { @Anchor = (Right: 4); }
-              $H.@ResourceTab #Res3 { @Anchor = (Right: 4); }
-              $H.@ResourceTab #Res4 { @Anchor = (Right: 4); }
+              $C.@ProgressBar #SecondaryBar {}
             }
 
-            Group #FaceGrid {
-              LayoutMode: Top;
-              Anchor: (Bottom: 10);
-
-              Group {
-                LayoutMode: CenterMiddle;
-                Anchor: (Height: $H.@FacePitch);
-
-                $H.@FaceGapCell { @Anchor = (Right: $H.@FaceGap); }
-                $H.@FaceCell #FaceUp { @Anchor = (Right: $H.@FaceGap); }
-                $H.@FaceGapCell { @Anchor = (Right: $H.@FaceGap); }
-              }
-
-              Group {
-                LayoutMode: CenterMiddle;
-                Anchor: (Height: $H.@FacePitch);
-
-                $H.@FaceCell #FaceWest { @Anchor = (Right: $H.@FaceGap); }
-                $H.@FaceCell #FaceNorth { @Anchor = (Right: $H.@FaceGap); }
-                $H.@FaceCell #FaceEast { @Anchor = (Right: $H.@FaceGap); }
-              }
-
-              Group {
-                LayoutMode: CenterMiddle;
-                Anchor: (Height: $H.@FacePitch);
-
-                $H.@FaceGapCell { @Anchor = (Right: $H.@FaceGap); }
-                $H.@FaceCell #FaceSouth { @Anchor = (Right: $H.@FaceGap); }
-                $H.@FaceCell #FaceDown { @Anchor = (Right: $H.@FaceGap); }
-              }
-
-            }
-
-            Label #FaceDetail {
-              Anchor: (Height: 34, Bottom: 8);
-              Style: (FontSize: 12, TextColor: $H.@ColorValue, HorizontalAlignment: Center, Wrap: true);
+            Label #SecondaryCaption {
+              Anchor: (Height: 18);
+              Style: $H.@CaptionStyle;
               Text: "";
             }
+          }
 
-            Group { FlexWeight: 1; }
+          Group #DetailSection {
+            LayoutMode: Top;
 
-            Label {
-              Anchor: (Height: 16);
+            Group #Detail0 {
+              LayoutMode: Left;
+              Anchor: (Height: 22);
+
+              Label #Detail0Label { FlexWeight: 1; Style: $H.@RowLabelStyle; Text: ""; }
+              Label #Detail0Value { Anchor: (Width: 130); Style: $H.@RowValueStyle; Text: ""; }
+            }
+
+            Group #Detail1 {
+              LayoutMode: Left;
+              Anchor: (Height: 22);
+
+              Label #Detail1Label { FlexWeight: 1; Style: $H.@RowLabelStyle; Text: ""; }
+              Label #Detail1Value { Anchor: (Width: 130); Style: $H.@RowValueStyle; Text: ""; }
+            }
+
+            Group #Detail2 {
+              LayoutMode: Left;
+              Anchor: (Height: 22);
+
+              Label #Detail2Label { FlexWeight: 1; Style: $H.@RowLabelStyle; Text: ""; }
+              Label #Detail2Value { Anchor: (Width: 130); Style: $H.@RowValueStyle; Text: ""; }
+            }
+
+            Group #Detail3 {
+              LayoutMode: Left;
+              Anchor: (Height: 22);
+
+              Label #Detail3Label { FlexWeight: 1; Style: $H.@RowLabelStyle; Text: ""; }
+              Label #Detail3Value { Anchor: (Width: 130); Style: $H.@RowValueStyle; Text: ""; }
+            }
+
+            Group #Detail4 {
+              LayoutMode: Left;
+              Anchor: (Height: 22);
+
+              Label #Detail4Label { FlexWeight: 1; Style: $H.@RowLabelStyle; Text: ""; }
+              Label #Detail4Value { Anchor: (Width: 130); Style: $H.@RowValueStyle; Text: ""; }
+            }
+
+            Group #Detail5 {
+              LayoutMode: Left;
+              Anchor: (Height: 22);
+
+              Label #Detail5Label { FlexWeight: 1; Style: $H.@RowLabelStyle; Text: ""; }
+              Label #Detail5Value { Anchor: (Width: 130); Style: $H.@RowValueStyle; Text: ""; }
+            }
+
+          }
+        }
+
+        // ---- Contents: the slots, and how long the current operation has left ----
+        $H.@Panel #ProcessPanel {
+          FlexWeight: 1;
+          Visible: false;
+
+          Label #SlotsHeading {
+            Anchor: (Height: 20, Bottom: 8);
+            Style: $H.@HeadingStyle;
+            Text: "";
+          }
+
+          // Split view: a machine that declares ingredient and result halves. The grids wrap
+          // rather than being laid out as fixed rows -- a hidden cell is skipped by layout
+          // entirely, so a crusher with one ingredient slot draws one cell, not one and three
+          // holes.
+          Group #SplitSlots {
+            LayoutMode: CenterMiddle;
+            Anchor: (Height: $H.@SlotPitchDouble, Bottom: 10);
+
+            Group #InGrid {
+              LayoutMode: LeftCenterWrap;
+              Anchor: (Width: $H.@SlotPitchDouble, Height: $H.@SlotPitchDouble, Right: 10);
+
+              $H.@SlotCell #InSlot0 {}
+              $H.@SlotCell #InSlot1 {}
+              $H.@SlotCell #InSlot2 {}
+              $H.@SlotCell #InSlot3 {}
+            }
+
+            Label #ProgressArrow {
+              Anchor: (Width: 46, Height: 26);
+              Style: (FontSize: 22, TextColor: $H.@ColorLabel, HorizontalAlignment: Center);
+              Text: ">>>";
+            }
+
+            Group #OutGrid {
+              LayoutMode: LeftCenterWrap;
+              Anchor: (Width: $H.@SlotPitchDouble, Height: $H.@SlotPitchDouble, Left: 10);
+
+              $H.@SlotCell #OutSlot0 {}
+              $H.@SlotCell #OutSlot1 {}
+              $H.@SlotCell #OutSlot2 {}
+              $H.@SlotCell #OutSlot3 {}
+            }
+          }
+
+          // Flat view: an undivided container -- the burner's fuel slot, an item buffer.
+          Group #FlatSlots {
+            LayoutMode: LeftCenterWrap;
+            Anchor: (Height: $H.@SlotPitchDouble, Bottom: 10);
+
+            $H.@SlotCell #FlatSlot0 {}
+            $H.@SlotCell #FlatSlot1 {}
+            $H.@SlotCell #FlatSlot2 {}
+            $H.@SlotCell #FlatSlot3 {}
+            $H.@SlotCell #FlatSlot4 {}
+            $H.@SlotCell #FlatSlot5 {}
+            $H.@SlotCell #FlatSlot6 {}
+            $H.@SlotCell #FlatSlot7 {}
+            $H.@SlotCell #FlatSlot8 {}
+            $H.@SlotCell #FlatSlot9 {}
+            $H.@SlotCell #FlatSlot10 {}
+            $H.@SlotCell #FlatSlot11 {}
+          }
+
+          // One progress row for every kind of block that has something running: a recipe in a
+          // crusher, a lump of charcoal in a burner. Same bar, same "left" wording, so the
+          // reading transfers.
+          Group #ProgressRow {
+            LayoutMode: Top;
+            Visible: false;
+
+            Group {
+              LayoutMode: CenterMiddle;
+              Anchor: (Height: 14, Bottom: 4);
+
+              $C.@ProgressBar #ProgressBar {}
+            }
+
+            Label #ProgressCaption {
+              Anchor: (Height: 18);
               Style: $H.@CaptionStyle;
-              Text: "Click a side to cycle its mode.";
+              Text: "";
             }
           }
         }
       }
 
-      // ======== the player's own inventory ========
+      // ---- the player's own inventory ----
       //
-      // Hidden along with the contents column: a battery has nothing you could move an item into,
+      // Hidden along with the contents panel: a battery has nothing you could move an item into,
       // so offering the inventory would be offering a dead control.
-      $H.@Section #InventorySection {
-        @Anchor = (Height: 316, Bottom: 10);
-        @Text = "Inventory";
+      $H.@Panel #InventorySection {
+        @Anchor = (Bottom: 10);
         Visible: false;
 
-        #Body {
-          $INV.@InventoryPanel #PlayerInventory {}
-        }
+        $INV.@InventoryPanel #PlayerInventory {}
       }
 
-      // ======== footer ========
+      // ---- footer ----
       Group {
         LayoutMode: Left;
         Anchor: (Height: 44);
@@ -386,6 +271,91 @@ $C.@PageOverlay {
         }
 
         Group { FlexWeight: 1; }
+      }
+    }
+  }
+
+  // ============================ side configuration ============================
+  //
+  // A plus: the four horizontal faces around a centre, Up above and Down tucked into the corner
+  // opposite it. Each cell shows only the neighbouring block's icon -- position already says
+  // which side, and the button's own colour says the mode, in the same shades the wrench paints
+  // on the block in world. No legend, because the player has already learned those colours.
+  //
+  // Its own container, so opening it neither reflows the machine nor crowds it. `CenterMiddle`
+  // keeps the pair centred, and hiding this one re-centres the machine on its own.
+  $C.@DecoratedContainer #SidesContainer {
+    Anchor: (Width: $H.@SidesWidth, Height: 400);
+    Visible: false;
+
+    #Title {
+      Label {
+        Style: $H.@TitleLabelStyle;
+        Text: "Side Configuration";
+      }
+    }
+
+    #Content {
+      LayoutMode: Top;
+
+      // Auto-push, then one tab per resource this block carries. Both are per-resource and both
+      // are about which way a resource leaves the block, so they share a row.
+      Group #SidesToolbar {
+        LayoutMode: Left;
+        Anchor: (Height: $H.@ToggleSize, Bottom: 14);
+
+        $H.@PushToggle #PushToggle { @Anchor = (Right: 12); }
+
+        $H.@ResourceTab #Res0 { @Anchor = (Right: 4); }
+        $H.@ResourceTab #Res1 { @Anchor = (Right: 4); }
+        $H.@ResourceTab #Res2 { @Anchor = (Right: 4); }
+        $H.@ResourceTab #Res3 { @Anchor = (Right: 4); }
+        $H.@ResourceTab #Res4 { @Anchor = (Right: 4); }
+      }
+
+      Group #FaceGrid {
+        LayoutMode: Top;
+        Anchor: (Bottom: 12);
+
+        Group {
+          LayoutMode: CenterMiddle;
+          Anchor: (Height: $H.@FacePitch);
+
+          $H.@FaceGapCell { @Anchor = (Right: $H.@FaceGap); }
+          $H.@FaceCell #FaceUp { @Anchor = (Right: $H.@FaceGap); }
+          $H.@FaceGapCell { @Anchor = (Right: $H.@FaceGap); }
+        }
+
+        Group {
+          LayoutMode: CenterMiddle;
+          Anchor: (Height: $H.@FacePitch);
+
+          $H.@FaceCell #FaceWest { @Anchor = (Right: $H.@FaceGap); }
+          $H.@FaceCell #FaceNorth { @Anchor = (Right: $H.@FaceGap); }
+          $H.@FaceCell #FaceEast { @Anchor = (Right: $H.@FaceGap); }
+        }
+
+        Group {
+          LayoutMode: CenterMiddle;
+          Anchor: (Height: $H.@FacePitch);
+
+          $H.@FaceGapCell { @Anchor = (Right: $H.@FaceGap); }
+          $H.@FaceCell #FaceSouth { @Anchor = (Right: $H.@FaceGap); }
+          $H.@FaceCell #FaceDown { @Anchor = (Right: $H.@FaceGap); }
+        }
+
+      }
+
+      Label #FaceDetail {
+        Anchor: (Height: 34, Bottom: 8);
+        Style: (FontSize: 12, TextColor: $H.@ColorValue, HorizontalAlignment: Center, Wrap: true);
+        Text: "";
+      }
+
+      Label {
+        Anchor: (Height: 16);
+        Style: $H.@CaptionStyle;
+        Text: "Click a side to cycle its mode.";
       }
     }
   }

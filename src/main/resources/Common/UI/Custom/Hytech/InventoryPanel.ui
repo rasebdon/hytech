@@ -2,10 +2,8 @@
 //
 // A custom page replaces the Bench screen rather than layering over it, so the real, draggable
 // slots are not available here -- ItemSlotButton is. Every cell reports its clicks, and
-// `SlotTransfer` turns click-source-then-click-destination into an actual move.
-//
-// No heading of its own: the panel this sits in is already titled "Inventory", and two headings
-// one above the other is just noise.
+// `SlotTransfer` turns click-source-then-click-destination into an actual move. There is no
+// longer a window to escape to: two clicks do everything dragging did.
 //
 // Exported as a named expression rather than a root element so a page instantiates it inline and
 // nothing is ever appended at runtime -- a structural update every refresh is a page that drops
@@ -15,7 +13,8 @@ $H = "Hytech.ui";
 @InventoryPanel = Group {
   LayoutMode: Top;
 
-  // What the two-click transfer is currently waiting for. Empty when nothing is selected.
+  // What the two-click transfer is currently waiting for. Empty when nothing is selected, which
+  // is also what the heading would have said, so it does the job of both.
   Label #TransferHint {
     Anchor: (Height: 18, Bottom: 6);
     Style: (FontSize: 12, TextColor: $H.@ColorMuted, HorizontalAlignment: Center, VerticalAlignment: Center);
@@ -90,7 +89,7 @@ $H = "Hytech.ui";
 
     Group {
       Background: $H.@ColorPanelBorder;
-      Anchor: (Height: 1, Width: 220);
+      Anchor: (Height: 1, Width: 240);
     }
   }
 

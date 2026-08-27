@@ -79,7 +79,7 @@ public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
                       @Nullable FuelBurnerComponent burner,
                       @Nullable ItemContainer fuel) {
 
-        view.primary("Energy",
+        view.primary(
                 String.format("%,d / %,d RF", energy.getAmount(), energy.getTotalCapacity()),
                 energy.getFillRatio(),
                 signed(generator.getCurrentRate()) + " RF/t");
@@ -96,13 +96,16 @@ public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
                 view.secondary("Wind", altitude, "Y " + blockPos.y + " - " + percent(altitude) + "% exposure");
             }
             case FUEL_SOLID -> {
-                if (burner != null) {
-                    view.secondary("Burn", burner.getBurnRatio(), burnStatus(burner));
-                }
-
                 // An undivided grid: fuel goes in and ash does not come out, so there is no
                 // ingredient/result split to draw.
                 view.slots("Fuel", fuel, 0, 0, stack -> !FuelUtil.isFuel(stack));
+
+                // The burn is a countdown, not a level, so it renders as progress beside the fuel
+                // it is consuming -- the same bar and the same "left" wording a crusher uses.
+                if (burner != null) {
+                    view.progress(burner.getBurnRatio(), burner.getBurnTimeRemaining(),
+                            burnStatus(burner));
+                }
             }
             case FUEL_LIQUID -> {
                 // Wiring these to the fluid module is not done; say so rather than showing an

@@ -61,6 +61,37 @@ public class OpenMachinePageInteraction extends OpenPageBlockInteraction {
                 (page, view) -> fill(view, processor, energy.getContainer(), items));
     }
 
+    /// How long the operation in flight has left, in seconds. Zero when nothing is running.
+    private static float secondsRemaining(MachineProcessorComponent processor) {
+        float total = operationSeconds(processor);
+
+        return total <= 0f ? 0f : Math.max(0f, total - processor.getProgress());
+    }
+
+    /// The length of the current operation, or zero when there is none.
+    private static float operationSeconds(MachineProcessorComponent processor) {
+        var recipeId = processor.getRecipeId();
+        if (recipeId == null) return 0f;
+
+        var recipe = CraftingRecipe.getAssetMap().getAsset(recipeId);
+        if (recipe == null) return 0f;
+
+        return processor.operationSeconds(recipe.getTimeSeconds());
+    }
+
+    /// Progress against the operation in flight, read from the recipe the machine is running.
+    ///
+    /// Zero when nothing is running: there is no operation to measure against, and a stale bar
+    /// reads as a stuck machine.
+    private static float progressRatio(MachineProcessorComponent processor) {
+        if (processor.getRecipeId() == null) return 0f;
+
+        float operation = operationSeconds(processor);
+
+        // An instant recipe never sits at a fraction, so show it as ready rather than empty.
+        return operation <= 0f ? 1f : processor.getProgress() / operation;
+    }
+
     private void fill(MachineView view,
                       MachineProcessorComponent processor,
                       HytechEnergyContainer energy,
@@ -68,15 +99,12 @@ public class OpenMachinePageInteraction extends OpenPageBlockInteraction {
 
         long draw = processor.isActive() ? processor.getEnergyPerTick() * processor.getParallelOperations() : 0L;
 
-        view.primary("Energy",
+        view.primary(
                 String.format("%,d / %,d RF", energy.getAmount(), energy.getTotalCapacity()),
                 energy.getFillRatio(),
                 signed(-draw) + " RF/t");
 
-        float progress = progressRatio(processor);
         String status = status(processor, energy);
-
-        view.secondary("Progress", progress, status);
 
         // The split is the machine's own: the leading slots take ingredients, the trailing ones
         // hold results, and `MachineSlots` is the only other place that arithmetic lives. Drawing
@@ -93,30 +121,14 @@ public class OpenMachinePageInteraction extends OpenPageBlockInteraction {
             view.slots("Processing", items.getItemContainer(),
                     items.getInputSlots(), items.getOutputSlots(),
                     stack -> !MachineRecipes.acceptsIngredient(group, stack));
-            view.progress(progress, status);
+
+            view.progress(progressRatio(processor), secondsRemaining(processor), status);
         }
 
         view.detail("Recipes", MachineRecipes.forGroup(processor.getRecipeGroup()).size()
                 + " known (" + processor.getRecipeGroup() + ")");
         view.detail("Speed", String.format("%.2fx", processor.getSpeedMultiplier()));
         view.detail("Parallel", processor.getParallelOperations() + " per operation");
-    }
-
-    /// Progress against the operation in flight, read from the recipe the machine is running.
-    ///
-    /// Zero when nothing is running: there is no operation to measure against, and a stale bar
-    /// reads as a stuck machine.
-    private static float progressRatio(MachineProcessorComponent processor) {
-        var recipeId = processor.getRecipeId();
-        if (recipeId == null) return 0f;
-
-        var recipe = CraftingRecipe.getAssetMap().getAsset(recipeId);
-        if (recipe == null) return 0f;
-
-        float operation = processor.operationSeconds(recipe.getTimeSeconds());
-
-        // An instant recipe never sits at a fraction, so show it as ready rather than empty.
-        return operation <= 0f ? 1f : processor.getProgress() / operation;
     }
 
     private static String status(MachineProcessorComponent processor, HytechEnergyContainer energy) {

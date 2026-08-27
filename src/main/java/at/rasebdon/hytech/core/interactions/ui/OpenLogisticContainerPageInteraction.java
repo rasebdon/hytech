@@ -47,8 +47,8 @@ public class OpenLogisticContainerPageInteraction extends OpenPageBlockInteracti
             if (!headlineShown && container instanceof ScalarContainer scalar) {
                 headlineShown = true;
 
-                view.primary(resource.label(), describe(scalar), scalar.getFillRatio(),
-                        percent(scalar.getFillRatio()) + "% full");
+                view.primary(describe(scalar), scalar.getFillRatio(),
+                        resource.label() + "  -  " + percent(scalar.getFillRatio()) + "% full");
                 continue;
             }
 
@@ -60,8 +60,8 @@ public class OpenLogisticContainerPageInteraction extends OpenPageBlockInteracti
         if (!headlineShown) {
             // A block with only slot-based containers still deserves a headline.
             var first = LogisticLookup.allBlockComponentsAt(world, blockPos).stream().findFirst();
-            first.ifPresent(component -> view.primary("Contents",
-                    summarise(component.getContainer()), 0f, ""));
+            first.ifPresent(component -> view.primary(
+                    summarise(component.getContainer()), 0f, "Contents"));
         }
     }
 

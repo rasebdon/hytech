@@ -4,9 +4,6 @@ import at.rasebdon.hytech.core.LogisticResourceType;
 import at.rasebdon.hytech.core.util.HytechUtil;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.protocol.packets.interface_.Page;
-import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.entity.entities.player.windows.ContainerWindow;
 import com.hypixel.hytale.server.core.inventory.InventoryComponent;
 import com.hypixel.hytale.server.core.inventory.InventoryUtils;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
@@ -31,12 +28,15 @@ import java.util.function.Predicate;
 /// is only which sections they fill, and that is a lambda. Side configuration, the player's own
 /// inventory and the two-click item transfer are handled here, so every machine gets all three
 /// without asking.
+///
+/// There is no longer a hand-off to a real `ContainerWindow`. Two clicks move a stack, right-click
+/// moves one, and a window would have cost the page: it switches the client to the Bench screen,
+/// which *replaces* this one.
 public final class MachinePage extends HytechCustomPage {
 
     private static final String DOCUMENT = "Hytech/MachinePage.ui";
 
     private static final String ACTION_CONFIGURE = "configure";
-    private static final String ACTION_CONTAINER = "container";
     private static final String ACTION_CANCEL = "cancel";
     private static final String ACTION_CLOSE = "close";
     private static final String ACTION_SLOT = "slot:";
@@ -141,7 +141,6 @@ public final class MachinePage extends HytechCustomPage {
         // vanilla's own containers bind its behaviour themselves.
         onClick(events, "#CloseButton", ACTION_CLOSE);
         onClick(events, "#ConfigureButton", ACTION_CONFIGURE);
-        onClick(events, "#ContainerButton", ACTION_CONTAINER);
         onClick(events, "#CancelTransferButton", ACTION_CANCEL);
 
         // A left click moves the whole stack, a right click moves one. Both are the same action
@@ -181,7 +180,6 @@ public final class MachinePage extends HytechCustomPage {
                 refresh();
             }
             case ACTION_CLOSE -> close();
-            case ACTION_CONTAINER -> openContainer(ref, store);
             case ACTION_CANCEL -> {
                 this.transfer.clear();
                 refresh();
@@ -256,22 +254,4 @@ public final class MachinePage extends HytechCustomPage {
         return InventoryUtils.getSectionById(ref, sectionId, ref.getStore());
     }
 
-    /// Hands the machine's container to a real inventory window.
-    ///
-    /// The cells on this page are clickable, which covers most moves, but they can never be
-    /// *dragged*: a window switches the client to the container screen and a custom page replaces
-    /// that screen rather than layering over it. This is the way out for anyone who would rather
-    /// drag, and it costs the page -- the window takes over.
-    private void openContainer(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
-        if (this.container == null) return;
-
-        var player = store.getComponent(ref, Player.getComponentType());
-        if (player == null) return;
-
-        var pageManager = player.getPageManager();
-        if (pageManager == null) return;
-
-        pageManager.setPageWithWindows(ref, store, Page.Bench, true,
-                new ContainerWindow(this.container));
-    }
 }

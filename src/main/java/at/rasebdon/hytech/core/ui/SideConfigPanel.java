@@ -39,6 +39,9 @@ public final class SideConfigPanel {
     /// Tabs the document declares: one per registered resource type.
     private static final int TABS = 5;
 
+    // The container's height is declared in the markup rather than written here: this panel shows
+    // the same six faces whatever the block, so unlike the machine's page nothing about it varies.
+
     /// Every face, in no particular order -- the plus in the document decides where each one sits.
     private static final List<BlockFace> FACES = List.of(
             BlockFace.Up, BlockFace.Down,
@@ -190,9 +193,11 @@ public final class SideConfigPanel {
     /// change signature -- a value written around the signature is one that can go stale on screen
     /// without the refresh ever noticing.
     void render(@Nonnull MachineView view, @Nonnull List<LogisticResourceType> present) {
-        view.write("#SidesPanel.Visible", this.open && !present.isEmpty());
+        boolean showing = this.open && !present.isEmpty();
 
-        if (!this.open || present.isEmpty()) return;
+        view.write("#SidesContainer.Visible", showing);
+
+        if (!showing) return;
 
         if (this.editing >= present.size()) this.editing = 0;
 

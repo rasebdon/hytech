@@ -322,26 +322,62 @@ How it fits together:
 
 `MachinePage.ui` is one wide `@DecoratedContainer` (980x860) holding three columns and a strip:
 
+**Two containers, side by side** in one `@PageOverlay` on `CenterMiddle`:
+
 ```
-Status (flex)    |  Contents (flex)      |  Side Configuration (268, hidden until asked)
-  primary bar    |    in cells > out     |    [^] [E][I][F][G][H]
-  secondary bar  |    progress + arrow   |         [ ][Up][ ]
-  6 detail rows  |    contents summary   |     [W][North][E]
-                 |    Open Inventory     |        [ ][S][Down]
--------------------------------------------------------------------
-Inventory: the player's 36 storage + 9 hotbar cells, centred
-[ Configure Sides ]  [ Cancel Move ]
++-- <block name> ------------------ x --+   +-- Side Configuration --+
+| Status (flex)  | Contents (flex)      |   | [^] [E][I][F][G][H]    |
+|  12,400/50,000 |   [in]  >>>  [out]   |   |       [ ][Up][ ]       |
+|  ============  |   =========          |   |    [W][North][E]       |
+|  -80 RF/t      |   Working - 4.2s left|   |       [ ][S][Down]     |
+|  Recipes    14 |                      |   |  Up - Output - Cable   |
++---------------------------------------+   +------------------------+
+| Inventory: 36 storage + 9 hotbar      |
+| [ Configure Sides ]  [ Cancel Move ]  |
++---------------------------------------+
 ```
 
-Side configuration is a **panel, not a page**. It used to be its own `SideConfigPage`, which meant
-configuring a crusher hid the crusher, and Back had to rebuild the machine page from scratch. Living
-inside `MachinePage` retires that whole dance, and you can watch a face change take effect.
+Side configuration is **its own container**, not a third column and not a page. As a page
+(`SideConfigPage`, now gone) it hid the machine you were configuring and Back had to rebuild the
+machine page from scratch. As a third column it crowded a row that already had to carry the readouts
+and the slots. Beside the machine, it costs the machine nothing: `CenterMiddle` keeps the pair
+centred, and hiding it re-centres the machine on its own.
 
-**The contents column and the inventory come and go together**, keyed off whether the machine filled
-`MachineView.slots`. A battery has nothing you could move an item into, so both disappear and the
-remaining panels flex to take the row back — which is why `#ReadoutPanel` and `#ProcessPanel` carry
-`FlexWeight` rather than fixed widths, and why the vanilla progress bar (a hard-coded 284 wide) is
-centred inside its column rather than stretched to fill it.
+**The page is sized by the server.** `MachineView.resize` adds up what it actually drew — which
+sections were filled, how many detail rows, how many slot rows — and rewrites the `Anchor` of
+`#Columns`, `#InventorySection` and `#MainContainer`. A battery comes out at ~300px where a smelter
+is ~680, instead of every block paying for the worst case.
+
+**Not every property path nests.** `#Button.Style.Default.Background` works, and is how the faces
+are recoloured — but `#Container.Anchor.Height` is rejected by the client with *"CustomUI Set command
+selector doesn't match a markup property"*. Only `Anchor` as a whole is settable, via
+`setObject(sel + ".Anchor", anchor)`, the way vanilla's `MemoriesPage` does it — and it **replaces**
+rather than merges, so every field the markup gave that element has to be restated or it is lost.
+`MachineView.writeAnchor` takes the fields rather than a built `Anchor` for a second reason:
+`Anchor` has setters and no getters, so a built one cannot be summarised afterwards, and a change
+signature entry that came out as an identity hash would differ on every pass and defeat the skip
+that keeps the page's own clicks alive.
+
+Intrinsic height would be neater and is what vanilla's `Teleporter.ui` relies on, but it is only
+available in a *vertical* stack: a child of a horizontal stack stretches to its parent on the cross
+axis, and both the two containers and the two panels inside sit side by side. `#Columns` is the sharp
+edge — a horizontal stack's own height is exactly the quantity its children are waiting on to learn
+theirs, so left alone the row can resolve to nothing. Writing it breaks the circle.
+
+The cost is that `Hytech.ui`'s metrics and `MachineView`'s constants have to agree; both say so, and
+a mismatch shows up as a gap at the bottom of a panel rather than as anything subtle.
+
+**The contents panel and the inventory come and go together**, keyed off whether the machine filled
+`MachineView.slots`. A battery has nothing you could move an item into, so both disappear — and the
+remaining panel takes the row, which is why `#ReadoutPanel` and `#ProcessPanel` carry `FlexWeight`
+rather than fixed widths, and why the vanilla progress bar (a hard-coded 284 wide) is centred inside
+its column rather than stretched to fill it.
+
+**One progress bar, in one place.** Anything with a *duration* — a recipe in a crusher, a lump of
+charcoal in a burner — goes through `MachineView.progress(ratio, secondsRemaining, status)` and is
+drawn under the slots it is consuming, worded identically by `MachineView.formatSeconds`. Progress
+used to be a second bar in the status column as well, so the same number was on screen twice.
+`secondary` is now only for a *level* with no duration: sunlight, wind exposure.
 
 **Face colours are the wrench's colours**, sampled from `Common/VFX/Overlay/Face_Overlay_*.png`:
 purple both, red in, blue out, grey off. The panel therefore needs no legend — the player learned
@@ -391,6 +427,14 @@ Things worth knowing:
   is what keeps a machine's result slots refusing insertions -- the `SlotFilter.DENY` on ADD is the
   same filter a pipe hits -- without the UI knowing anything about machines. Right-click moves one.
   The `ContainerWindow` button is still there for anyone who would rather drag.
+- **No `ContainerWindow` hand-off any more.** Two clicks move a stack and right-click moves one,
+  which covers what dragging did, and the button cost the page: a window switches the client to the
+  Bench screen, which *replaces* this one. `Page.Bench`, `ContainerWindow` and `openContainer` are
+  gone from `MachinePage`.
+- **Say it once.** The contents panel used to carry an "8 items" summary above slots that already
+  showed the items, and the status column a heading above a value that already named itself. Both
+  are gone. The `incompatible` predicate that fed the summary survives, because it is what gates a
+  click-transfer into an ingredient slot.
 - **Two filters, two jobs.** A `SlotFilter` on the container is the right tool for a rule that holds
   against everyone — a machine's result slots refuse insertions from pipes and players alike.
   `SlotTransfer.Filter` is the rule that only applies to *a person clicking*: a crusher will happily
