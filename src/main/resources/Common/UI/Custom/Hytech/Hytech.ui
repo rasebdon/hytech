@@ -1,29 +1,72 @@
-// Shared styling for every Hytech machine page.
+// Shared styling for every Hytech page.
 //
 // Built on the game's own Common.ui rather than a private look, so a Hytech panel reads as part of
 // Hytale rather than bolted on: the same container chrome, the same button art, the same label
-// colours. Every construct here is one taken from a shipped vanilla page.
+// colours.
+//
+// This file is the mod's design token sheet. Nothing below draws anything on its own -- the pages
+// instantiate the templates and the server sets the values.
+//
+// One rule to keep in mind here: a `UIPath` resolves **relative to the file it is written in**, and
+// this file lives in `Hytech/`. Vanilla's own `"Common/ContainerPanelPatch.png"` therefore does not
+// work when copied here -- it looks for `Hytech/Common/...`, finds nothing, and the client draws a
+// white missing-texture cross. Anything from vanilla needs `../`.
 $C = "../Common.ui";
 
-// Accent per resource, matching the pipe tints and the in-world face overlay, so a colour means
-// the same thing everywhere in the mod.
-@ColorEnergy = #e8a93b;
-@ColorItems  = #7a9cc6;
-@ColorFluid  = #5ca8d1;
-@ColorGas    = #7cb855;
-@ColorHeat   = #d18a5c;
+// ---------------------------------------------------------------------------------------------
+// Palette
+// ---------------------------------------------------------------------------------------------
 
 @ColorValue = #ffffff;
 @ColorMuted = #878e9c;
+@ColorLabel = #96a9be;
+
+// Panel chrome. Flat colour plus a hairline rather than a 9-patch: the panels are inner columns
+// inside a container that already carries the game's frame, so a second frame around each one only
+// competes with it.
+@ColorPanelBg     = #10171f;
+@ColorPanelInset  = #0e141c;
+@ColorPanelBorder = #2b3542;
+
+// Slot states. Only the resting look lives here: the "picked up" highlight is repainted by
+// `MachineView` on every selection change, so it owns those colours rather than duplicating them
+// across a document boundary that nothing checks. The same goes for the face and resource colours,
+// which `SideConfigPanel` owns because it is the only thing that draws them.
+@SlotBg        = #1b2530;
+@SlotBgHover   = #2a3846;
+@SlotBgPressed = #14202b;
+
+// ---------------------------------------------------------------------------------------------
+// Metrics
+// ---------------------------------------------------------------------------------------------
 
 @PanelWidth = 284;   // matches the vanilla @ProgressBar width, so bars and labels align
+
+@SlotSize = 40;
+@SlotGap  = 4;
+@SlotPitch = @SlotSize + @SlotGap;
+// Width of a two-column slot grid, spelled out rather than computed at the use site so the page
+// never has to do arithmetic across a document reference.
+@SlotPitchDouble = @SlotPitch * 2;
+
+@FaceSize = 60;
+@FaceGap  = 5;
+@FacePitch = @FaceSize + @FaceGap;
+
+@ToggleSize = 34;
+
+@SidesWidth = 268;
+
+// ---------------------------------------------------------------------------------------------
+// Text styles
+// ---------------------------------------------------------------------------------------------
 
 // Section heading: uppercase, spaced, the vanilla subtitle treatment.
 @HeadingStyle = LabelStyle(
   FontSize: 14,
   RenderUppercase: true,
   RenderBold: true,
-  TextColor: #96a9be,
+  TextColor: @ColorLabel,
   HorizontalAlignment: Center
 );
 
@@ -41,19 +84,186 @@ $C = "../Common.ui";
   HorizontalAlignment: Center
 );
 
-// The quantity under an item icon. Small, centred, and bold enough to read over the icon art.
+// The quantity in the corner of an item cell. Small, bold enough to read over the icon art, and
+// bottom-right so it never covers the icon's silhouette.
 @SlotCountStyle = LabelStyle(
   FontSize: 12,
   TextColor: @ColorValue,
   RenderBold: true,
-  HorizontalAlignment: Center
+  HorizontalAlignment: End,
+  VerticalAlignment: End
 );
 
 // A label on the left and its value on the right, so a column of them lines up.
-@RowLabelStyle = LabelStyle(FontSize: 14, TextColor: #96a9be, VerticalAlignment: Center);
+@RowLabelStyle = LabelStyle(FontSize: 14, TextColor: @ColorLabel, VerticalAlignment: Center);
 @RowValueStyle = LabelStyle(
   FontSize: 14,
   TextColor: @ColorValue,
   HorizontalAlignment: End,
   VerticalAlignment: Center
 );
+
+// The single letter on a resource tab. The colour behind it carries the meaning; this just keeps
+// the button from being an unlabelled swatch.
+@TabLabelStyle = LabelStyle(
+  FontSize: 15,
+  RenderBold: true,
+  TextColor: @ColorValue,
+  HorizontalAlignment: Center,
+  VerticalAlignment: Center
+);
+
+@TitleLabelStyle = LabelStyle(
+  FontSize: 18,
+  TextColor: #b4c8c9,
+  RenderBold: true,
+  HorizontalAlignment: Center,
+  VerticalAlignment: Center
+);
+
+// ---------------------------------------------------------------------------------------------
+// Constructs
+// ---------------------------------------------------------------------------------------------
+
+// A titled column. The page is built out of these rather than bare Groups so every panel gets the
+// same inset, the same header rule and the same padding without repeating it four times.
+@Section = Group {
+  @Anchor = ();
+  @Text = "";
+  @BodyLayout = Top;
+
+  LayoutMode: Top;
+  Anchor: (...@Anchor);
+  Background: @ColorPanelBg;
+  OutlineColor: @ColorPanelBorder;
+  OutlineSize: 1;
+  Padding: (Full: 10);
+
+  Label #SectionTitle {
+    Style: (RenderBold: true, RenderUppercase: true, FontSize: 13, TextColor: #afc2c3);
+    Anchor: (Height: 20, Bottom: 2);
+    Text: @Text;
+  }
+
+  Group {
+    Background: @ColorPanelBorder;
+    Anchor: (Height: 1, Bottom: 8);
+  }
+
+  // Scrolling is opt-in per panel: the status column can outgrow its height on a machine that
+  // carries every resource, while the side configurator is a fixed size by construction.
+  Group #Body {
+    LayoutMode: @BodyLayout;
+    ScrollbarStyle: $C.@TranslucentScrollbarStyle;
+    FlexWeight: 1;
+  }
+};
+
+// One item cell.
+//
+// ItemSlotButton rather than ItemSlot: a custom page cannot let anyone *drag* an item, but a
+// button reports its clicks, which is what the two-click transfer is built on. It also gives the
+// item tooltip for free -- ItemSlotButton detects ItemSlot children and shows their tooltip.
+//
+// The server addresses the parts by descendant selector -- `#Inv12 #Icon.ItemId` -- and recolours
+// the button through its own style states, `#Inv12.Style.Default.Background`, the way vanilla's
+// BarterPage recolours a trade row.
+@SlotCell = ItemSlotButton {
+  @Anchor = ();
+
+  LayoutMode: Full;
+  Anchor: (...@Anchor, Width: @SlotSize, Height: @SlotSize, Right: @SlotGap, Bottom: @SlotGap);
+  Padding: 2;
+  Style: (
+    Default: (Background: @SlotBg),
+    Hovered: (Background: @SlotBgHover),
+    Pressed: (Background: @SlotBgPressed),
+    Disabled: (Background: @ColorPanelInset),
+    Sounds: $C.@ButtonSounds
+  );
+
+  ItemSlot #Icon {
+    Anchor: (Full: 0);
+    ShowQualityBackground: true;
+    ShowQuantity: false;
+  }
+
+  // The count is drawn here rather than by the slot: a page-hosted ItemSlot rejects `.Quantity`
+  // with a "CustomUI Set command error", which is also why vanilla's own DroppedItemSlot carries
+  // a label of its own.
+  Label #Count {
+    Anchor: (Right: 4, Bottom: 1);
+    Style: @SlotCountStyle;
+    Text: "";
+  }
+};
+
+// One face of the side configurator.
+//
+// Only the neighbour's icon: position tells you which side, and the button's colour tells you the
+// mode -- in exactly the shades the wrench paints on the block itself, so the panel and the world
+// agree without either needing a legend. A face with nothing against it draws an empty well.
+@FaceCell = ItemSlotButton {
+  @Anchor = ();
+
+  LayoutMode: Full;
+  Anchor: (...@Anchor, Width: @FaceSize, Height: @FaceSize);
+  Padding: 4;
+  Style: (
+    Default: (Background: @SlotBg),
+    Hovered: (Background: @SlotBgHover),
+    Pressed: (Background: @SlotBg),
+    Sounds: $C.@ButtonSounds
+  );
+
+  ItemSlot #Icon {
+    Anchor: (Full: 0);
+    ShowQualityBackground: false;
+    ShowQuantity: false;
+  }
+};
+
+// A spacer the size of a face cell, for the two empty corners of the plus.
+@FaceGapCell = Group {
+  @Anchor = ();
+
+  Anchor: (...@Anchor, Width: @FaceSize, Height: @FaceSize);
+};
+
+// Auto-push, as one square button per resource rather than a stack of "Push Energy: On" rows.
+//
+// It belongs beside the side configuration because it is the same decision: which way this
+// resource leaves the block. The arrow is a texture of our own -- note the path is bare, because
+// it sits next to this file.
+@PushToggle = Button {
+  @Anchor = ();
+
+  LayoutMode: Full;
+  Anchor: (...@Anchor, Width: @ToggleSize, Height: @ToggleSize);
+  Style: (
+    Default: (Background: @SlotBg),
+    Hovered: (Background: @SlotBgHover),
+    Pressed: (Background: @SlotBgPressed),
+    Sounds: $C.@ButtonSounds
+  );
+
+  Group #Arrow {
+    Anchor: (Full: 7);
+    Background: "PushArrow.png";
+  }
+};
+
+// One resource tab: a coloured square carrying the resource's initial, with the full name in its
+// tooltip. Five of these fit a narrow column where five text buttons wrapped onto three rows.
+@ResourceTab = TextButton {
+  @Anchor = ();
+
+  Anchor: (...@Anchor, Width: @ToggleSize, Height: @ToggleSize);
+  Style: (
+    Default: (Background: @SlotBg, LabelStyle: @TabLabelStyle),
+    Hovered: (Background: @SlotBgHover, LabelStyle: @TabLabelStyle),
+    Pressed: (Background: @SlotBgPressed, LabelStyle: @TabLabelStyle),
+    Sounds: $C.@ButtonSounds
+  );
+  Text: "";
+};

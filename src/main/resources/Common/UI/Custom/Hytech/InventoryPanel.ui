@@ -1,0 +1,112 @@
+// The player's own inventory, rendered onto a Hytech page.
+//
+// A custom page replaces the Bench screen rather than layering over it, so the real, draggable
+// slots are not available here -- ItemSlotButton is. Every cell reports its clicks, and
+// `SlotTransfer` turns click-source-then-click-destination into an actual move.
+//
+// No heading of its own: the panel this sits in is already titled "Inventory", and two headings
+// one above the other is just noise.
+//
+// Exported as a named expression rather than a root element so a page instantiates it inline and
+// nothing is ever appended at runtime -- a structural update every refresh is a page that drops
+// its own clicks.
+$H = "Hytech.ui";
+
+@InventoryPanel = Group {
+  LayoutMode: Top;
+
+  // What the two-click transfer is currently waiting for. Empty when nothing is selected.
+  Label #TransferHint {
+    Anchor: (Height: 18, Bottom: 6);
+    Style: (FontSize: 12, TextColor: $H.@ColorMuted, HorizontalAlignment: Center, VerticalAlignment: Center);
+    Text: "";
+  }
+
+  // Storage: four rows of nine, centred in the panel.
+  Group {
+    LayoutMode: CenterMiddle;
+    Anchor: (Height: $H.@SlotPitch);
+
+    $H.@SlotCell #Inv0 {}
+    $H.@SlotCell #Inv1 {}
+    $H.@SlotCell #Inv2 {}
+    $H.@SlotCell #Inv3 {}
+    $H.@SlotCell #Inv4 {}
+    $H.@SlotCell #Inv5 {}
+    $H.@SlotCell #Inv6 {}
+    $H.@SlotCell #Inv7 {}
+    $H.@SlotCell #Inv8 {}
+  }
+
+  Group {
+    LayoutMode: CenterMiddle;
+    Anchor: (Height: $H.@SlotPitch);
+
+    $H.@SlotCell #Inv9 {}
+    $H.@SlotCell #Inv10 {}
+    $H.@SlotCell #Inv11 {}
+    $H.@SlotCell #Inv12 {}
+    $H.@SlotCell #Inv13 {}
+    $H.@SlotCell #Inv14 {}
+    $H.@SlotCell #Inv15 {}
+    $H.@SlotCell #Inv16 {}
+    $H.@SlotCell #Inv17 {}
+  }
+
+  Group {
+    LayoutMode: CenterMiddle;
+    Anchor: (Height: $H.@SlotPitch);
+
+    $H.@SlotCell #Inv18 {}
+    $H.@SlotCell #Inv19 {}
+    $H.@SlotCell #Inv20 {}
+    $H.@SlotCell #Inv21 {}
+    $H.@SlotCell #Inv22 {}
+    $H.@SlotCell #Inv23 {}
+    $H.@SlotCell #Inv24 {}
+    $H.@SlotCell #Inv25 {}
+    $H.@SlotCell #Inv26 {}
+  }
+
+  Group {
+    LayoutMode: CenterMiddle;
+    Anchor: (Height: $H.@SlotPitch);
+
+    $H.@SlotCell #Inv27 {}
+    $H.@SlotCell #Inv28 {}
+    $H.@SlotCell #Inv29 {}
+    $H.@SlotCell #Inv30 {}
+    $H.@SlotCell #Inv31 {}
+    $H.@SlotCell #Inv32 {}
+    $H.@SlotCell #Inv33 {}
+    $H.@SlotCell #Inv34 {}
+    $H.@SlotCell #Inv35 {}
+  }
+
+  // The hotbar, set apart the way the real inventory screen sets it apart.
+  Group {
+    LayoutMode: CenterMiddle;
+    Anchor: (Height: 9, Bottom: 4);
+
+    Group {
+      Background: $H.@ColorPanelBorder;
+      Anchor: (Height: 1, Width: 220);
+    }
+  }
+
+  Group {
+    LayoutMode: CenterMiddle;
+    Anchor: (Height: $H.@SlotPitch);
+
+    $H.@SlotCell #Inv36 {}
+    $H.@SlotCell #Inv37 {}
+    $H.@SlotCell #Inv38 {}
+    $H.@SlotCell #Inv39 {}
+    $H.@SlotCell #Inv40 {}
+    $H.@SlotCell #Inv41 {}
+    $H.@SlotCell #Inv42 {}
+    $H.@SlotCell #Inv43 {}
+    $H.@SlotCell #Inv44 {}
+  }
+
+};

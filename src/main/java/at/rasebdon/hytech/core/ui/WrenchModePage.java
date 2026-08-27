@@ -68,8 +68,12 @@ public final class WrenchModePage extends HytechCustomPage {
             boolean active = resource == selected;
 
             commands.set(selector + ".Visible", true);
-            // The marker is what turns a list of choices into a display of state.
-            commands.set(selector + ".Text", active ? "> " + resource.label() : resource.label());
+            commands.set(selector + ".Text", resource.label());
+
+            // The selected resource is disabled rather than prefixed with a marker: the vanilla
+            // disabled style already reads as "you are here", and re-picking what is already picked
+            // is a click that would do nothing.
+            commands.set(selector + ".Disabled", active);
         }
     }
 

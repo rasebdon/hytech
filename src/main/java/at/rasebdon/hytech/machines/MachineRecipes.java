@@ -1,15 +1,13 @@
 package at.rasebdon.hytech.machines;
 
+import com.hypixel.hytale.builtin.crafting.component.CraftingManager;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.asset.type.item.config.CraftingRecipe;
+import com.hypixel.hytale.server.core.inventory.ItemStack;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /// Which recipes each Hytech machine may run.
 ///
@@ -44,6 +42,33 @@ public final class MachineRecipes {
         if (group == null || group.isEmpty()) return List.of();
 
         return index().getOrDefault(group, List.of());
+    }
+
+    /// Whether `stack` is an ingredient of *any* recipe this machine knows.
+    ///
+    /// Deliberately not positional. Vanilla's own `CraftingManager.matchesAnyRecipe` asks whether an
+    /// item fits one specific input slot, which is right for a bench whose slots are laid out to
+    /// match a recipe -- but a Hytech machine's ingredient slots are interchangeable:
+    /// [MachineSlots#countInputSets] scans the whole input range and does not care which slot holds
+    /// the dust and which holds the charcoal. Asking positionally here would refuse loads the
+    /// machine would happily have processed.
+    ///
+    /// Used to keep junk out of the input slots when a player click-transfers into them. A machine
+    /// with no recipes at all accepts nothing, which is the honest answer: it cannot process
+    /// anything either.
+    public static boolean acceptsIngredient(@Nullable String group, @Nonnull ItemStack stack) {
+        if (ItemStack.isEmpty(stack)) return false;
+
+        for (var recipe : forGroup(group)) {
+            var inputs = recipe.getInput();
+            if (inputs == null) continue;
+
+            for (var input : inputs) {
+                if (CraftingManager.matches(input, stack)) return true;
+            }
+        }
+
+        return false;
     }
 
     @Nonnull

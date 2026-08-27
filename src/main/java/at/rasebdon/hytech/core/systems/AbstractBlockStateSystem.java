@@ -6,8 +6,6 @@ import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.system.tick.TickingSystem;
-import com.hypixel.hytale.server.core.modules.block.BlockModule;
-import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import org.jspecify.annotations.NonNull;
 
@@ -76,12 +74,12 @@ public abstract class AbstractBlockStateSystem<TComponent extends Component<Chun
         if (state == null) return;
 
         var blockRef = archetypeChunk.getReferenceTo(index);
-        var blockInfo = store.getComponent(blockRef, BlockModule.BlockStateInfo.getComponentType());
-        if (blockInfo == null) return;
 
-        var blockPosition = HytechUtil.getLocalBlockPosition(blockInfo);
-        var chunk = store.getComponent(blockInfo.getChunkRef(), WorldChunk.getComponentType());
-        if (chunk == null) return;
+        var located = HytechUtil.locate(store, blockRef);
+        if (located == null) return;
+
+        var chunk = located.chunk();
+        var blockPosition = located.localPos();
 
         var blockType = chunk.getBlockType(blockPosition);
         if (blockType == null) return;

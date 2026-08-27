@@ -9,7 +9,7 @@ items. It uses the native Hytale Plugin framework with Gradle (Kotlin DSL).
 
 - **Group/Version:** `at.rasebdon` / `0.1.0`
 - **Java Version:** 25
-- **Server Version:** `0.5.9`
+- **Server Version:** `0.6.0`
 - **Main Entrypoint:** `at.rasebdon.hytech.HytechPlugin`
 
 ## Build & Development Commands
@@ -230,15 +230,20 @@ contains the point, falling back to `blockFace` when the client sends no hit poi
 
 ### Auto-push
 
-`MachinePage` carries a **Push ‹resource›: On/Off** row for every resource the block participates in,
-which flips `isExtracting` on that resource's block component. Only the block-push phase of
+The side-configuration panel carries an **arrow-up toggle** that flips `isExtracting` on the block
+component of whichever resource its tabs have selected. Only the block-push phase of
 `AbstractTransferSystem` reads that flag — a pipe wrenched to pull from a face draws whether or not
 the block is extracting — so the toggle is what saves a player from wrenching every pipe that
 collects a machine's output.
 
-Rows index `SideConfigPage.presentResources`, the same registration-ordered list the side
-configurator walks, and the index is re-resolved on click rather than remembered: a page can outlive
-a change to the block it describes.
+It lives beside the faces because it is the same question they answer: *which way does this resource
+leave the block.* It used to be a stack of "Push Energy: On" buttons in the status column, one per
+resource, which put a per-resource decision a long way from the other per-resource decision and made
+the status column mostly buttons. One toggle that follows the selected tab replaces all five rows.
+
+The resource is re-resolved from `LogisticResourceType.presentAt` on click rather than remembered: a
+page can outlive a change to the block it describes, and a stale index would toggle the wrong
+container.
 
 `ItemNetwork.isFull()` is what stops this being a footgun. An item run with no reachable sink reports
 itself full, so a machine with auto-push on next to a dead-end pipe pushes nothing instead of loading
@@ -260,7 +265,7 @@ resolves the container for a world position from the block's ECS components
 `ItemComponentRegistrationSystem` keys its wrappers by world position, because components — unlike
 the block states they replaced — are not identity-stable across lookups.
 
-### Hytale API Notes (0.5.9)
+### Hytale API Notes (0.6.0)
 
 - Vectors are **JOML** (`org.joml.Vector3i/f/d`); Hytale's own vector classes are gone. The
   read-only `Vector3ic` views have no `clone()` — copy via `new Vector3i(other)`. Constants such as
@@ -270,8 +275,20 @@ the block states they replaced — are not identity-stable across lookups.
   components on the `ChunkStore`, fetched with `HytechUtil.getBlockComponent(world, pos, type)`.
 - Chat goes through the `PlayerRef` **component** (`store.getComponent(ref, PlayerRef.getComponentType())`);
   `Player.sendMessage` is gone and `Player.getPlayerRef()` is deprecated for removal.
-- `BlockAccessor.getRotation`/`getRotationIndex` are deprecated for removal with no replacement
-  exposed yet, so `HytechUtil.getBlockTransform` still emits one deprecation warning.
+- **A block entity lives on a 32-cube section, not on the column.** `BlockModule.BlockStateInfo`
+  carries `getSectionRef()` (0.5.9's `getChunkRef()` is gone) pointing at a `ChunkSection`, and its
+  `getIndex()` decodes with `ChunkUtil.xFromIndex`/`yFromIndex`/`zFromIndex` -- the old
+  `*FromBlockInColumn` trio no longer exists. The y that comes out is **section-local (0-31)** and
+  has to be lifted by the section's own y before `WorldChunk` will take it; the old call returned a
+  column y and needed no lifting, so this is a silent semantic change, not just a rename.
+  `HytechUtil.locate` does the whole walk -- section, then `getChunkColumnReference()` to the
+  column, then the coordinates -- and returns the `BlockLocation` every caller wants. Nothing
+  should decode a block index by hand.
+  `BlockStateInfo.fillWorldPos` is the engine's own version, but it yields a **world** position,
+  while `WorldChunk`'s block accessors take chunk-local x/z with an absolute y. Different spaces.
+- `BlockAccessor.getRotation` was **removed**. Only `getRotationIndex` survives, itself deprecated
+  for removal, so `HytechUtil.getBlockTransform` turns the index back into a tuple with
+  `RotationTuple.get` -- an unguarded array access, hence the bounds check before it.
 
 ### Machine UIs
 
@@ -290,37 +307,114 @@ dialect only approximated.
 
 How it fits together:
 
-| Piece | Role |
-|---|---|
-| `core/ui/HytechCustomPage` | base: appends a `.ui` document, renders values, binds actions |
-| `core/ui/MachinePage` | the page every machine opens; sections are filled or hidden |
-| `core/ui/MachineView` | what a machine writes: primary bar, secondary bar, item slots, detail rows |
-| `core/ui/HytechPages` | opens a page, with a container window when it has one |
-| `core/ui/PageRefreshSystem` | pushes fresh values once a second (HyUI did this internally) |
-| `Common/UI/Custom/Hytech/*.ui` | the documents, built on the game's `Common.ui` |
+| Piece                       | Role                                                                                       |
+|-----------------------------|--------------------------------------------------------------------------------------------|
+| `core/ui/HytechCustomPage`  | base: appends a `.ui` document, renders values, binds actions                              |
+| `core/ui/MachinePage`       | the page every machine opens; owns the panels, the actions and the routing                 |
+| `core/ui/MachineView`       | the **only** writer on the page: bars, cells, detail rows, and the signature               |
+| `core/ui/SideConfigPanel`   | the plus-shaped side configurator, as a panel inside `MachinePage`                         |
+| `core/ui/SlotTransfer`      | two-click item moves, since a page cannot be dragged on                                    |
+| `core/ui/HytechPages`       | opens a page, with a container window when it has one                                      |
+| `core/ui/PageRefreshSystem` | pushes fresh values once a second (HyUI did this internally)                               |
+| `Hytech/Hytech.ui`          | the design tokens: palette, metrics, and the `@Section`/`@SlotCell`/`@FaceCell` constructs |
+| `Hytech/MachinePage.ui`     | the three-column shell every block opens                                                   |
+| `Hytech/InventoryPanel.ui`  | the player's 45 cells, as a named expression a page instantiates                           |
+
+`MachinePage.ui` is one wide `@DecoratedContainer` (980x860) holding three columns and a strip:
+
+```
+Status (flex)    |  Contents (flex)      |  Side Configuration (268, hidden until asked)
+  primary bar    |    in cells > out     |    [^] [E][I][F][G][H]
+  secondary bar  |    progress + arrow   |         [ ][Up][ ]
+  6 detail rows  |    contents summary   |     [W][North][E]
+                 |    Open Inventory     |        [ ][S][Down]
+-------------------------------------------------------------------
+Inventory: the player's 36 storage + 9 hotbar cells, centred
+[ Configure Sides ]  [ Cancel Move ]
+```
+
+Side configuration is a **panel, not a page**. It used to be its own `SideConfigPage`, which meant
+configuring a crusher hid the crusher, and Back had to rebuild the machine page from scratch. Living
+inside `MachinePage` retires that whole dance, and you can watch a face change take effect.
+
+**The contents column and the inventory come and go together**, keyed off whether the machine filled
+`MachineView.slots`. A battery has nothing you could move an item into, so both disappear and the
+remaining panels flex to take the row back — which is why `#ReadoutPanel` and `#ProcessPanel` carry
+`FlexWeight` rather than fixed widths, and why the vanilla progress bar (a hard-coded 284 wide) is
+centred inside its column rather than stretched to fill it.
+
+**Face colours are the wrench's colours**, sampled from `Common/VFX/Overlay/Face_Overlay_*.png`:
+purple both, red in, blue out, grey off. The panel therefore needs no legend — the player learned
+those colours pointing a wrench at a block, and a panel that invented its own would have to teach
+them twice. `SideConfigPanel` owns the hex values; if the overlay art changes, they change with it.
+
+**Resource tabs are coloured squares with tooltips**, not text buttons: five labels wrapped onto
+three rows in a 268px column and read as a mess. Each carries the resource's initial over its pipe
+accent, dimmed when not selected.
 
 Things worth knowing:
 
 - **Windows and custom pages are different systems, not layers.** `setPageWithWindows` switches the
   client to `Page.Bench` -- the screen that carries the player's inventory -- and a custom page
   *replaces* that screen. So a custom page cannot host real item slots, and
-  `openCustomPageWithWindows` does not give you both. A machine that needs slots summarises its
-  container on the page and offers a button that opens a `ContainerWindow`. The docs are explicit:
-  "Only use `ContainerWindow` when the player needs to move actual items."
+  `openCustomPageWithWindows` does not give you both -- it exists and does send the `OpenWindow`
+  packets, but the custom page is the visible screen. A machine therefore draws its slots as
+  clickable cells (see two-click transfer below) and keeps a `ContainerWindow` button for real
+  dragging. The docs are explicit: "Only use `ContainerWindow` when the player needs to move actual
+  items."
 - **`EventData` keys: no `@` for a literal, `@` for a selector.** An unprefixed key carries a static
   value; a leading `@` marks it *dynamic*, meaning the client reads the value as a selector at event
   time. `@Action` with a literal makes the client try to resolve it as a selector and fail with
   "Failed to gather CustomUI event binding".
 - **One decoded event arrives per page**, not per element, so each binding carries its action name as
   a static literal in its `EventData` and `onAction` switches on it.
-- `ItemSlot` **renders** on a custom page and is how a machine shows its contents: set
-  `#Selector.ItemId` and `#Selector.Quantity` on it, as vanilla's own `RespawnPage` does for the
-  items a player dropped. What a custom page cannot do is let anyone *drag* one, so moving items
-  still means a `ContainerWindow`. `ItemGrid` in a custom page renders nothing.
-- **Declare the cells, set the values.** `MachinePage.ui` carries a fixed six item cells and five
-  auto-push rows, hidden when unused, rather than `clear` + `append` per refresh. A structural
-  update every second is a page that keeps dropping its own clicks (see the acknowledgment rule
-  above).
+- **A `UIPath` is relative to the document it is written in, and a miss is silent.** Copying
+  vanilla's `"Common/ContainerPanelPatch.png"` into `Hytech/Hytech.ui` looks for
+  `Hytech/Common/ContainerPanelPatch.png`, finds nothing, and the client draws a **white
+  missing-texture cross** with nothing in the log — which is what made every panel on the first
+  draft of this page look broken. Vanilla art needs `../`; our own art sits next to the document and
+  needs no prefix at all. `check-asset-refs.py` now resolves every texture and `$document` reference
+  in every `.ui` file, including the `@2x`-only naming most vanilla UI art uses, so this fails the
+  check instead of the eye.
+- **`ItemSlotButton`, not `ItemSlot`, and not `ItemGrid`.** `ItemSlot` renders but is display-only.
+  `ItemGrid` is not the answer either, despite appearances: `ItemGridSlot` *is* registered in
+  `UICommandBuilder.CODEC_MAP`, so `set("#Grid.Slots", List<ItemGridSlot>)` encodes fine -- but the
+  element's only documented callbacks are `SlotDoubleClicking` and the mouse-enter/exit pair, no
+  shipped server code binds any of them, and `EventData` carries static literals plus client-side
+  `@` selectors with nothing that yields a slot index. `ItemSlotButton` reports `Activating`,
+  `RightClicking` and `DoubleClicking`, and shows the item tooltip of any `ItemSlot` child. So every
+  cell in the mod is an `ItemSlotButton` wrapping an `ItemSlot #Icon` and a `Label #Count`.
+- **`.Quantity` on a page-hosted slot is rejected** with a "CustomUI Set command error", which is
+  why `@SlotCell` draws the number in a label of its own -- as vanilla's `DroppedItemSlot` does.
+- **Two clicks move an item.** Nothing on a custom page can be dragged, so `SlotTransfer` turns
+  click-source then click-destination into `moveItemStackFromSlotToSlot` with filtering **on**. That
+  is what keeps a machine's result slots refusing insertions -- the `SlotFilter.DENY` on ADD is the
+  same filter a pipe hits -- without the UI knowing anything about machines. Right-click moves one.
+  The `ContainerWindow` button is still there for anyone who would rather drag.
+- **Two filters, two jobs.** A `SlotFilter` on the container is the right tool for a rule that holds
+  against everyone — a machine's result slots refuse insertions from pipes and players alike.
+  `SlotTransfer.Filter` is the rule that only applies to *a person clicking*: a crusher will happily
+  hold cobblestone in its ingredient slot, it just has no recipe for it. The predicate comes from
+  `MachineRecipes.acceptsIngredient`, which is deliberately **non-positional** — `MachineSlots`
+  matches across the whole input range, so a positional check (vanilla's own
+  `CraftingManager.matchesAnyRecipe`) would refuse loads the machine would have processed.
+  It is the same predicate that greys the contents summary, so the page never learns what a crusher
+  is.
+- **Style states are settable from Java, by hex string.** `set("#FaceUp.Style.Default.Background",
+  "#3f8f57")` works: selectors chain by descendant and nest into style objects, exactly as vanilla's
+  `BarterPage` recolours a trade row. That is how the side configurator's faces carry their mode as
+  a colour, and it means hover is a real style state rather than a round-trip event. `ButtonStyle`
+  itself is *not* in `CODEC_MAP`, so a whole style can only be swapped by `Value.ref`.
+- **Repaint the two cells that changed, not all fifty.** The page draws 45 inventory cells plus the
+  machine's own; writing four style commands per cell every second to say "still not selected" would
+  triple the update. `MachineView` is handed the previously-held cell and touches only it and the
+  new one.
+- **Declare the cells, set the values.** `MachinePage.ui` carries fixed item cells, six detail rows
+  and five auto-push rows, hidden when unused, rather than `clear` + `append` per refresh. A
+  structural update every second is a page that keeps dropping its own clicks (see the
+  acknowledgment rule above).
+- **A hidden element is skipped by layout**, which is why the slot grids use `LeftCenterWrap` rather
+  than fixed rows: a crusher with one ingredient slot draws one cell, not one cell and three holes.
 - `render` runs on open *and* on every refresh, so it must read live state and be safe to repeat.
   It returns a **change signature**, and `refresh` skips the update when it matches the last one.
   That is not an optimisation: `updateCustomPage` increments an outstanding-acknowledgment counter,
@@ -337,8 +431,16 @@ Things worth knowing:
 - **Use the vanilla widget styles rather than rebuilding them.** `$C.@ProgressBar` carries the right
   height, background and effect textures; wrapping a bare `ProgressBar` in a bordered `Group` and
   forcing a taller height stretched the 9-patch and looked broken. `@PanelWidth` is 284 to match it.
+- **Everything writes through `MachineView`.** Not tidiness: `write` is what appends to the change
+  signature, and a value sent around it is one that can go stale on screen without `refresh` ever
+  noticing. `SideConfigPanel` takes the view, not the command builder, for exactly that reason.
+- **`@ProgressBar` spreads the caller's `@Anchor` before its own `Width: 284`,** so a narrower bar
+  cannot be had through `@Anchor` -- the 284 always wins. Replace the `Anchor` property outright.
+  This is why `@ReadoutWidth` is 312: 284 plus the section's padding.
 - A machine adds no UI document of its own: `MachinePage.ui` declares every section and
   [MachineView] hides the ones the machine did not fill. A new resource type needs no UI code.
+- **`@DecoratedContainer`'s close button is artwork only.** `@CloseButton = true` draws the X; the
+  page still has to bind `#CloseButton` itself, as vanilla's own containers do.
 
 ### Electric Machines
 

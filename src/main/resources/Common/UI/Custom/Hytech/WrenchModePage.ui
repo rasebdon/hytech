@@ -1,7 +1,9 @@
 // Picks the resource the wrench configures. Crouch and right-click with the wrench to open.
 //
 // One button per possible resource, hidden when unused, so the page never has to build elements at
-// runtime.
+// runtime. The resource currently selected is disabled rather than marked with a prefix: the
+// vanilla disabled style already reads as "you are here", and a control that would do nothing
+// should not accept the click.
 $C = "../Common.ui";
 $H = "Hytech.ui";
 
@@ -9,12 +11,12 @@ $C.@PageOverlay {
   LayoutMode: Middle;
 
   $C.@DecoratedContainer {
-    Anchor: (Width: 320, Height: 400);
+    @CloseButton = true;
+    Anchor: (Width: 360, Height: 420);
 
     #Title {
       Label #TitleLabel {
-        Style: (FontSize: 18, TextColor: #b4c8c9, RenderBold: true,
-                HorizontalAlignment: Center, VerticalAlignment: Center);
+        Style: $H.@TitleLabelStyle;
         Text: "Wrench Mode";
       }
     }
@@ -23,23 +25,29 @@ $C.@PageOverlay {
       LayoutMode: Top;
 
       Label #Hint {
-        Anchor: (Width: 260, Bottom: 10);
+        Anchor: (Width: 300, Bottom: 14);
         Style: $H.@CaptionStyle;
         Text: "Pick the resource the wrench configures.";
       }
 
-      $C.@TextButton #Mode0 { Anchor: (Width: 260, Height: 34, Bottom: 4); Text: ""; }
-      $C.@TextButton #Mode1 { Anchor: (Width: 260, Height: 34, Bottom: 4); Text: ""; }
-      $C.@TextButton #Mode2 { Anchor: (Width: 260, Height: 34, Bottom: 4); Text: ""; }
-      $C.@TextButton #Mode3 { Anchor: (Width: 260, Height: 34, Bottom: 4); Text: ""; }
-      $C.@TextButton #Mode4 { Anchor: (Width: 260, Height: 34, Bottom: 4); Text: ""; }
-      $C.@TextButton #Mode5 { Anchor: (Width: 260, Height: 34, Bottom: 4); Text: ""; }
+      $C.@SecondaryTextButton #Mode0 { @Anchor = (Width: 300, Bottom: 6); @Text = ""; }
+      $C.@SecondaryTextButton #Mode1 { @Anchor = (Width: 300, Bottom: 6); @Text = ""; }
+      $C.@SecondaryTextButton #Mode2 { @Anchor = (Width: 300, Bottom: 6); @Text = ""; }
+      $C.@SecondaryTextButton #Mode3 { @Anchor = (Width: 300, Bottom: 6); @Text = ""; }
+      $C.@SecondaryTextButton #Mode4 { @Anchor = (Width: 300, Bottom: 6); @Text = ""; }
+      $C.@SecondaryTextButton #Mode5 { @Anchor = (Width: 300, Bottom: 6); @Text = ""; }
 
       Group { FlexWeight: 1; }
 
-      $C.@CancelTextButton #CloseButton {
-        Anchor: (Width: 260, Height: 34);
-        Text: "Close";
+      Group {
+        Background: $H.@ColorPanelBorder;
+        Anchor: (Height: 1, Bottom: 10);
+      }
+
+      Label {
+        Anchor: (Height: 16);
+        Style: $H.@CaptionStyle;
+        Text: "Right-click a block face to cycle it.";
       }
     }
   }

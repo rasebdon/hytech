@@ -1,11 +1,11 @@
 package at.rasebdon.hytech.core.interactions.ui;
 
+import at.rasebdon.hytech.core.LogisticResourceType;
 import at.rasebdon.hytech.core.containers.ScalarContainer;
 import at.rasebdon.hytech.core.containers.TypedScalarContainer;
 import at.rasebdon.hytech.core.ui.HytechCustomPage;
 import at.rasebdon.hytech.core.ui.MachinePage;
 import at.rasebdon.hytech.core.ui.MachineView;
-import at.rasebdon.hytech.core.ui.SideConfigPage;
 import at.rasebdon.hytech.core.util.LogisticLookup;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -31,22 +31,10 @@ public class OpenLogisticContainerPageInteraction extends OpenPageBlockInteracti
                     .documentation("Opens the generic Hytech container page for the target block.")
                     .build();
 
-    @Override
-    @Nullable
-    protected HytechCustomPage createPage(@NotNull World world,
-                                          @NotNull Vector3i blockPos,
-                                          @NotNull PlayerRef playerRef) {
-
-        if (SideConfigPage.presentResources(world, blockPos).isEmpty()) return null;
-
-        return new MachinePage(playerRef, world, blockPos, null,
-                (page, view) -> fill(view, world, blockPos));
-    }
-
     /// Reads live state on every refresh rather than closing over a snapshot, so a tank being
     /// filled by a pipe updates while the page is open.
     private static void fill(MachineView view, World world, Vector3i blockPos) {
-        var resources = SideConfigPage.presentResources(world, blockPos);
+        var resources = LogisticResourceType.presentAt(world, blockPos);
 
         boolean headlineShown = false;
 
@@ -75,6 +63,18 @@ public class OpenLogisticContainerPageInteraction extends OpenPageBlockInteracti
             first.ifPresent(component -> view.primary("Contents",
                     summarise(component.getContainer()), 0f, ""));
         }
+    }
+
+    @Override
+    @Nullable
+    protected HytechCustomPage createPage(@NotNull World world,
+                                          @NotNull Vector3i blockPos,
+                                          @NotNull PlayerRef playerRef) {
+
+        if (LogisticResourceType.presentAt(world, blockPos).isEmpty()) return null;
+
+        return new MachinePage(playerRef, world, blockPos, null,
+                (page, view) -> fill(view, world, blockPos));
     }
 
     /// "1,200 / 8,000  Water" -- amount, capacity and, for a typed tank, what it holds.

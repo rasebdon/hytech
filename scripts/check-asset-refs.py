@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import zipfile
 from pathlib import Path
@@ -128,6 +129,77 @@ def check_recipes(vanilla: set[str]) -> list[tuple[Path, str]]:
     return missing
 
 
+UI_ROOT = COMMON / "UI" / "Custom"
+
+# Properties in a .ui document whose value names a file. Everything else that happens to be a
+# quoted string -- a label, a tooltip -- is left alone.
+UI_PATH_KEYS = (
+    "TexturePath", "Background", "MaskTexturePath", "BarTexturePath", "EffectTexturePath",
+    "ContentMaskTexturePath", "Overlay", "Handle", "HoveredHandle", "DraggedHandle",
+    "DefaultBackground", "HoveredBackground", "PressedBackground", "DisabledBackground",
+    "SelectedBackground", "LabelMaskTexturePath", "DefaultArrowTexturePath",
+    "HoveredArrowTexturePath", "PressedArrowTexturePath", "AssetPath",
+)
+
+UI_PATH_PATTERN = re.compile(
+    r"\b(?:" + "|".join(UI_PATH_KEYS) + r")\s*:\s*\(?[^\"\n]*\"([^\"]+\.(?:png|ui))\""
+)
+
+UI_DOCUMENT_PATTERN = re.compile(r"^\s*\$\w+\s*=\s*\"([^\"]+\.ui)\"", re.MULTILINE)
+
+
+def resolve_ui_path(document: Path, reference: str) -> Path:
+    """Where a UIPath points, given the file it was written in.
+
+    A UIPath is relative to the *declaring document*, not to any root -- so vanilla's own
+    "Common/ContainerPanelPatch.png", copied into a file one directory deeper, quietly resolves
+    somewhere that does not exist. The client draws a white cross and logs nothing, which is a
+    miserable thing to debug by eye.
+    """
+    return (document.parent / reference).resolve()
+
+
+def check_ui(vanilla: set[str]) -> tuple[list[tuple[Path, str]], int]:
+    """Texture and document references inside .ui files."""
+    missing: list[tuple[Path, str]] = []
+    checked = 0
+
+    for document in sorted(UI_ROOT.rglob("*.ui")):
+        text = document.read_text(encoding="utf-8")
+        text = re.sub(r"//[^\n]*", "", text)
+
+        references = UI_PATH_PATTERN.findall(text) + UI_DOCUMENT_PATTERN.findall(text)
+
+        for reference in references:
+            checked += 1
+
+            target = resolve_ui_path(document, reference)
+            if target.exists():
+                continue
+
+            # The game ships most UI art only at @2x and references it without the suffix.
+            retina = target.with_name(target.stem + "@2x" + target.suffix)
+            if retina.exists():
+                continue
+
+            try:
+                relative = target.relative_to(RESOURCES).as_posix()
+            except ValueError:
+                missing.append((document, reference))
+                continue
+
+            if relative in vanilla:
+                continue
+
+            stem, _, suffix = relative.rpartition(".")
+            if f"{stem}@2x.{suffix}" in vanilla:
+                continue
+
+            missing.append((document, reference))
+
+    return missing, checked
+
+
 def main() -> int:
     vanilla = game_assets()
 
@@ -180,6 +252,19 @@ def main() -> int:
         return 1
 
     print("All recipe item references exist.")
+
+    unresolved, ui_checked = check_ui(vanilla)
+    print(f"Checked {ui_checked} UI references across {UI_ROOT.name}/.")
+
+    if unresolved:
+        print(f"\n{len(unresolved)} UI references do not resolve:", file=sys.stderr)
+        for document, reference in unresolved:
+            print(f"  {document.relative_to(RESOURCES)}  ->  {reference}", file=sys.stderr)
+        print("\nA UIPath is relative to the document it is written in. A miss is silent: the"
+              "\nclient draws a white missing-texture cross and logs nothing.", file=sys.stderr)
+        return 1
+
+    print("All UI texture and document references resolve.")
     return 0
 
 

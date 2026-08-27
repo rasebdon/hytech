@@ -73,10 +73,27 @@ public class OpenMachinePageInteraction extends OpenPageBlockInteraction {
                 energy.getFillRatio(),
                 signed(-draw) + " RF/t");
 
-        view.secondary("Progress", progressRatio(processor), status(processor, energy));
+        float progress = progressRatio(processor);
+        String status = status(processor, energy);
 
+        view.secondary("Progress", progress, status);
+
+        // The split is the machine's own: the leading slots take ingredients, the trailing ones
+        // hold results, and `MachineSlots` is the only other place that arithmetic lives. Drawing
+        // it means the page shows a crusher the way a crusher works -- ore on the left of the
+        // arrow, dust on the right -- rather than one undifferentiated row.
         if (items != null) {
-            view.container("Slots", items.getItemContainer(), null);
+            // The predicate does double duty: it greys the contents summary when the machine is
+            // loaded with something it cannot use, and it is what the page checks before letting a
+            // click-transfer drop an item into an ingredient slot. Non-positional on purpose --
+            // MachineSlots matches across the whole input range, so the UI must not be stricter
+            // about which slot a dust goes in than the machine itself is.
+            var group = processor.getRecipeGroup();
+
+            view.slots("Processing", items.getItemContainer(),
+                    items.getInputSlots(), items.getOutputSlots(),
+                    stack -> !MachineRecipes.acceptsIngredient(group, stack));
+            view.progress(progress, status);
         }
 
         view.detail("Recipes", MachineRecipes.forGroup(processor.getRecipeGroup()).size()

@@ -84,6 +84,8 @@ public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
                 energy.getFillRatio(),
                 signed(generator.getCurrentRate()) + " RF/t");
 
+        // Only the burner has slots. The others say nothing, and the contents column and the
+        // player's inventory disappear with them -- the remaining panels flex to fill the row.
         switch (generator.getGeneratorType()) {
             case SOLAR -> {
                 float sunlight = sunlight(world);
@@ -97,7 +99,10 @@ public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
                 if (burner != null) {
                     view.secondary("Burn", burner.getBurnRatio(), burnStatus(burner));
                 }
-                view.container("Fuel", fuel, stack -> !FuelUtil.isFuel(stack));
+
+                // An undivided grid: fuel goes in and ash does not come out, so there is no
+                // ingredient/result split to draw.
+                view.slots("Fuel", fuel, 0, 0, stack -> !FuelUtil.isFuel(stack));
             }
             case FUEL_LIQUID -> {
                 // Wiring these to the fluid module is not done; say so rather than showing an

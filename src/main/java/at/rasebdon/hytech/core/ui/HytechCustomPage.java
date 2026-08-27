@@ -4,11 +4,11 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
+import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
-import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
@@ -69,6 +69,18 @@ public abstract class HytechCustomPage extends InteractiveCustomUIPage<PageActio
         // the server answers, and PageManager silently *drops* Data events while an update is still
         // unacknowledged -- so one refresh landing at the wrong moment could freeze a page for good.
         events.addEventBinding(CustomUIEventBindingType.Activating, selector,
+                EventData.of("Action", action), false);
+    }
+
+    /// Binds a right-click to a named action.
+    ///
+    /// The same payload shape as [#onClick], because one decoded event arrives per page whichever
+    /// button produced it -- the action name is the only thing that tells them apart, so a
+    /// right-click has to carry its own.
+    protected static void onRightClick(@Nonnull UIEventBuilder events,
+                                       @Nonnull String selector,
+                                       @Nonnull String action) {
+        events.addEventBinding(CustomUIEventBindingType.RightClicking, selector,
                 EventData.of("Action", action), false);
     }
 

@@ -1,23 +1,27 @@
 // One document for every Hytech machine, tank and container.
 //
-// Sections are declared once and hidden when a machine has nothing to put in them, so a battery, a
-// fluid tank and the burner generator all share this file and the server decides what is relevant.
-// The mod stays visually consistent for free, and a new resource type needs no new UI document.
+// Three columns under a wide container: what the block is doing on the left, what it is
+// processing in the middle, and -- when asked for -- its side configuration on the right, beside
+// the machine rather than instead of it. The player's own inventory runs along the bottom.
+//
+// Sections are declared once and hidden when a machine has nothing to put in them, so a battery,
+// a fluid tank and the burner generator all share this file and the server decides what is
+// relevant. A block with no item storage loses the middle column and the inventory outright, and
+// the remaining columns flex to take the space back.
 $C = "../Common.ui";
 $H = "Hytech.ui";
+$INV = "InventoryPanel.ui";
 
 $C.@PageOverlay {
   LayoutMode: Middle;
 
   $C.@DecoratedContainer {
-    // Tall enough for the worst case: two bars, a contents grid, the auto-push rows for a
-    // machine carrying both items and energy, and three detail lines.
-    Anchor: (Width: 360, Height: 560);
+    @CloseButton = true;
+    Anchor: (Width: 980, Height: 860);
 
     #Title {
       Label #TitleLabel {
-        Style: (FontSize: 18, TextColor: #b4c8c9, RenderBold: true,
-                HorizontalAlignment: Center, VerticalAlignment: Center);
+        Style: $H.@TitleLabelStyle;
         Text: "";
       }
     }
@@ -25,257 +29,363 @@ $C.@PageOverlay {
     #Content {
       LayoutMode: Top;
 
-      // ---- Primary readout: the resource this machine is mainly about ----
-      Group #PrimarySection {
-        LayoutMode: Top;
-        Anchor: (Bottom: 12);
+      // ======== upper half: the panels, side by side ========
+      Group #Columns {
+        LayoutMode: Left;
+        FlexWeight: 1;
+        Anchor: (Bottom: 10);
 
-        Label #PrimaryHeading {
-          Anchor: (Width: $H.@PanelWidth, Bottom: 4);
-          Style: $H.@HeadingStyle;
-          Text: "";
-        }
-
-        Label #PrimaryValue {
-          Anchor: (Width: $H.@PanelWidth, Bottom: 6);
-          Style: $H.@ValueStyle;
-          Text: "";
-        }
-
-        $C.@ProgressBar #PrimaryBar {
-          @Anchor = Anchor(Bottom: 8);
-        }
-
-        Label #PrimaryCaption {
-          Anchor: (Width: $H.@PanelWidth);
-          Style: $H.@CaptionStyle;
-          Text: "";
-        }
-      }
-
-      // ---- Secondary readout: burn progress, sunlight, altitude ----
-      Group #SecondarySection {
-        LayoutMode: Top;
-        Anchor: (Bottom: 12);
-
-        Label #SecondaryHeading {
-          Anchor: (Width: $H.@PanelWidth, Bottom: 4);
-          Style: $H.@HeadingStyle;
-          Text: "";
-        }
-
-        $C.@ProgressBar #SecondaryBar {
-          @Anchor = Anchor(Bottom: 8);
-        }
-
-        Label #SecondaryCaption {
-          Anchor: (Width: $H.@PanelWidth);
-          Style: $H.@CaptionStyle;
-          Text: "";
-        }
-      }
-
-      // ---- Contents, plus a button to the real container.
-      //
-      // The icons here are read-only. Windows are a separate system from custom pages: a window
-      // switches the client to the Bench page, which is the screen carrying the player's own
-      // inventory, and a custom page *replaces* that screen rather than layering over it. So
-      // nothing on this page can be dragged, however much it looks like a slot -- moving items
-      // still means the button below.
-      Group #SlotsSection {
-        LayoutMode: Top;
-        Anchor: (Bottom: 12);
-
-        Label #SlotsHeading {
-          Anchor: (Width: $H.@PanelWidth, Bottom: 4);
-          Style: $H.@HeadingStyle;
-          Text: "";
-        }
-
-        Label #SlotsSummary {
-          Anchor: (Width: $H.@PanelWidth, Bottom: 6);
-          Style: $H.@ValueStyle;
-          Text: "";
-        }
-
-        // What is actually in the slots, as icons rather than a sentence.
+        // ---- Status: the bars and the numbers ----
         //
-        // ItemSlot renders perfectly well on a custom page -- vanilla's own RespawnPage lists the
-        // items a player dropped this way. What a custom page cannot do is let anyone *drag* one,
-        // which is why the button below still hands over to a real ContainerWindow. The cells are
-        // declared statically and hidden when unused, so a refresh only ever sets values: an
-        // update that cleared and re-appended children would be a structural change on every
-        // tick of the refresh timer.
-        Group #SlotsGrid {
-          LayoutMode: Left;
-          Anchor: (Width: $H.@PanelWidth, Height: 52, Bottom: 6);
+        // Flexes rather than sitting at a fixed width: on a battery, where there is no contents
+        // column and no inventory, this is the only panel left and a 312px column in a 946px row
+        // would look like a bug.
+        $H.@Section #ReadoutPanel {
+          @Anchor = (Right: 10);
+          @Text = "Status";
+          @BodyLayout = TopScrolling;
+          FlexWeight: 1;
 
-          Group #Slot0Cell {
-            LayoutMode: Top;
-            Anchor: (Width: 44, Height: 52);
+          #Body {
+            // Primary readout: the resource this machine is mainly about.
+            Group #PrimarySection {
+              LayoutMode: Top;
+              Anchor: (Bottom: 14);
 
-            ItemSlot #Slot0Icon {
-              Anchor: (Width: 40, Height: 40);
-              ShowQualityBackground: true;
-              ShowQuantity: false;
+              Label #PrimaryHeading {
+                Anchor: (Height: 18, Bottom: 4);
+                Style: $H.@HeadingStyle;
+                Text: "";
+              }
+
+              Label #PrimaryValue {
+                Anchor: (Height: 24, Bottom: 6);
+                Style: $H.@ValueStyle;
+                Text: "";
+              }
+
+              // The vanilla bar is a fixed 284 wide and cannot be talked out of it, so it is
+              // centred inside the flexing column rather than stretched to fill it.
+              Group {
+                LayoutMode: CenterMiddle;
+                Anchor: (Height: 14, Bottom: 4);
+
+                $C.@ProgressBar #PrimaryBar {}
+              }
+
+              Label #PrimaryCaption {
+                Anchor: (Height: 18);
+                Style: $H.@CaptionStyle;
+                Text: "";
+              }
             }
 
-            Label #Slot0Count {
-              Anchor: (Width: 44);
-              Style: $H.@SlotCountStyle;
-              Text: "";
-            }
-          }
+            // Secondary readout: burn progress, sunlight, altitude.
+            Group #SecondarySection {
+              LayoutMode: Top;
+              Anchor: (Bottom: 14);
 
-          Group #Slot1Cell {
-            LayoutMode: Top;
-            Anchor: (Width: 44, Height: 52);
+              Label #SecondaryHeading {
+                Anchor: (Height: 18, Bottom: 4);
+                Style: $H.@HeadingStyle;
+                Text: "";
+              }
 
-            ItemSlot #Slot1Icon {
-              Anchor: (Width: 40, Height: 40);
-              ShowQualityBackground: true;
-              ShowQuantity: false;
-            }
+              Group {
+                LayoutMode: CenterMiddle;
+                Anchor: (Height: 14, Bottom: 4);
 
-            Label #Slot1Count {
-              Anchor: (Width: 44);
-              Style: $H.@SlotCountStyle;
-              Text: "";
-            }
-          }
+                $C.@ProgressBar #SecondaryBar {}
+              }
 
-          Group #Slot2Cell {
-            LayoutMode: Top;
-            Anchor: (Width: 44, Height: 52);
-
-            ItemSlot #Slot2Icon {
-              Anchor: (Width: 40, Height: 40);
-              ShowQualityBackground: true;
-              ShowQuantity: false;
+              Label #SecondaryCaption {
+                Anchor: (Height: 18);
+                Style: $H.@CaptionStyle;
+                Text: "";
+              }
             }
 
-            Label #Slot2Count {
-              Anchor: (Width: 44);
-              Style: $H.@SlotCountStyle;
-              Text: "";
-            }
-          }
+            // Detail lines.
+            Group #DetailSection {
+              LayoutMode: Top;
 
-          Group #Slot3Cell {
-            LayoutMode: Top;
-            Anchor: (Width: 44, Height: 52);
+              Group #Detail0 {
+                LayoutMode: Left;
+                Anchor: (Height: 22);
 
-            ItemSlot #Slot3Icon {
-              Anchor: (Width: 40, Height: 40);
-              ShowQualityBackground: true;
-              ShowQuantity: false;
-            }
+                Label #Detail0Label { FlexWeight: 1; Style: $H.@RowLabelStyle; Text: ""; }
+                Label #Detail0Value { Anchor: (Width: 130); Style: $H.@RowValueStyle; Text: ""; }
+              }
 
-            Label #Slot3Count {
-              Anchor: (Width: 44);
-              Style: $H.@SlotCountStyle;
-              Text: "";
-            }
-          }
+              Group #Detail1 {
+                LayoutMode: Left;
+                Anchor: (Height: 22);
 
-          Group #Slot4Cell {
-            LayoutMode: Top;
-            Anchor: (Width: 44, Height: 52);
+                Label #Detail1Label { FlexWeight: 1; Style: $H.@RowLabelStyle; Text: ""; }
+                Label #Detail1Value { Anchor: (Width: 130); Style: $H.@RowValueStyle; Text: ""; }
+              }
 
-            ItemSlot #Slot4Icon {
-              Anchor: (Width: 40, Height: 40);
-              ShowQualityBackground: true;
-              ShowQuantity: false;
-            }
+              Group #Detail2 {
+                LayoutMode: Left;
+                Anchor: (Height: 22);
 
-            Label #Slot4Count {
-              Anchor: (Width: 44);
-              Style: $H.@SlotCountStyle;
-              Text: "";
-            }
-          }
+                Label #Detail2Label { FlexWeight: 1; Style: $H.@RowLabelStyle; Text: ""; }
+                Label #Detail2Value { Anchor: (Width: 130); Style: $H.@RowValueStyle; Text: ""; }
+              }
 
-          Group #Slot5Cell {
-            LayoutMode: Top;
-            Anchor: (Width: 44, Height: 52);
+              Group #Detail3 {
+                LayoutMode: Left;
+                Anchor: (Height: 22);
 
-            ItemSlot #Slot5Icon {
-              Anchor: (Width: 40, Height: 40);
-              ShowQualityBackground: true;
-              ShowQuantity: false;
-            }
+                Label #Detail3Label { FlexWeight: 1; Style: $H.@RowLabelStyle; Text: ""; }
+                Label #Detail3Value { Anchor: (Width: 130); Style: $H.@RowValueStyle; Text: ""; }
+              }
 
-            Label #Slot5Count {
-              Anchor: (Width: 44);
-              Style: $H.@SlotCountStyle;
-              Text: "";
+              Group #Detail4 {
+                LayoutMode: Left;
+                Anchor: (Height: 22);
+
+                Label #Detail4Label { FlexWeight: 1; Style: $H.@RowLabelStyle; Text: ""; }
+                Label #Detail4Value { Anchor: (Width: 130); Style: $H.@RowValueStyle; Text: ""; }
+              }
+
+              Group #Detail5 {
+                LayoutMode: Left;
+                Anchor: (Height: 22);
+
+                Label #Detail5Label { FlexWeight: 1; Style: $H.@RowLabelStyle; Text: ""; }
+                Label #Detail5Value { Anchor: (Width: 130); Style: $H.@RowValueStyle; Text: ""; }
+              }
+
             }
           }
         }
 
-        $C.@TextButton #ContainerButton {
-          Anchor: (Width: $H.@PanelWidth, Height: 32);
-          Text: "Open Inventory";
+        // ---- Contents: what is going in, what is coming out ----
+        $H.@Section #ProcessPanel {
+          @Anchor = (Right: 10);
+          @Text = "Contents";
+          FlexWeight: 1;
+          Visible: false;
+
+          #Body {
+            // The machine's own word for what is in here -- "Processing", "Fuel". A label of its
+            // own rather than the section's title: `#SectionTitle` belongs to the @Section
+            // template and there are three of those on this page, so addressing one of them means
+            // relying on descendant resolution for something a unique id gives outright.
+            Label #SlotsHeading {
+              Anchor: (Height: 20, Bottom: 8);
+              Style: $H.@HeadingStyle;
+              Text: "";
+            }
+
+            // Split view: a machine that declares ingredient and result halves.
+            //
+            // The grids wrap rather than being laid out as fixed rows: a hidden cell is skipped
+            // by layout entirely, so a crusher with one ingredient slot draws one cell instead
+            // of one cell and three holes.
+            Group #SplitSlots {
+              LayoutMode: CenterMiddle;
+              Anchor: (Bottom: 12);
+
+              // Ingredients.
+              Group #InGrid {
+                LayoutMode: LeftCenterWrap;
+                Anchor: (Width: $H.@SlotPitchDouble, Height: 88, Right: 8);
+
+                $H.@SlotCell #InSlot0 {}
+                $H.@SlotCell #InSlot1 {}
+                $H.@SlotCell #InSlot2 {}
+                $H.@SlotCell #InSlot3 {}
+              }
+
+              // The arrow between the halves, and how far along the operation is.
+              Group #ProgressColumn {
+                LayoutMode: MiddleCenter;
+                Anchor: (Width: 110, Height: 88, Right: 8);
+
+                Label #ProgressArrow {
+                  Anchor: (Height: 26);
+                  Style: (FontSize: 22, TextColor: $H.@ColorLabel, HorizontalAlignment: Center);
+                  Text: ">>>";
+                }
+
+                // Anchor set outright rather than through @Anchor: the template spreads the
+                // caller's anchor and *then* applies Width: 284, so a narrower bar can only be
+                // had by replacing the property.
+                $C.@ProgressBar #ProgressBar {
+                  Anchor: (Width: 100, Height: 6, Top: 6, Bottom: 6);
+                }
+
+                Label #ProgressCaption {
+                  Anchor: (Height: 18, Width: 110);
+                  Style: $H.@CaptionStyle;
+                  Text: "";
+                }
+              }
+
+              // Results.
+              Group #OutGrid {
+                LayoutMode: LeftCenterWrap;
+                Anchor: (Width: $H.@SlotPitchDouble, Height: 88);
+
+                $H.@SlotCell #OutSlot0 {}
+                $H.@SlotCell #OutSlot1 {}
+                $H.@SlotCell #OutSlot2 {}
+                $H.@SlotCell #OutSlot3 {}
+              }
+            }
+
+            // Flat view: an undivided container -- the burner's fuel slot, an item buffer.
+            Group #FlatSlots {
+              LayoutMode: LeftCenterWrap;
+              Anchor: (Height: 132, Bottom: 12);
+
+              $H.@SlotCell #FlatSlot0 {}
+              $H.@SlotCell #FlatSlot1 {}
+              $H.@SlotCell #FlatSlot2 {}
+              $H.@SlotCell #FlatSlot3 {}
+              $H.@SlotCell #FlatSlot4 {}
+              $H.@SlotCell #FlatSlot5 {}
+              $H.@SlotCell #FlatSlot6 {}
+              $H.@SlotCell #FlatSlot7 {}
+              $H.@SlotCell #FlatSlot8 {}
+              $H.@SlotCell #FlatSlot9 {}
+              $H.@SlotCell #FlatSlot10 {}
+              $H.@SlotCell #FlatSlot11 {}
+            }
+
+            Label #SlotsSummary {
+              Anchor: (Height: 20, Bottom: 10);
+              Style: $H.@CaptionStyle;
+              Text: "";
+            }
+
+            Group { FlexWeight: 1; }
+
+            // Real item movement still lives in a window: a custom page cannot host a draggable
+            // slot. The cells above are clickable instead, and this is the escape hatch.
+            Group {
+              LayoutMode: CenterMiddle;
+              Anchor: (Height: 34);
+
+              $C.@TextButton #ContainerButton {
+                @Anchor = (Width: 220);
+                @Text = "Open Inventory Window";
+              }
+            }
+          }
+        }
+
+        // ---- Side configuration, beside the machine rather than instead of it ----
+        //
+        // A plus: the four horizontal faces around a centre, Up above and Down tucked into the
+        // corner opposite it. Each cell shows only the neighbouring block's icon -- position
+        // already says which side, and the button's own colour says the mode, in the same shades
+        // the wrench paints on the block in world. No legend, because the player has already
+        // learned these colours from the wrench.
+        $H.@Section #SidesPanel {
+          @Anchor = (Width: $H.@SidesWidth);
+          @Text = "Side Configuration";
+          Visible: false;
+
+          #Body {
+            // Auto-push, then one tab per resource this block carries. Both are per-resource and
+            // both are about which way a resource leaves the block, so they share a row.
+            Group #SidesToolbar {
+              LayoutMode: Left;
+              Anchor: (Height: $H.@ToggleSize, Bottom: 12);
+
+              $H.@PushToggle #PushToggle { @Anchor = (Right: 12); }
+
+              $H.@ResourceTab #Res0 { @Anchor = (Right: 4); }
+              $H.@ResourceTab #Res1 { @Anchor = (Right: 4); }
+              $H.@ResourceTab #Res2 { @Anchor = (Right: 4); }
+              $H.@ResourceTab #Res3 { @Anchor = (Right: 4); }
+              $H.@ResourceTab #Res4 { @Anchor = (Right: 4); }
+            }
+
+            Group #FaceGrid {
+              LayoutMode: Top;
+              Anchor: (Bottom: 10);
+
+              Group {
+                LayoutMode: CenterMiddle;
+                Anchor: (Height: $H.@FacePitch);
+
+                $H.@FaceGapCell { @Anchor = (Right: $H.@FaceGap); }
+                $H.@FaceCell #FaceUp { @Anchor = (Right: $H.@FaceGap); }
+                $H.@FaceGapCell { @Anchor = (Right: $H.@FaceGap); }
+              }
+
+              Group {
+                LayoutMode: CenterMiddle;
+                Anchor: (Height: $H.@FacePitch);
+
+                $H.@FaceCell #FaceWest { @Anchor = (Right: $H.@FaceGap); }
+                $H.@FaceCell #FaceNorth { @Anchor = (Right: $H.@FaceGap); }
+                $H.@FaceCell #FaceEast { @Anchor = (Right: $H.@FaceGap); }
+              }
+
+              Group {
+                LayoutMode: CenterMiddle;
+                Anchor: (Height: $H.@FacePitch);
+
+                $H.@FaceGapCell { @Anchor = (Right: $H.@FaceGap); }
+                $H.@FaceCell #FaceSouth { @Anchor = (Right: $H.@FaceGap); }
+                $H.@FaceCell #FaceDown { @Anchor = (Right: $H.@FaceGap); }
+              }
+
+            }
+
+            Label #FaceDetail {
+              Anchor: (Height: 34, Bottom: 8);
+              Style: (FontSize: 12, TextColor: $H.@ColorValue, HorizontalAlignment: Center, Wrap: true);
+              Text: "";
+            }
+
+            Group { FlexWeight: 1; }
+
+            Label {
+              Anchor: (Height: 16);
+              Style: $H.@CaptionStyle;
+              Text: "Click a side to cycle its mode.";
+            }
+          }
         }
       }
 
-      // ---- Auto-push, one row per resource this block carries ----
+      // ======== the player's own inventory ========
       //
-      // A block pushes into its neighbours only when its container is extracting, and that is a
-      // per-resource decision: a crusher ejects its results while still drawing power in on the
-      // same face. Five rows because five resource types are registered; the page hides the ones
-      // this block has nothing to say about.
-      Group #PushSection {
-        LayoutMode: Top;
-        Anchor: (Bottom: 12);
+      // Hidden along with the contents column: a battery has nothing you could move an item into,
+      // so offering the inventory would be offering a dead control.
+      $H.@Section #InventorySection {
+        @Anchor = (Height: 316, Bottom: 10);
+        @Text = "Inventory";
+        Visible: false;
 
-        $C.@TextButton #Push0Button { Anchor: (Width: $H.@PanelWidth, Height: 30, Bottom: 4); Text: ""; }
-        $C.@TextButton #Push1Button { Anchor: (Width: $H.@PanelWidth, Height: 30, Bottom: 4); Text: ""; }
-        $C.@TextButton #Push2Button { Anchor: (Width: $H.@PanelWidth, Height: 30, Bottom: 4); Text: ""; }
-        $C.@TextButton #Push3Button { Anchor: (Width: $H.@PanelWidth, Height: 30, Bottom: 4); Text: ""; }
-        $C.@TextButton #Push4Button { Anchor: (Width: $H.@PanelWidth, Height: 30, Bottom: 4); Text: ""; }
-      }
-
-      // ---- Detail lines ----
-      Group #DetailSection {
-        LayoutMode: Top;
-        Anchor: (Bottom: 12);
-
-        Group #Detail0 {
-          LayoutMode: Left;
-          Anchor: (Width: $H.@PanelWidth, Height: 20);
-
-          Label #Detail0Label { Anchor: (Width: 150); Style: $H.@RowLabelStyle; Text: ""; }
-          Label #Detail0Value { Anchor: (Width: 150); Style: $H.@RowValueStyle; Text: ""; }
-        }
-
-        Group #Detail1 {
-          LayoutMode: Left;
-          Anchor: (Width: $H.@PanelWidth, Height: 20);
-
-          Label #Detail1Label { Anchor: (Width: 150); Style: $H.@RowLabelStyle; Text: ""; }
-          Label #Detail1Value { Anchor: (Width: 150); Style: $H.@RowValueStyle; Text: ""; }
-        }
-
-        Group #Detail2 {
-          LayoutMode: Left;
-          Anchor: (Width: $H.@PanelWidth, Height: 20);
-
-          Label #Detail2Label { Anchor: (Width: 150); Style: $H.@RowLabelStyle; Text: ""; }
-          Label #Detail2Value { Anchor: (Width: 150); Style: $H.@RowValueStyle; Text: ""; }
+        #Body {
+          $INV.@InventoryPanel #PlayerInventory {}
         }
       }
 
-      Group { FlexWeight: 1; }
+      // ======== footer ========
+      Group {
+        LayoutMode: Left;
+        Anchor: (Height: 44);
 
-      $C.@TextButton #ConfigureButton {
-        Anchor: (Width: $H.@PanelWidth, Height: 34, Bottom: 6);
-        Text: "Configure Sides";
-      }
+        $C.@SecondaryTextButton #ConfigureButton {
+          @Anchor = (Width: 200, Right: 8);
+          @Text = "Configure Sides";
+        }
 
-      $C.@CancelTextButton #CloseButton {
-        Anchor: (Width: $H.@PanelWidth, Height: 34);
-        Text: "Close";
+        $C.@CancelTextButton #CancelTransferButton {
+          @Anchor = (Width: 180);
+          @Text = "Cancel Move";
+          Visible: false;
+        }
+
+        Group { FlexWeight: 1; }
       }
     }
   }
