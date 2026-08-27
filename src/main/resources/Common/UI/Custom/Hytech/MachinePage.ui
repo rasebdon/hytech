@@ -151,7 +151,6 @@ $C.@PageOverlay {
               Label #Detail5Label { FlexWeight: 1; Style: $H.@RowLabelStyle; Text: ""; }
               Label #Detail5Value { Anchor: (Width: 130); Style: $H.@RowValueStyle; Text: ""; }
             }
-
           }
         }
 
@@ -343,7 +342,6 @@ $C.@PageOverlay {
           $H.@FaceCell #FaceSouth { @Anchor = (Right: $H.@FaceGap); }
           $H.@FaceCell #FaceDown { @Anchor = (Right: $H.@FaceGap); }
         }
-
       }
 
       Label #FaceDetail {

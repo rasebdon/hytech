@@ -1,6 +1,8 @@
 plugins {
     `maven-publish`
+    pmd
     id("hytale-mod") version "0.+"
+    id("com.diffplug.spotless") version "7.0.3"
 }
 
 group = "at.rasebdon"
@@ -141,4 +143,78 @@ afterEvaluate {
     } else {
         logger.warn("⚠️ Could not find 'runServer' or 'server' task to hook auto-sync into.")
     }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Formatting and dead-code checks
+// ---------------------------------------------------------------------------------------------
+
+/// Deliberately *not* a wholesale reformatter.
+///
+/// A full google-java-format/palantir pass would rewrite every file in the repo and flatten the
+/// hand-aligned constant blocks and the `///` markdown doc comments that carry most of the
+/// reasoning here. These steps are the mechanical ones instead -- the edits nobody would ever make
+/// on purpose -- so `spotlessApply` is safe to run on a whole tree without reviewing the diff.
+spotless {
+    java {
+        target("src/main/java/**/*.java")
+
+        removeUnusedImports()
+        // No `importOrder` on purpose: Spotless separates its groups with blank lines, which
+        // reflows the import block of every file in the tree for no gain. IntelliJ already keeps
+        // the order; this only deletes what nothing uses.
+        trimTrailingWhitespace()
+        endWithNewline()
+        leadingTabsToSpaces(4)
+    }
+
+    format("assets") {
+        target("src/main/resources/**/*.ui", "src/main/resources/**/*.json")
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+
+/// Dead code.
+///
+/// Nothing in the Java ecosystem *deletes* an unused method for you, and that is not a gap in the
+/// tooling: `public` is an API surface the compiler cannot see past, and this plugin's components,
+/// interactions and systems are instantiated by the server's asset loader by name, so "nothing
+/// calls it" is not the same as "nothing uses it". PMD is therefore scoped to the cases that are
+/// decidable from one file -- private members, locals, parameters, assignments -- where the fix is
+/// unambiguous.
+///
+/// Anything auto-fixable is already handled: Spotless deletes unused imports on `spotlessApply`.
+/// What is left needs the judgement call between deleting the member and wiring it up, so this
+/// fails the build rather than filing a report nobody reads. The tree is at zero as of this commit.
+///
+/// PMD needs 7.26 or newer here. Older releases bundle an ASM that cannot read class file major
+/// version 69, so on a Java 25 toolchain they fall back to unresolved types and drown the log in
+/// parse-failure stack traces.
+pmd {
+    toolVersion = "7.26.0"
+    ruleSetConfig = resources.text.fromFile("config/pmd/dead-code.xml")
+    ruleSets = emptyList()
+    isConsoleOutput = true
+    isIgnoreFailures = false
+}
+
+tasks.named("pmdMain") {
+    // Reads the compiled classes for type resolution, so the sources have to compile first.
+    dependsOn(tasks.named("compileJava"))
+}
+
+// PMD only has rules for main sources here; there is no test source set.
+tasks.matching { it.name == "pmdTest" }.configureEach { enabled = false }
+
+tasks.named("check") {
+    dependsOn(tasks.named("spotlessCheck"), tasks.named("pmdMain"))
+}
+
+tasks.register("tidy") {
+    group = "verification"
+    description = "Applies the mechanical formatting fixes, then reports what needs a decision."
+
+    dependsOn(tasks.named("spotlessApply"), tasks.named("pmdMain"))
+    mustRunAfter(tasks.named("spotlessApply"))
 }

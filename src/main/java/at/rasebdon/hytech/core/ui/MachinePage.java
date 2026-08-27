@@ -43,11 +43,15 @@ public final class MachinePage extends HytechCustomPage {
 
     /// Item cells the document declares, by prefix and count. Bound once on open; which of them
     /// are *visible*, and what each one stands for, is decided on every render.
+    ///
+    /// Counted from [MachineView]'s own constants rather than restated: a cell this binds but the
+    /// view never draws is dead, and one the view draws but this misses is a cell that ignores
+    /// clicks.
     private static final Map<String, Integer> CELL_GROUPS = Map.of(
-            "#InSlot", 4,
-            "#OutSlot", 4,
-            "#FlatSlot", 12,
-            "#Inv", 45);
+            "#InSlot", MachineView.SPLIT_CELLS,
+            "#OutSlot", MachineView.SPLIT_CELLS,
+            "#FlatSlot", MachineView.FLAT_CELLS,
+            "#Inv", MachineView.STORAGE_CELLS + MachineView.HOTBAR_CELLS);
 
     private final World world;
     private final Vector3i blockPos;
@@ -185,6 +189,7 @@ public final class MachinePage extends HytechCustomPage {
                 refresh();
             }
             default -> {
+                // Not one of this page's own actions.
             }
         }
     }
@@ -253,5 +258,4 @@ public final class MachinePage extends HytechCustomPage {
 
         return InventoryUtils.getSectionById(ref, sectionId, ref.getStore());
     }
-
 }

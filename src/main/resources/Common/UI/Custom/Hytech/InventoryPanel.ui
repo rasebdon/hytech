@@ -107,5 +107,4 @@ $H = "Hytech.ui";
     $H.@SlotCell #Inv43 {}
     $H.@SlotCell #Inv44 {}
   }
-
 };

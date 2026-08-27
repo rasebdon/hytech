@@ -40,13 +40,11 @@ $C = "../Common.ui";
 // ---------------------------------------------------------------------------------------------
 // Metrics
 //
-// These are mirrored by `MachineView.Metrics`, which adds up what it drew and sets each container's
-// height to fit. Change a number here and change it there, or a battery's panel grows a gap at the
-// bottom. The duplication buys the thing that matters: a page sized to the machine rather than to
-// the worst case, so a solar panel is not a mostly-empty crusher.
+// These are mirrored by the pixel constants on `MachineView`, which adds up what it drew and sets
+// each container's height to fit. Change a number here and change it there, or a battery's panel
+// grows a gap at the bottom. The duplication buys the thing that matters: a page sized to the
+// machine rather than to the worst case, so a solar panel is not a mostly-empty crusher.
 // ---------------------------------------------------------------------------------------------
-
-@BarWidth = 284;     // the vanilla @ProgressBar width, which cannot be overridden through @Anchor
 
 @SlotSize = 52;
 @SlotGap  = 4;

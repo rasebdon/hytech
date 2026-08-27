@@ -7,8 +7,6 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
 
-import javax.annotation.Nullable;
-
 /// Lights a burner's firebox while it has fuel alight.
 ///
 /// Both states are named rather than only the lit one, because a block state cannot be

@@ -7,4 +7,3 @@ public abstract class LogisticComponentChangedEvent<TContainer> extends Logistic
         super(component, changeType);
     }
 }
-

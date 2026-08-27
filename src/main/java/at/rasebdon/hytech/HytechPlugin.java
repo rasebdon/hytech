@@ -7,7 +7,6 @@ import at.rasebdon.hytech.gas.GasModule;
 import at.rasebdon.hytech.heat.HeatModule;
 import at.rasebdon.hytech.items.ItemModule;
 import at.rasebdon.hytech.machines.MachineModule;
-import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 
@@ -15,8 +14,6 @@ import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 
 @SuppressWarnings("unused")
 public final class HytechPlugin extends JavaPlugin {
-    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
-
     public HytechPlugin(JavaPluginInit init) {
         super(init);
     }

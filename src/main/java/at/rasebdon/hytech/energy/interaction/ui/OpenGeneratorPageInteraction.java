@@ -6,6 +6,7 @@ import at.rasebdon.hytech.core.ui.MachinePage;
 import at.rasebdon.hytech.core.ui.MachineView;
 import at.rasebdon.hytech.core.util.HytechUtil;
 import at.rasebdon.hytech.energy.EnergyModule;
+import at.rasebdon.hytech.energy.HytechEnergyContainer;
 import at.rasebdon.hytech.energy.components.EnergyGeneratorComponent;
 import at.rasebdon.hytech.energy.components.FuelBurnerComponent;
 import at.rasebdon.hytech.energy.util.FuelUtil;
@@ -39,6 +40,13 @@ public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
                             OpenPageBlockInteraction.CODEC)
                     .build();
 
+    /// Float rather than the double `WorldTimeResource` reports, since a bar takes a float.
+    private static float sunlight(World world) {
+        var time = world.getEntityStore().getStore().getResource(WorldTimeResource.getResourceType());
+
+        return (float) time.getSunlightFactor();
+    }
+
     @Override
     @Nullable
     protected HytechCustomPage createPage(@NotNull World world,
@@ -66,16 +74,21 @@ public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
                 : fuelComponent.getItemContainer();
 
         return new MachinePage(playerRef, world, blockPos, fuel,
-                (page, view) -> fill(page, view, world, blockPos, generator,
+                (_, view) -> fill(view, world, blockPos, generator,
                         energyComponent.getContainer(), burner, fuel));
     }
 
-    private void fill(MachinePage page,
-                      MachineView view,
+    private static String burnStatus(FuelBurnerComponent burner) {
+        if (!burner.isBurning()) return "No fuel";
+
+        return String.format("%.0fs remaining", Math.ceil(burner.getBurnTimeRemaining()));
+    }
+
+    private void fill(MachineView view,
                       World world,
                       Vector3i blockPos,
                       EnergyGeneratorComponent generator,
-                      at.rasebdon.hytech.energy.HytechEnergyContainer energy,
+                      HytechEnergyContainer energy,
                       @Nullable FuelBurnerComponent burner,
                       @Nullable ItemContainer fuel) {
 
@@ -107,29 +120,14 @@ public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
                             burnStatus(burner));
                 }
             }
-            case FUEL_LIQUID -> {
-                // Wiring these to the fluid module is not done; say so rather than showing an
-                // empty bar that looks broken.
-                view.secondary("Fuel", 0f, "Liquid fuel not implemented");
-            }
+            // Wiring these to the fluid module is not done; say so rather than showing an
+            // empty bar that looks broken.
+            case FUEL_LIQUID -> view.secondary("Fuel", 0f, "Liquid fuel not implemented");
         }
 
         view.detail("Output", generator.getCurrentRate() + " RF/t");
         view.detail("Maximum", generator.getBaseRate() + " RF/t");
         view.detail("Max transfer", energy.getTransferSpeed() + " RF/t");
-    }
-
-    private static String burnStatus(FuelBurnerComponent burner) {
-        if (!burner.isBurning()) return "No fuel";
-
-        return String.format("%.0fs remaining", Math.ceil(burner.getBurnTimeRemaining()));
-    }
-
-    /// Float rather than the double `WorldTimeResource` reports, since a bar takes a float.
-    private static float sunlight(World world) {
-        var time = world.getEntityStore().getStore().getResource(WorldTimeResource.getResourceType());
-
-        return time == null ? 0f : (float) time.getSunlightFactor();
     }
 
     private static float altitude(Vector3i blockPos) {

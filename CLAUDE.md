@@ -18,7 +18,29 @@ items. It uses the native Hytale Plugin framework with Gradle (Kotlin DSL).
 ./gradlew build          # Compile and package
 ./gradlew server         # Run dev server (also syncs assets)
 ./gradlew syncAssets     # Sync resources from game build folder back to src
+./gradlew tidy           # Apply the mechanical formatting fixes, then check for dead code
+./gradlew check          # spotlessCheck + pmdMain, without rewriting anything
 ```
+
+### Formatting and dead code
+
+`spotlessApply` (or `tidy`) is the only thing that rewrites source. It is deliberately **not** a
+reformatter: no `google-java-format`, no `importOrder`. Both would reflow every file in the tree and
+flatten the aligned constant blocks and `///` doc comments that carry most of the reasoning here.
+What it does do is the set of edits nobody makes on purpose -- delete unused imports, trim trailing
+whitespace, end files with a newline -- so it is safe to run over the whole tree unreviewed.
+
+Dead code is `pmdMain`, gated by `config/pmd/dead-code.xml` and **failing** the build. Nothing in
+the Java ecosystem deletes an unused *method* for you, and that is not a tooling gap: `public` is an
+API surface the compiler cannot see past, and this plugin's components, interactions and systems are
+instantiated by the server's asset loader by name, so "nothing calls it" is not "nothing uses it".
+PMD is therefore scoped to what one file decides on its own -- private members, locals, parameters,
+assignments -- where the fix is unambiguous. For the rest, IntelliJ's *Analyze > Run Inspection by
+Name > Unused declaration* is the tool, and it needs a human on each hit.
+
+PMD must be **7.26 or newer**. Older releases bundle an ASM that cannot read class file major
+version 69, so against a Java 25 toolchain they silently lose type resolution and bury the console
+in `Unsupported class file major version 69` stack traces while still claiming to have run.
 
 Gradle itself must run on a **Java 25+ JVM** — the `hytale-mod` plugin requires it, so an older
 default JDK fails during configuration with "Dependency requires at least JVM runtime version 25".
@@ -474,13 +496,14 @@ Things worth knowing:
   Any new machine with a page inherits that.
 - **Use the vanilla widget styles rather than rebuilding them.** `$C.@ProgressBar` carries the right
   height, background and effect textures; wrapping a bare `ProgressBar` in a bordered `Group` and
-  forcing a taller height stretched the 9-patch and looked broken. `@PanelWidth` is 284 to match it.
+  forcing a taller height stretched the 9-patch and looked broken.
 - **Everything writes through `MachineView`.** Not tidiness: `write` is what appends to the change
   signature, and a value sent around it is one that can go stale on screen without `refresh` ever
   noticing. `SideConfigPanel` takes the view, not the command builder, for exactly that reason.
 - **`@ProgressBar` spreads the caller's `@Anchor` before its own `Width: 284`,** so a narrower bar
-  cannot be had through `@Anchor` -- the 284 always wins. Replace the `Anchor` property outright.
-  This is why `@ReadoutWidth` is 312: 284 plus the section's padding.
+  cannot be had through `@Anchor` -- the 284 always wins, and replacing the `Anchor` property
+  outright is the only way past it. Every bar in `MachinePage.ui` therefore sits in a `CenterMiddle`
+  wrapper inside its flexing column rather than being stretched to fill it.
 - A machine adds no UI document of its own: `MachinePage.ui` declares every section and
   [MachineView] hides the ones the machine did not fill. A new resource type needs no UI code.
 - **`@DecoratedContainer`'s close button is artwork only.** `@CloseButton = true` draws the X; the

@@ -6,7 +6,6 @@ import at.rasebdon.hytech.core.transport.BlockFaceConfigType;
 import at.rasebdon.hytech.core.util.BlockFaceUtil;
 import at.rasebdon.hytech.core.util.BlockRayUtil;
 import at.rasebdon.hytech.core.util.HytechUtil;
-import at.rasebdon.hytech.core.util.LogisticLookup;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.system.tick.TickingSystem;
 import com.hypixel.hytale.math.vector.Rotation3f;
@@ -49,6 +48,7 @@ public final class FaceConfigOverlaySystem extends TickingSystem<EntityStore> {
     /// little instead: a badge that stops short of the edges reads as an overlay rather than as a
     /// retexture of the block, and it stops the quad z-fighting with a neighbour's own face.
     private static final float OVERLAY_SCALE = 1.6f;
+
     // Keyed by entity index, not by Ref: Ref has no equals/hashCode, so a fresh one is
     // handed out every tick and map lookups would never match -- which spawned a new quad
     // every pass and never cleaned any up.
@@ -220,7 +220,7 @@ public final class FaceConfigOverlaySystem extends TickingSystem<EntityStore> {
         // Only the resource the wrench is currently set to. Showing a face the wrench cannot
         // change -- because this block has no container of that type -- is worse than showing
         // nothing: the colour would describe something the next click will not touch.
-        var component = componentForMode(world, playerRef, blockPos);
+        var component = componentForMode(store, world, playerRef, blockPos);
         if (component == null) return null;
 
         var worldFace = faceOfHit(hit.point(), blockPos);
@@ -251,10 +251,11 @@ public final class FaceConfigOverlaySystem extends TickingSystem<EntityStore> {
     /// the mode says Items would be a lie the moment the block has both.
     @Nullable
     private LogisticComponent<?> componentForMode(
-            @NonNull World world, @NonNull Ref<EntityStore> playerRef, @NonNull Vector3i blockPos) {
+            @NonNull Store<EntityStore> store, @NonNull World world,
+            @NonNull Ref<EntityStore> playerRef, @NonNull Vector3i blockPos) {
 
         var modeType = HytechCoreModule.get().getWrenchModeComponentType();
-        var mode = store(world).getComponent(playerRef, modeType);
+        var mode = store.getComponent(playerRef, modeType);
 
         var resource = mode == null ? null : mode.resolve();
         if (resource == null) return null;
@@ -262,10 +263,6 @@ public final class FaceConfigOverlaySystem extends TickingSystem<EntityStore> {
         // Pipes are excluded: their arms already show connectivity, and a quad over an arm would
         // hide it.
         return resource.blockAt(world, blockPos);
-    }
-
-    private static Store<EntityStore> store(@NonNull World world) {
-        return world.getEntityStore().getStore();
     }
 
     private Ref<EntityStore> spawnOverlay(Store<EntityStore> store, Shown target) {
@@ -292,7 +289,6 @@ public final class FaceConfigOverlaySystem extends TickingSystem<EntityStore> {
     }
 
     /// What the overlay currently shows for a player, so it is only respawned on change.
-
     private record Shown(Vector3i block, BlockFace face, BlockFaceConfigType config) {
     }
 

@@ -30,14 +30,17 @@ public final class MachineView {
     /// Ingredient and result cells in the split view. Four each is generous for what the mod
     /// ships -- the widest is the smelter's two in, two out -- and a machine wanting more slots
     /// than that wants the undivided grid.
-    private static final int SPLIT_CELLS = 4;
+    ///
+    /// The four cell counts are package-private because [MachinePage] binds a click handler to
+    /// every declared cell and must bind exactly as many as this draws.
+    static final int SPLIT_CELLS = 4;
 
     /// Cells in the undivided view, for a fuel slot or an item buffer.
-    private static final int FLAT_CELLS = 12;
+    static final int FLAT_CELLS = 12;
 
     /// Player inventory cells: thirty-six storage, then nine hotbar.
-    private static final int STORAGE_CELLS = 36;
-    private static final int HOTBAR_CELLS = 9;
+    static final int STORAGE_CELLS = 36;
+    static final int HOTBAR_CELLS = 9;
 
     /// Pixel metrics, mirroring `Hytech.ui`.
     ///
@@ -132,21 +135,6 @@ public final class MachineView {
     // Primitives
     // -------------------------------------------------------------------------------------------
 
-    /// Writes one value and records it in the change signature.
-    ///
-    /// Public because the side configurator writes through this view rather than touching the
-    /// command builder: a value written around the signature is a value that can go stale on the
-    /// page without the refresh ever noticing.
-    public void write(@Nonnull String selector, @Nonnull String value) {
-        this.commands.set(selector, value);
-        this.signature.append(selector).append('=').append(value).append(';');
-    }
-
-    public void write(@Nonnull String selector, float value) {
-        this.commands.set(selector, value);
-        this.signature.append(selector).append('=').append(value).append(';');
-    }
-
     /// "8.4s", "1m 05s". Seconds under a minute keep a decimal, because a crusher operation is
     /// often shorter than the second a whole number would round it to.
     @Nonnull
@@ -158,14 +146,29 @@ public final class MachineView {
         return String.format("%dm %02ds", whole / 60, whole % 60);
     }
 
+    /// Writes one value and records it in the change signature.
+    ///
+    /// Public because the side configurator writes through this view rather than touching the
+    /// command builder: a value written around the signature is a value that can go stale on the
+    /// page without the refresh ever noticing.
+    public void write(@Nonnull String selector, @Nonnull String value) {
+        this.commands.set(selector, value);
+        note(selector, value);
+    }
+
+    public void write(@Nonnull String selector, float value) {
+        this.commands.set(selector, value);
+        note(selector, value);
+    }
+
     public void write(@Nonnull String selector, int value) {
         this.commands.set(selector, value);
-        this.signature.append(selector).append('=').append(value).append(';');
+        note(selector, value);
     }
 
     public void write(@Nonnull String selector, boolean value) {
         this.commands.set(selector, value);
-        this.signature.append(selector).append('=').append(value).append(';');
+        note(selector, value);
     }
 
     /// A signature of this pass, for change detection.
@@ -257,15 +260,6 @@ public final class MachineView {
         write("#Detail" + row + "Value.Text", value);
     }
 
-    /// Whether a Configure Sides button makes sense for this block.
-    public void configurable(boolean canConfigure) {
-        write("#ConfigureButton.Visible", canConfigure);
-    }
-
-    // -------------------------------------------------------------------------------------------
-    // Contents
-    // -------------------------------------------------------------------------------------------
-
     /// A second bar for a *level*: sunlight, wind exposure. Anything with a duration is
     /// [#progress] instead, which lives beside the slots it is working on.
     public void secondary(@Nonnull String heading, float ratio, @Nonnull String caption) {
@@ -275,6 +269,17 @@ public final class MachineView {
         write("#SecondaryBar.Value", clamp(ratio));
         write("#SecondaryCaption.Text", caption);
     }
+
+    /// Records a written value in the change signature. `commands.set` is overloaded per type
+    /// and has no common supertype to dispatch on, so the overloads above split on the `set`
+    /// call and share this.
+    private void note(@Nonnull String selector, @Nonnull Object value) {
+        this.signature.append(selector).append('=').append(value).append(';');
+    }
+
+    // -------------------------------------------------------------------------------------------
+    // Contents
+    // -------------------------------------------------------------------------------------------
 
     /// The machine's own slots.
     ///
@@ -408,7 +413,6 @@ public final class MachineView {
                 this.held = cell;
             }
         }
-
     }
 
     private void hideCells(@Nonnull String prefix, int from, int to) {
@@ -416,6 +420,10 @@ public final class MachineView {
             write(prefix + cell + ".Visible", false);
         }
     }
+
+    // -------------------------------------------------------------------------------------------
+    // Finish
+    // -------------------------------------------------------------------------------------------
 
     /// Hides everything the machine did not fill in, and repaints the held cell. Called after the
     /// machine has had its say.
@@ -482,10 +490,6 @@ public final class MachineView {
         writeAnchor("#MainContainer", MAIN_WIDTH, container, CONTAINER_GAP, null);
     }
 
-    // -------------------------------------------------------------------------------------------
-    // Finish
-    // -------------------------------------------------------------------------------------------
-
     /// Two style writes rather than four per cell.
     ///
     /// A page carrying the player's inventory draws over fifty cells; repainting every one of them
@@ -511,5 +515,10 @@ public final class MachineView {
 
     private static float clamp(float ratio) {
         return Math.max(0f, Math.min(1f, ratio));
+    }
+
+    /// Whether a Configure Sides button makes sense for this block.
+    public void configurable(boolean canConfigure) {
+        write("#ConfigureButton.Visible", canConfigure);
     }
 }

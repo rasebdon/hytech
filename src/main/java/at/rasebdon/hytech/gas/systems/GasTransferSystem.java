@@ -1,6 +1,5 @@
 package at.rasebdon.hytech.gas.systems;
 
-import at.rasebdon.hytech.core.components.ContainerHolder;
 import at.rasebdon.hytech.core.systems.AbstractTransferSystem;
 import at.rasebdon.hytech.gas.HytechGasContainer;
 import at.rasebdon.hytech.gas.events.GasContainerChangedEvent;
@@ -13,15 +12,5 @@ public class GasTransferSystem extends AbstractTransferSystem<HytechGasContainer
 
     public GasTransferSystem(IEventRegistry eventRegistry) {
         super(eventRegistry, GasContainerChangedEvent.class, GasNetworkChangedEvent.class);
-    }
-
-    @Override
-    protected void onBeforePass(ContainerHolder<HytechGasContainer> holder) {
-        if (!holder.isAvailable()) return;
-
-        var container = holder.getContainer();
-        if (container == null) return;
-
-        container.updateDelta();
     }
 }

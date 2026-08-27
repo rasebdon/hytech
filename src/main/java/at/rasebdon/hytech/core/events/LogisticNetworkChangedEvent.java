@@ -8,4 +8,3 @@ public abstract class LogisticNetworkChangedEvent<TContainer> extends LogisticCh
         super(network, changeType);
     }
 }
-

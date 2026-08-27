@@ -46,7 +46,7 @@ public class BlockFaceConfig implements Cloneable {
         // shows nothing. A generator wants to *default* to output while still being configurable,
         // which is what this expresses. Declared after the per-face keys so it is applied last.
         builder.append(new KeyedCodec<>("Default", Codec.STRING),
-                (c, v) -> c.setAllFaces(v), (c) -> null).add();
+                BlockFaceConfig::setAllFaces, (_) -> null).add();
 
         builder.append(new KeyedCodec<>("BlockFaceConfigBitmap", Codec.LONG),
                 (c, v) -> c.currentBitmap = v, (c) -> c.currentBitmap).add();

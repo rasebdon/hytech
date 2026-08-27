@@ -3,6 +3,7 @@ package at.rasebdon.hytech.core.systems;
 import at.rasebdon.hytech.core.components.ContainerHolder;
 import at.rasebdon.hytech.core.components.LogisticBlockComponent;
 import at.rasebdon.hytech.core.containers.LogisticContainer;
+import at.rasebdon.hytech.core.containers.ScalarContainer;
 import at.rasebdon.hytech.core.events.LogisticComponentChangedEvent;
 import at.rasebdon.hytech.core.events.LogisticNetworkChangedEvent;
 import at.rasebdon.hytech.core.networks.LogisticNetwork;
@@ -56,9 +57,16 @@ public abstract class AbstractTransferSystem<TContainer extends LogisticContaine
         return 0f;
     }
 
-    /// Hook for resource types that track a per-pass delta for their UI. Energy is the only
-    /// one today; the default does nothing so nobody pays for it.
+    /// Snapshots each container's per-pass delta, which the UIs read as a throughput figure.
+    ///
+    /// Every scalar resource wants exactly this and items have no delta to track, so the base
+    /// does it for [ScalarContainer] and no concrete transfer system has to override anything.
     protected void onBeforePass(ContainerHolder<TContainer> holder) {
+        if (!holder.isAvailable()) return;
+
+        if (holder.getContainer() instanceof ScalarContainer scalar) {
+            scalar.updateDelta();
+        }
     }
 
     @Override

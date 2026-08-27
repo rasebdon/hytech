@@ -1,6 +1,5 @@
 package at.rasebdon.hytech.heat.systems;
 
-import at.rasebdon.hytech.core.components.ContainerHolder;
 import at.rasebdon.hytech.core.systems.AbstractTransferSystem;
 import at.rasebdon.hytech.heat.HytechHeatContainer;
 import at.rasebdon.hytech.heat.events.HeatContainerChangedEvent;
@@ -12,15 +11,5 @@ public class HeatTransferSystem extends AbstractTransferSystem<HytechHeatContain
 
     public HeatTransferSystem(IEventRegistry eventRegistry) {
         super(eventRegistry, HeatContainerChangedEvent.class, HeatNetworkChangedEvent.class);
-    }
-
-    @Override
-    protected void onBeforePass(ContainerHolder<HytechHeatContainer> holder) {
-        if (!holder.isAvailable()) return;
-
-        var container = holder.getContainer();
-        if (container == null) return;
-
-        container.updateDelta();
     }
 }

@@ -1,28 +1,28 @@
 package at.rasebdon.hytech.core.interactions;
 
 import at.rasebdon.hytech.core.HytechCoreModule;
+import at.rasebdon.hytech.core.LogisticResourceType;
 import at.rasebdon.hytech.core.components.LogisticComponent;
 import at.rasebdon.hytech.core.components.LogisticEntityProxyComponent;
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
-import at.rasebdon.hytech.core.util.BlockFaceUtil;
-import at.rasebdon.hytech.core.util.HytechUtil;
 import at.rasebdon.hytech.core.ui.HytechPages;
 import at.rasebdon.hytech.core.ui.WrenchModePage;
+import at.rasebdon.hytech.core.util.BlockFaceUtil;
+import at.rasebdon.hytech.core.util.HytechUtil;
 import at.rasebdon.hytech.core.util.LogisticLookup;
-import at.rasebdon.hytech.core.LogisticResourceType;
 import at.rasebdon.hytech.core.util.PipeConnectionMask;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.*;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
+import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.entity.component.HeadRotation;
 import com.hypixel.hytale.server.core.modules.entity.component.ModelComponent;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHandler;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.SimpleInteraction;
-import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -54,37 +54,28 @@ public class WrenchInteraction extends SimpleInteraction {
             @Nonnull World world,
             @Nonnull Ref<EntityStore> playerRef,
             @Nonnull Vector3i targetBlock) {
-        doBlockInteraction(clientState, world, playerRef, targetBlock);
+
+        var containerComponent = getContainer(world, playerRef, targetBlock);
+        if (containerComponent == null) return;
+
+        var worldFace = resolveTargetedFace(clientState, containerComponent, playerRef, targetBlock);
+        if (worldFace == BlockFace.None) return;
+
+        var blockRef = HytechUtil.getBlockEntityRef(world, targetBlock);
+        if (blockRef == null) return;
+
+        var blockTransform = HytechUtil.getBlockTransform(blockRef, world.getChunkStore().getStore());
+        if (blockTransform == null) return;
+
+        var worldDir = BlockFaceUtil.getVectorFromFace(worldFace);
+        var localFace = BlockFaceUtil.getLocalFace(worldDir, blockTransform.rotation());
+
+        cycleFace(containerComponent, localFace, playerRef);
     }
 
     /// Whether this stack is a wrench, for blocks deciding whether to defer.
     public static boolean isWrench(@Nullable ItemStack stack) {
         return !ItemStack.isEmpty(stack) && WRENCH_ITEM_ID.equals(stack.getItemId());
-    }
-
-    private static void doBlockInteraction(
-            @Nonnull InteractionSyncData clientState,
-            @Nonnull World world,
-            @Nonnull Ref<EntityStore> playerRef,
-            @Nonnull Vector3i targetBlock) {
-
-        var containerComponent = getContainer(world, playerRef, targetBlock);
-
-        if (containerComponent != null) {
-            BlockFace worldFace = resolveTargetedFace(clientState, containerComponent, playerRef, targetBlock);
-            if (worldFace == BlockFace.None) return;
-
-            Vector3i worldDir = BlockFaceUtil.getVectorFromFace(worldFace);
-
-            var blockRef = HytechUtil.getBlockEntityRef(world, targetBlock);
-            assert blockRef != null;
-
-            var blockTransform = HytechUtil.getBlockTransform(blockRef, world.getChunkStore().getStore());
-            assert blockTransform != null;
-
-            var localFace = BlockFaceUtil.getLocalFace(worldDir, blockTransform.rotation());
-            cycleFace(containerComponent, localFace, playerRef);
-        }
     }
 
     /// Works out which face the player actually aimed at.
@@ -177,7 +168,6 @@ public class WrenchInteraction extends SimpleInteraction {
         return mode == null ? null : mode.resolve();
     }
 
-
     @Nonnull
     @Override
     public WaitForDataFrom getWaitForDataFrom() {
@@ -232,9 +222,8 @@ public class WrenchInteraction extends SimpleInteraction {
             var pageTarget = store.getComponent(playerRef, PlayerRef.getComponentType());
 
             if (pageTarget != null) {
-                var target = pageTarget;
                 world.execute(() -> HytechPages.open(store, playerRef,
-                        new WrenchModePage(target, playerRef)));
+                        new WrenchModePage(pageTarget, playerRef)));
             }
             return;
         }
@@ -246,7 +235,7 @@ public class WrenchInteraction extends SimpleInteraction {
                 return;
             }
 
-            doBlockInteraction(
+            configureTargetedFace(
                     clientState,
                     world,
                     playerRef,

@@ -65,5 +65,3 @@ public final class LogisticNeighborMap<TContainer> {
         return new HashSet<>(faceToNeighbor.values());
     }
 }
-
-

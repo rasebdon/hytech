@@ -57,4 +57,3 @@ public class EnergyGeneratorComponent implements Component<ChunkStore> {
         return new EnergyGeneratorComponent(generatorType, baseRate);
     }
 }
-

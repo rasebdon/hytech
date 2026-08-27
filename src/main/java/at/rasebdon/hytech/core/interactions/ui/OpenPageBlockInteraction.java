@@ -1,18 +1,11 @@
 package at.rasebdon.hytech.core.interactions.ui;
 
-import at.rasebdon.hytech.core.ui.HytechCustomPage;
 import at.rasebdon.hytech.core.interactions.WrenchInteraction;
+import at.rasebdon.hytech.core.ui.HytechCustomPage;
 import at.rasebdon.hytech.core.ui.HytechPages;
-import at.rasebdon.hytech.core.util.HytechUtil;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.CommandBuffer;
-import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.InteractionType;
-import com.hypixel.hytale.protocol.packets.interface_.Page;
-import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.entity.entities.player.windows.ContainerWindow;
-import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHandler;

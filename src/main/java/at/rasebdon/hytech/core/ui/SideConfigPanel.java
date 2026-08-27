@@ -48,18 +48,24 @@ public final class SideConfigPanel {
             BlockFace.North, BlockFace.South,
             BlockFace.East, BlockFace.West);
 
-    /// Face colours, taken from the wrench's own in-world overlay textures
+    /// How each face mode is drawn and described.
+    ///
+    /// The colours are taken from the wrench's own in-world overlay textures
     /// (`Common/VFX/Overlay/Face_Overlay_*.png`) so that a face is the same colour on the panel as
     /// it is on the block. That is what lets this panel carry no legend: the player has already
     /// learned red-in, blue-out, purple-both from pointing a wrench at things.
-    private static final String BOTH = "#a040c0";
-    private static final String BOTH_HOVER = "#c066e0";
-    private static final String IN = "#d03030";
-    private static final String IN_HOVER = "#e85c5c";
-    private static final String OUT = "#3060d0";
-    private static final String OUT_HOVER = "#5c88e8";
-    private static final String OFF = "#808080";
-    private static final String OFF_HOVER = "#a0a0a0";
+    ///
+    /// One table rather than three parallel switches, so a new mode cannot pick up a colour and
+    /// lose its hover or its wording.
+    private static final Map<BlockFaceConfigType, FaceStyle> FACE_STYLES = Map.of(
+            BlockFaceConfigType.BOTH, new FaceStyle("#a040c0", "#c066e0", "Both"),
+            BlockFaceConfigType.INPUT, new FaceStyle("#d03030", "#e85c5c", "Input"),
+            BlockFaceConfigType.OUTPUT, new FaceStyle("#3060d0", "#5c88e8", "Output"),
+            BlockFaceConfigType.NONE, new FaceStyle("#808080", "#a0a0a0", "Disabled"));
+
+    /// A block with no container of the selected resource: grey like Disabled, worded as what it is.
+    private static final FaceStyle UNCONFIGURABLE =
+            new FaceStyle("#808080", "#a0a0a0", "Not configurable");
 
     /// A face the block's assets pin to a single state. Clicking does nothing, so it must not look
     /// like it would -- the same colour hovered as at rest.
@@ -109,43 +115,8 @@ public final class SideConfigPanel {
     }
 
     @Nonnull
-    private static String colour(@Nullable BlockFaceConfigType mode) {
-        if (mode == null) return OFF;
-
-        return switch (mode) {
-            case BOTH -> BOTH;
-            case INPUT -> IN;
-            case OUTPUT -> OUT;
-            case NONE -> OFF;
-        };
-    }
-
-    @Nonnull
-    private static String hoverColour(@Nullable BlockFaceConfigType mode) {
-        if (mode == null) return OFF_HOVER;
-
-        return switch (mode) {
-            case BOTH -> BOTH_HOVER;
-            case INPUT -> IN_HOVER;
-            case OUTPUT -> OUT_HOVER;
-            case NONE -> OFF_HOVER;
-        };
-    }
-
-    @Nonnull
-    private static String describe(@Nullable BlockFaceConfigType mode) {
-        if (mode == null) return "Not configurable";
-
-        return switch (mode) {
-            case BOTH -> "Both";
-            case INPUT -> "Input";
-            case OUTPUT -> "Output";
-            case NONE -> "Disabled";
-        };
-    }
-
-    public boolean isOpen() {
-        return this.open;
+    private static FaceStyle style(@Nullable BlockFaceConfigType mode) {
+        return mode == null ? UNCONFIGURABLE : FACE_STYLES.get(mode);
     }
 
     public void toggle() {
@@ -278,8 +249,10 @@ public final class SideConfigPanel {
         var mode = component == null ? null : component.getFaceConfigTowards(local);
         boolean locked = component == null || !component.isFaceConfigurable(local);
 
-        view.write(cell + ".Style.Default.Background", locked ? LOCKED : colour(mode));
-        view.write(cell + ".Style.Hovered.Background", locked ? LOCKED : hoverColour(mode));
+        var style = style(mode);
+
+        view.write(cell + ".Style.Default.Background", locked ? LOCKED : style.colour());
+        view.write(cell + ".Style.Hovered.Background", locked ? LOCKED : style.hover());
 
         // An empty well when there is nothing on that side -- air, an unloaded chunk, or a block
         // with no item form to draw. All three are "nothing to show" as far as the player is
@@ -291,15 +264,15 @@ public final class SideConfigPanel {
             view.write(cell + " #Icon.ItemId", neighbourId);
         }
 
-        view.write(cell + ".TooltipText", tooltip(face, mode, locked));
+        view.write(cell + ".TooltipText", tooltip(face, style, locked));
     }
 
     /// "Up -- Output -- Energy Pipe". The tooltip carries what the plus deliberately does not draw.
     @Nonnull
-    private String tooltip(@Nonnull BlockFace face, @Nullable BlockFaceConfigType mode, boolean locked) {
+    private String tooltip(@Nonnull BlockFace face, @Nonnull FaceStyle style, boolean locked) {
         var name = HytechUtil.getBlockDisplayNameOrNull(this.world, neighbourPos(face));
 
-        String line = face.name() + " -- " + describe(mode);
+        String line = face.name() + " -- " + style.label();
         if (name != null) line += " -- " + name;
         if (locked) line += "  (fixed by this block)";
 
@@ -360,5 +333,9 @@ public final class SideConfigPanel {
 
         return BlockFaceUtil.getLocalFace(BlockFaceUtil.getVectorFromFace(worldFace),
                 transform.rotation());
+    }
+
+    /// One face mode's resting colour, hover colour and wording.
+    private record FaceStyle(@Nonnull String colour, @Nonnull String hover, @Nonnull String label) {
     }
 }

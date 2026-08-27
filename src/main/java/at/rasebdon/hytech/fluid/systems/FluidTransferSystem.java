@@ -1,6 +1,5 @@
 package at.rasebdon.hytech.fluid.systems;
 
-import at.rasebdon.hytech.core.components.ContainerHolder;
 import at.rasebdon.hytech.core.systems.AbstractTransferSystem;
 import at.rasebdon.hytech.fluid.HytechFluidContainer;
 import at.rasebdon.hytech.fluid.events.FluidContainerChangedEvent;
@@ -13,15 +12,5 @@ public class FluidTransferSystem extends AbstractTransferSystem<HytechFluidConta
 
     public FluidTransferSystem(IEventRegistry eventRegistry) {
         super(eventRegistry, FluidContainerChangedEvent.class, FluidNetworkChangedEvent.class);
-    }
-
-    @Override
-    protected void onBeforePass(ContainerHolder<HytechFluidContainer> holder) {
-        if (!holder.isAvailable()) return;
-
-        var container = holder.getContainer();
-        if (container == null) return;
-
-        container.updateDelta();
     }
 }
