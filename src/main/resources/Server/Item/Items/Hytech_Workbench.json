@@ -35,7 +35,7 @@
       {
         "Sides": "BlockTextures/Machines/Machine_Casing.png",
         "UpDown": "BlockTextures/Machines/Machine_Casing.png",
-        "North": "BlockTextures/Machines/Workbench_Front.png",
+        "South": "BlockTextures/Machines/Workbench_Front.png",
         "Weight": 1
       }
     ],

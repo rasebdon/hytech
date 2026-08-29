@@ -34,7 +34,7 @@
       {
         "Sides": "BlockTextures/Machines/Machine_Casing.png",
         "UpDown": "BlockTextures/Machines/Machine_Casing.png",
-        "North": "BlockTextures/Machines/Crusher_Front.png",
+        "South": "BlockTextures/Machines/Crusher_Front.png",
         "Weight": 1
       }
     ],
@@ -158,7 +158,7 @@
             {
               "Sides": "BlockTextures/Machines/Machine_Casing.png",
               "UpDown": "BlockTextures/Machines/Machine_Casing.png",
-              "North": "BlockTextures/Machines/Crusher_Front.png",
+              "South": "BlockTextures/Machines/Crusher_Front.png",
               "Weight": 1
             }
           ]
@@ -168,7 +168,7 @@
             {
               "Sides": "BlockTextures/Machines/Machine_Casing.png",
               "UpDown": "BlockTextures/Machines/Machine_Casing.png",
-              "North": "BlockTextures/Machines/Crusher_Front_Active.png",
+              "South": "BlockTextures/Machines/Crusher_Front_Active.png",
               "Weight": 1
             }
           ]

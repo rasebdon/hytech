@@ -34,7 +34,7 @@
       {
         "Sides": "BlockTextures/Generators/Burner/Burner_Casing.png",
         "UpDown": "BlockTextures/Generators/Burner/Burner_Casing.png",
-        "North": "BlockTextures/Generators/Burner/Burner_Front.png",
+        "South": "BlockTextures/Generators/Burner/Burner_Front.png",
         "Weight": 1
       }
     ],
@@ -151,7 +151,7 @@
             {
               "Sides": "BlockTextures/Generators/Burner/Burner_Casing.png",
               "UpDown": "BlockTextures/Generators/Burner/Burner_Casing.png",
-              "North": "BlockTextures/Generators/Burner/Burner_Front.png",
+              "South": "BlockTextures/Generators/Burner/Burner_Front.png",
               "Weight": 1
             }
           ]
@@ -161,7 +161,7 @@
             {
               "Sides": "BlockTextures/Generators/Burner/Burner_Casing.png",
               "UpDown": "BlockTextures/Generators/Burner/Burner_Casing.png",
-              "North": "BlockTextures/Generators/Burner/Burner_Front_Lit.png",
+              "South": "BlockTextures/Generators/Burner/Burner_Front_Lit.png",
               "Weight": 1
             }
           ]
