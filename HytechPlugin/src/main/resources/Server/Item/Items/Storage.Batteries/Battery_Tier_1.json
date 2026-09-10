@@ -1,0 +1,155 @@
+{
+  "TranslationProperties": {
+    "Name": "server.items.Battery_Tier_1.name"
+  },
+  "ItemLevel": 600,
+  "Categories": [
+    "Technic.Machines"
+  ],
+  "PlayerAnimationsId": "Block",
+  "Set": "Machine",
+  "Tags": {
+    "Type": [
+      "Machine"
+    ]
+  },
+  "ItemSoundSetId": "ISS_Blocks_Soft",
+  "IconProperties": {
+    "Scale": 0.58823,
+    "Rotation": [
+      22.5,
+      45,
+      22.5
+    ],
+    "Translation": [
+      0,
+      -13.5
+    ]
+  },
+  "BlockType": {
+    "Material": "Solid",
+    "DrawType": "Model",
+    "Opacity": "Solid",
+    "CustomModel": "Blocks/Storage/Batteries/Battery_Tier_1.blockymodel",
+    "CustomModelTexture": [
+      {
+        "Texture": "BlockTextures/Storage/Batteries/Battery_Tier_1_0.png",
+        "Weight": 1
+      }
+    ],
+    "Group": "Props",
+    "Gathering": {
+      "Breaking": {
+        "GatherType": "Rocks"
+      }
+    },
+    "Flags": {
+      "IsUsable": true
+    },
+    "Interactions": {
+      "Use": {
+        "Interactions": [
+          {
+            "Type": "Hytech_OpenBatteryPage"
+          }
+        ]
+      }
+    },
+    "BlockParticleSetId": "Metal",
+    "ParticleColor": "#353535",
+    "BlockSoundSetId": "Metal",
+    "BlockEntity": {
+      "Components": {
+        "hytech:energy:container": {
+          "MaxTransfer": 2500,
+          "TransferPriority": 25,
+          "TotalCapacity": 100000,
+          "IsExtracting": false,
+          "EnergyLevelBlockStates": {
+            "Charge_0": 0,
+            "Charge_20": 20,
+            "Charge_40": 40,
+            "Charge_60": 60,
+            "Charge_80": 80,
+            "Charge_100": 100
+          }
+        }
+      }
+    },
+    "VariantRotation": "NESW",
+    "State": {
+      "Definitions": {
+        "Charge_0": {
+          "CustomModelTexture": [
+            {
+              "Texture": "BlockTextures/Storage/Batteries/Battery_Tier_1_0.png"
+            }
+          ]
+        },
+        "Charge_20": {
+          "CustomModelTexture": [
+            {
+              "Texture": "BlockTextures/Storage/Batteries/Battery_Tier_1_1.png"
+            }
+          ]
+        },
+        "Charge_40": {
+          "CustomModelTexture": [
+            {
+              "Texture": "BlockTextures/Storage/Batteries/Battery_Tier_1_2.png"
+            }
+          ]
+        },
+        "Charge_60": {
+          "CustomModelTexture": [
+            {
+              "Texture": "BlockTextures/Storage/Batteries/Battery_Tier_1_3.png"
+            }
+          ]
+        },
+        "Charge_80": {
+          "CustomModelTexture": [
+            {
+              "Texture": "BlockTextures/Storage/Batteries/Battery_Tier_1_4.png"
+            }
+          ]
+        },
+        "Charge_100": {
+          "CustomModelTexture": [
+            {
+              "Texture": "BlockTextures/Storage/Batteries/Battery_Tier_1_5.png"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "Icon": "Icons/ItemsGenerated/Battery_Tier_1.png",
+  "Recipe": {
+    "Input": [
+      {
+        "ItemId": "Hytech_Casing",
+        "Quantity": 1
+      },
+      {
+        "ItemId": "Hytech_Wire_Copper",
+        "Quantity": 4
+      },
+      {
+        "ItemId": "Hytech_Circuit_Basic",
+        "Quantity": 2
+      }
+    ],
+    "BenchRequirement": [
+      {
+        "Type": "Crafting",
+        "Id": "Hytech_Workbench",
+        "Categories": [
+          "Hytech_Logistics"
+        ]
+      }
+    ],
+    "OutputQuantity": 1,
+    "TimeSeconds": 4
+  }
+}

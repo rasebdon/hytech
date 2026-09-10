@@ -28,41 +28,66 @@ import math
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-RESOURCES = REPO_ROOT / "src" / "main" / "resources"
+from paths import CONTENT, CORE, REPO_ROOT, resources
+
+CORE_RESOURCES = resources(CORE)
+CONTENT_RESOURCES = resources(CONTENT)
 
 # Each pipe type has its own hub and arm geometry with its own UV layout and size, so
 # they cannot share a generated model set: the item hub is 12 units and the default hub is
 # 8, and their textures are authored against those specific layouts.
+#
+# A geometry set is owned by whichever mod authored it, and `root` says which tree its models and
+# hitboxes are written into. `Default` belongs to HytechCore, which is the shape every mod gets to
+# reuse by pointing its own pipe item at `Blocks/Pipes/Generated/Default/` and giving it a
+# different `CustomModelTexture` -- `Common/` is one namespace at runtime, so a cross-mod model
+# path needs no prefix. `Items` is Hytech's own fatter hub, and lives with Hytech: a mod that wants
+# geometry of its own authors the two source models and adds an entry here.
+#
+# `item_jsons` are the items whose `BlockType.State` map this fills in. They are separate from
+# `root` on purpose: the shared geometry lives in the library while the items using it belong to
+# content mods.
 PIPE_TYPES = [
     {
         "name": "Default",
-        "center_model": RESOURCES / "Common/Blocks/Pipes/Default/Pipe_Center.blockymodel",
-        "arm_model": RESOURCES / "Common/Blocks/Pipes/Default/Pipe_Full.blockymodel",
+        "root": CORE_RESOURCES,
+        "center_model": CORE_RESOURCES / "Common/Blocks/Pipes/Default/Pipe_Center.blockymodel",
+        "arm_model": CORE_RESOURCES / "Common/Blocks/Pipes/Default/Pipe_Full.blockymodel",
         "hub_units": 8,
         # Every scalar resource shares this geometry; only CustomModelTexture on each item
         # JSON differs, so a new type costs no generated models or hitboxes at all.
         "item_jsons": [
-            RESOURCES / "Server/Item/Items/Pipes/Energy/Pipe_Energy.json",
-            RESOURCES / "Server/Item/Items/Pipes/Fluid/Pipe_Fluid.json",
-            RESOURCES / "Server/Item/Items/Pipes/Gas/Pipe_Gas.json",
-            RESOURCES / "Server/Item/Items/Pipes/Heat/Pipe_Heat.json",
+            CONTENT_RESOURCES / "Server/Item/Items/Pipes/Energy/Pipe_Energy.json",
+            CONTENT_RESOURCES / "Server/Item/Items/Pipes/Fluid/Pipe_Fluid.json",
+            CONTENT_RESOURCES / "Server/Item/Items/Pipes/Gas/Pipe_Gas.json",
+            CONTENT_RESOURCES / "Server/Item/Items/Pipes/Heat/Pipe_Heat.json",
+            CORE_RESOURCES / "Server/Item/Items/Debug/Pipe_Debug_Energy.json",
+            CORE_RESOURCES / "Server/Item/Items/Debug/Pipe_Debug_Fluid.json",
+            CORE_RESOURCES / "Server/Item/Items/Debug/Pipe_Debug_Gas.json",
+            CORE_RESOURCES / "Server/Item/Items/Debug/Pipe_Debug_Heat.json",
         ],
     },
     {
+        # Both shipped shapes belong to the library, because a core component decides which one it
+        # is drawn as: ItemPipeComponent.getHubSize() returns 12, and the wrench ray-tests an arm
+        # against exactly that hub. Only the texture is content's -- that is the reskin.
         "name": "Items",
-        "center_model": RESOURCES / "Common/Blocks/Pipes/Items/Pipe_Items_Center.blockymodel",
-        "arm_model": RESOURCES / "Common/Items/Pipes/Items/Pipe_Items_Normal.blockymodel",
+        "root": CORE_RESOURCES,
+        "center_model": CORE_RESOURCES / "Common/Blocks/Pipes/Items/Pipe_Items_Center.blockymodel",
+        "arm_model": CORE_RESOURCES / "Common/Items/Pipes/Items/Pipe_Items_Normal.blockymodel",
         "hub_units": 12,
-        "item_jsons": [RESOURCES / "Server/Item/Items/Pipes/Items/Pipe_Items.json"],
+        "item_jsons": [
+            CONTENT_RESOURCES / "Server/Item/Items/Pipes/Items/Pipe_Items.json",
+            CORE_RESOURCES / "Server/Item/Items/Debug/Pipe_Debug_Items.json",
+        ],
     },
 ]
 
 # A block model spans 32 units, with the hub centred on it.
 BLOCK_UNITS = 32
 
-MODEL_ROOT = RESOURCES / "Common/Blocks/Pipes/Generated"
-HITBOX_ROOT = RESOURCES / "Server/Item/Block/Hitboxes/Pipes/Generated"
+MODEL_SUBDIR = "Common/Blocks/Pipes/Generated"
+HITBOX_SUBDIR = "Server/Item/Block/Hitboxes/Pipes/Generated"
 
 # Bit layout mirrors com.hypixel.hytale.protocol.BlockFace, minus the None entry:
 # Up(1) -> bit 0, Down(2) -> bit 1, ... West(6) -> bit 5. Keeping the same order as
@@ -232,11 +257,14 @@ def main() -> int:
 
         arm_node = keep_only_normal_cap(arm_source)
 
+        model_root = pipe_type["root"] / MODEL_SUBDIR
+        hitbox_root = pipe_type["root"] / HITBOX_SUBDIR
+
         for mask in range(64):
             mask_name = f"Conn_{mask}"
-            write_json(MODEL_ROOT / name / f"{mask_name}.blockymodel",
+            write_json(model_root / name / f"{mask_name}.blockymodel",
                        build_model(mask, center_node, arm_node), args.check, stale)
-            write_json(HITBOX_ROOT / name / f"Pipe_{name}_{mask_name}.json",
+            write_json(hitbox_root / name / f"Pipe_{name}_{mask_name}.json",
                        build_hitbox(mask, pipe_type["hub_units"]), args.check, stale)
 
         definitions = state_definitions(name)

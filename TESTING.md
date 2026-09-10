@@ -7,7 +7,7 @@ types observable at all.
 ## Before launching
 
 ```bash
-export JAVA_HOME=~/.jdks/openjdk-25.0.1      # Gradle needs a Java 25+ JVM
+export JAVA_HOME=~/.jdks/openjdk-25.0.2      # Gradle needs a Java 25+ JVM
 
 python scripts/check-asset-refs.py           # catches the fatal asset errors below
 python scripts/generate-pipe-assets.py --check
@@ -21,11 +21,57 @@ python scripts/generate-icons.py --check
 ./gradlew build && ./gradlew server
 ```
 
+`server` runs `:HytechPlugin:runServer`, which loads both plugins. Each generator writes into the
+project it belongs to -- `scripts/paths.py` says which -- so all of the above are still run from the
+repo root, unchanged.
+
+**Two plugins, so check the log before anything else:**
+
+- **Both** `Enabled plugin Technic:...` lines are there, `HytechCore` first. The order comes from
+  the content manifest's `Dependencies`, and content's setup reads `EnergyModule.get()`, so the
+  wrong order is an immediate `IllegalStateException: Not initialized`. Only *one* line means the
+  library booted alone -- `:HytechCore:runServer`, the IDE configuration named
+  `HytechCore only (no content)` -- which presents as Hytech being broken: the creative menu holds
+  the wrench, the multimeter and the five debug pipes and nothing else.
+- `Loading assets from ...HytechCore...` before `...HytechPlugin...`, and **no** `Duplicate asset
+  pack` line -- that one shuts the server down outright.
+- No `SEVERE` from our packs. Vanilla's own `BlockSetModule` warnings and the `Flags.IsUsable`
+  unused-key warnings are pre-existing noise.
+
+To check the library still stands on its own, which the dev run does not tell you:
+
+```bash
+python scripts/check-asset-refs.py --resources HytechCore/src/main/resources
+```
+
+**Stopping the server: kill the JVM, not Gradle.** `runServer` forks the server as a child
+process, so killing the Gradle invocation leaves it running -- holding the world lock and its log
+file handles, which then makes the next run come up on a stale world and refuse to delete its own
+logs. Stop it from the server console, or:
+
+```powershell
+Get-CimInstance Win32_Process -Filter "Name = 'java.exe'" |
+  Where-Object { $_.CommandLine -like '*com.hypixel.hytale.Main*' } |
+  ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+```
+
+Also note `hytale.runDir` is resolved against the *project* directory, so it is pinned to the repo
+root in the shared build config. Without that pin each subproject grows its own `run/` and the
+server boots a fresh world while the real universe sits untouched at the root.
+
+And once per release, the case `runServer` cannot reach: copy both jars into `run/mods/`, take them
+off the classpath and start the server. Under `runServer` every class sits on one app classloader,
+so cross-plugin linkage always appears to work; only real jars exercise `PluginClassLoader` and the
+dependency bridge. **This has not been done yet.**
+
 `check-asset-refs.py` exists because a missing `Icon` or texture is a **fatal validation error
 for that item**, and the server reports it as a wall of `SEVERE` lines and then carries on
 without the item rather than failing the build. That is easy to ship and only notice on launch.
-The script resolves every asset path our JSON references against both our `Common/` tree and the
-game's `Assets.zip`, since plenty of our assets legitimately point at vanilla art.
+The script resolves every asset path our JSON references against *every* project's `Common/` tree
+and the game's `Assets.zip`, since plenty of our assets legitimately point at vanilla art -- and
+since `Common/` is one merged namespace at runtime, so a content pipe pointing at the library's
+geometry is correct rather than missing. It also checks that every pipe item declares all 64
+connection states with models that resolve, which is the one pipe failure that is silent in-world.
 
 Icons in particular are a trap: `Icons/ItemsGenerated/` is normally written by the game's own
 icon renderer and copied back by the `syncAssets` task — which happens *after* validation. So
@@ -52,9 +98,15 @@ A source will not convert one resource into another: if its tank somehow already
 something else, it refuses rather than overwriting. A void releases its type claim each time it
 drains, so it swallows anything you throw at it rather than locking onto the first resource.
 
-**Read any block or pipe with the Multimeter** (`ReadLogisticContainer`). It prints every
+**Read any block or pipe with the Multimeter** (`Hytech_ReadLogisticContainer`). It prints every
 Hytech container on the block, so a fluid pipe reports its network's resource and fill, and the
 burner reports both its energy and its item container.
+
+`HytechCore` also ships **`Pipe_Debug_{Energy,Items,Fluid,Gas,Heat}`** -- untinted grey pipes at a
+throughput high enough that they never become the bottleneck you are trying to watch, with no recipe
+so they are creative-only. Two uses: run a resource across a distance without building a real pipe
+network, and check a content pipe against them, since they are the reference implementation the
+pipe-authoring rules in `HytechCore/CLAUDE.md` describe.
 
 ## Checklist
 
@@ -168,6 +220,9 @@ bar, Technic → Components for wire, coils, circuits, casings and frames.
 
 ## Known gaps
 
+- **The split has not been smoke-tested from real jars.** Both plugins load, both packs register in
+  dependency order and cross-plugin component registration works -- but only under `runServer`,
+  which puts everything on one classloader. See *Before launching*.
 - **`FUEL_LIQUID` generators return 0.** Wiring them to the fluid module is not done.
 - **Breaking a pipe fails when aimed at a marker-drawn arm** — the marker entity absorbs the
   break ray. Left as is by decision; the alternatives each trade one bug for another.

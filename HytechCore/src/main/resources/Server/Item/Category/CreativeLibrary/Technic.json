@@ -1,0 +1,26 @@
+{
+  "Icon": "Icons/ItemCategories/Items-Tools.png",
+  "Children": [
+    {
+      "Id": "General",
+      "Name": "hytechcore.ui.itemcategory.technic.general",
+      "Icon": "Icons/ItemCategories/Items-Tools.png"
+    },
+    {
+      "Id": "Machines",
+      "Name": "hytechcore.ui.itemcategory.technic.machines",
+      "Icon": "Icons/ItemCategories/Items-Tools.png"
+    },
+    {
+      "Id": "Materials",
+      "Name": "hytechcore.ui.itemcategory.technic.materials",
+      "Icon": "Icons/ItemCategories/Items-Tools.png"
+    },
+    {
+      "Id": "Components",
+      "Name": "hytechcore.ui.itemcategory.technic.components",
+      "Icon": "Icons/ItemCategories/Items-Tools.png"
+    }
+  ],
+  "Order": 5
+}

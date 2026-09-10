@@ -233,10 +233,9 @@ class BlockRecipe:
 
 
 BLOCK_RECIPES = [
-    # ---- tools: the first two things a player needs, so they cost plates and nothing rarer ----
-    BlockRecipe("Wrench.json", CATEGORY_COMPONENTS, [("Hytech_Plate_Iron", 2)], seconds=2),
-    BlockRecipe("Multimeter.json", CATEGORY_COMPONENTS,
-                [("Hytech_Plate_Copper", 1), ("Hytech_Circuit_Basic", 1)], seconds=2),
+    # The wrench and the multimeter are not here: they belong to HytechCore, and a library cannot
+    # put its recipes on a bench a content mod owns. They craft at the vanilla workbench out of
+    # vanilla bars, which is what keeps HytechCore usable on its own.
 
     # ---- logistics: eight pipes a craft, since a run eats them by the dozen ----
     BlockRecipe("Pipes/Energy/Pipe_Energy.json", CATEGORY_LOGISTICS,
@@ -250,8 +249,6 @@ BLOCK_RECIPES = [
     BlockRecipe("Pipes/Heat/Pipe_Heat.json", CATEGORY_LOGISTICS,
                 [("Hytech_Plate_Steel", 6)], output_quantity=8),
 
-    BlockRecipe("Storage.Items/Item_Buffer.json", CATEGORY_LOGISTICS,
-                [("Hytech_Casing", 1), ("Hytech_Plate_Iron", 4)]),
     BlockRecipe("Storage.Tanks/Fluid_Tank.json", CATEGORY_LOGISTICS,
                 [("Hytech_Casing", 1), ("Hytech_Plate_Bronze", 4)]),
     BlockRecipe("Storage.Tanks/Gas_Tank.json", CATEGORY_LOGISTICS,

@@ -24,8 +24,9 @@ import sys
 import zlib
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-RESOURCES = REPO_ROOT / "src" / "main" / "resources"
+from paths import REPO_ROOT, resources, CONTENT
+
+RESOURCES = resources(CONTENT)
 TEXTURE_DIR = RESOURCES / "Common/BlockTextures/Generators/Burner"
 
 SIZE = 16

@@ -1,0 +1,136 @@
+{
+  "TranslationProperties": {
+    "Name": "server.items.Solar_Panel_Tier_1.name"
+  },
+  "ItemLevel": 600,
+  "Categories": [
+    "Technic.Machines"
+  ],
+  "PlayerAnimationsId": "Block",
+  "Set": "Machine",
+  "Tags": {
+    "Type": [
+      "Machine"
+    ]
+  },
+  "ItemSoundSetId": "ISS_Blocks_Stone",
+  "IconProperties": {
+    "Scale": 0.58823,
+    "Rotation": [
+      22.5,
+      45,
+      22.5
+    ],
+    "Translation": [
+      0,
+      -13.5
+    ]
+  },
+  "BlockType": {
+    "Material": "Solid",
+    "DrawType": "Model",
+    "Opacity": "Transparent",
+    "CustomModel": "Blocks/Generators/Solar/Solar_Panel_Tier_1.blockymodel",
+    "CustomModelTexture": [
+      {
+        "Texture": "BlockTextures/Generators/Solar/Solar_Panel_Tier_1.png",
+        "Weight": 1
+      }
+    ],
+    "Group": "Props",
+    "Gathering": {
+      "Breaking": {
+        "GatherType": "Rocks"
+      }
+    },
+    "BlockEntity": {
+      "Components": {
+        "hytech:energy:generator": {
+          "GenerationRate": 50,
+          "GeneratorType": "SOLAR"
+        },
+        "hytech:energy:container": {
+          "MaxTransfer": 50,
+          "TransferPriority": 0,
+          "TotalCapacity": 50,
+          "IsExtracting": true,
+          "BlockFaceConfig": {
+            "None": [
+              "OUTPUT",
+              "NONE"
+            ],
+            "Up": [
+              "OUTPUT",
+              "NONE"
+            ],
+            "Down": [
+              "OUTPUT",
+              "NONE"
+            ],
+            "North": [
+              "OUTPUT",
+              "NONE"
+            ],
+            "South": [
+              "OUTPUT",
+              "NONE"
+            ],
+            "East": [
+              "OUTPUT",
+              "NONE"
+            ],
+            "West": [
+              "OUTPUT",
+              "NONE"
+            ],
+            "Default": "OUTPUT"
+          }
+        }
+      }
+    },
+    "VariantRotation": "NESW",
+    "BlockParticleSetId": "Metal",
+    "ParticleColor": "#353535",
+    "Flags": {
+      "IsUsable": true
+    },
+    "Interactions": {
+      "Use": {
+        "Interactions": [
+          {
+            "Type": "Hytech_OpenGeneratorPage"
+          }
+        ]
+      }
+    },
+    "BlockSoundSetId": "Metal"
+  },
+  "Icon": "Icons/ItemsGenerated/Solar_Panel_Tier_1.png",
+  "Recipe": {
+    "Input": [
+      {
+        "ItemId": "Hytech_Casing",
+        "Quantity": 1
+      },
+      {
+        "ItemId": "Hytech_Circuit_Basic",
+        "Quantity": 1
+      },
+      {
+        "ItemId": "Hytech_Plate_Silver",
+        "Quantity": 2
+      }
+    ],
+    "BenchRequirement": [
+      {
+        "Type": "Crafting",
+        "Id": "Hytech_Workbench",
+        "Categories": [
+          "Hytech_Machines"
+        ]
+      }
+    ],
+    "OutputQuantity": 1,
+    "TimeSeconds": 4
+  }
+}

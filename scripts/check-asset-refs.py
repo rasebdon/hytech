@@ -1,21 +1,27 @@
 #!/usr/bin/env python3
 """
-Verifies every asset path our JSON references actually resolves, and every item a recipe names
-actually exists.
+Verifies every asset path our JSON references actually resolves, every item a recipe names
+actually exists, and every pipe item declares the block states its renderer needs.
 
 A missing `Icon` or texture is a *fatal* validation error for that item at load time, and the
 server reports it as a wall of SEVERE lines rather than failing the build -- so it is easy to
 ship and only find out when launching. This catches the same thing in a second.
 
-References are resolved against our own `Common/` tree first and then the game's `Assets.zip`,
-because plenty of our assets legitimately point at vanilla textures and models.
+References are resolved against *every* mod's `Common/` tree and then the game's `Assets.zip`,
+because plenty of our assets legitimately point at vanilla textures and models -- and because
+`Common/` is one flat, last-pack-wins namespace at runtime, so a content mod's pipe item pointing
+at geometry shipped by HytechCore is correct and must not be reported as missing.
+
+Roots are discovered as `*/src/main/resources`, so adding a mod project needs no edit here.
 
 Usage:
     python scripts/check-asset-refs.py
+    python scripts/check-asset-refs.py --resources HytechCore/src/main/resources
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import re
@@ -24,8 +30,6 @@ import zipfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-RESOURCES = REPO_ROOT / "src" / "main" / "resources"
-COMMON = RESOURCES / "Common"
 
 # Keys whose values name a file under Common/. Kept explicit rather than "any string that looks
 # like a path", so a stray description never trips this.
@@ -33,6 +37,37 @@ ASSET_KEYS = {
     "Icon", "CustomModel", "Texture", "Model", "TransitionTexture",
     "All", "Sides", "UpDown", "Up", "Down", "North", "South", "East", "West",
 }
+
+
+def resource_roots(explicit: list[str]) -> list[Path]:
+    """Every mod's resource tree in this build.
+
+    One root per Gradle subproject. They are checked together rather than one at a time because
+    the runtime merges them: a reference that resolves in any pack resolves at load time, and a
+    per-project run would report every cross-mod reference as missing.
+    """
+    if explicit:
+        roots = [Path(value).resolve() for value in explicit]
+    else:
+        roots = sorted(path.resolve() for path in REPO_ROOT.glob("*/src/main/resources")
+                       if path.is_dir())
+
+    if not roots:
+        sys.exit("no resource roots found; expected */src/main/resources")
+
+    for root in roots:
+        if not root.is_dir():
+            sys.exit(f"not a directory: {root}")
+
+    return roots
+
+
+def display(path: Path) -> str:
+    """A path as a reader of this repo would write it."""
+    try:
+        return path.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        return path.as_posix()
 
 
 def game_assets() -> set[str]:
@@ -70,8 +105,13 @@ def collect(node: object, out: list[str]) -> None:
             collect(value, out)
 
 
-def item_ids(vanilla: set[str]) -> set[str]:
-    """Every item id the server will know: the game's, plus ours.
+def json_files(roots: list[Path]) -> list[Path]:
+    return sorted(path for root in roots for path in root.rglob("*.json")
+                  if path.name != "manifest.json")
+
+
+def item_ids(roots: list[Path], vanilla: set[str]) -> set[str]:
+    """Every item id the server will know: the game's, plus every mod's.
 
     An item's id is its file name, which is how `AssetBuilderCodec` keys the store.
     """
@@ -81,7 +121,8 @@ def item_ids(vanilla: set[str]) -> set[str]:
         if name.startswith("Server/Item/Items/") and name.endswith(".json")
     }
 
-    known.update(path.stem for path in (RESOURCES / "Server/Item/Items").rglob("*.json"))
+    for root in roots:
+        known.update(path.stem for path in (root / "Server/Item/Items").rglob("*.json"))
 
     return known
 
@@ -99,20 +140,17 @@ def collect_items(node: object, out: list[str]) -> None:
             collect_items(value, out)
 
 
-def check_recipes(vanilla: set[str]) -> list[tuple[Path, str]]:
+def check_recipes(roots: list[Path], vanilla: set[str]) -> list[tuple[Path, str]]:
     """Recipes naming an item that does not exist.
 
     Worth its own pass because the failure is quiet in a different way from a missing texture: the
     recipe loads, validates, and then simply never matches anything, so a machine sits idle with no
     log line to explain why. Generated recipes make this cheap to get wrong at scale.
     """
-    known = item_ids(vanilla)
+    known = item_ids(roots, vanilla)
     missing: list[tuple[Path, str]] = []
 
-    for path in sorted(RESOURCES.rglob("*.json")):
-        if path.name == "manifest.json":
-            continue
-
+    for path in json_files(roots):
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
@@ -129,7 +167,127 @@ def check_recipes(vanilla: set[str]) -> list[tuple[Path, str]]:
     return missing
 
 
-UI_ROOT = COMMON / "UI" / "Custom"
+# --------------------------------------------------------------------------------------------
+# Pipes
+# --------------------------------------------------------------------------------------------
+
+# Every mod ships its own pipe items, reusing the connection geometry HytechCore generates. That
+# makes a pipe the one block type whose assets have a contract the Java side cannot state: a
+# missing state is not an error anywhere, `setBlockInteractionState` simply no-ops and the pipe
+# renders as though it were unconnected.
+PIPE_COMPONENT = re.compile(r"^hytech:\w+:pipe$")
+
+# Kept in step with PipeConnectionMask: six faces, so 64 masks, named `Conn_<mask>`.
+PIPE_STATE_COUNT = 64
+
+# Defaults from LogisticPipeComponent.DEFAULT_CONNECTION_MODEL_ASSETS, used for whichever of the
+# three a pipe does not name itself.
+PIPE_MODEL_KEYS = {
+    "NormalConnectionModelAsset": "Pipe_Normal",
+    "PullConnectionModelAsset": "Pipe_Pull",
+    "PushConnectionModelAsset": "Pipe_Push",
+}
+
+
+def model_asset_ids(roots: list[Path], vanilla: set[str]) -> set[str]:
+    """Every `ModelAsset` id, which like an item id is just the file name."""
+    known = {
+        name.split("/")[-1][:-5]
+        for name in vanilla
+        if name.startswith("Server/Models/") and name.endswith(".json")
+    }
+
+    for root in roots:
+        known.update(path.stem for path in (root / "Server/Models").rglob("*.json"))
+
+    return known
+
+
+def hitbox_ids(roots: list[Path], vanilla: set[str]) -> set[str]:
+    known = {
+        name.split("/")[-1][:-5]
+        for name in vanilla
+        if name.startswith("Server/Item/Block/Hitboxes/") and name.endswith(".json")
+    }
+
+    for root in roots:
+        known.update(path.stem
+                     for path in (root / "Server/Item/Block/Hitboxes").rglob("*.json"))
+
+    return known
+
+
+def pipe_components(payload: dict) -> list[str]:
+    block_type = payload.get("BlockType")
+    if not isinstance(block_type, dict):
+        return []
+
+    entity = block_type.get("BlockEntity")
+    if not isinstance(entity, dict):
+        return []
+
+    components = entity.get("Components")
+    if not isinstance(components, dict):
+        return []
+
+    return [name for name in components if PIPE_COMPONENT.match(name)]
+
+
+def check_pipes(roots: list[Path], vanilla: set[str]) -> tuple[list[tuple[Path, str]], int]:
+    """The block-state contract a pipe item has to satisfy to render at all."""
+    problems: list[tuple[Path, str]] = []
+    models = model_asset_ids(roots, vanilla)
+    hitboxes = hitbox_ids(roots, vanilla)
+    checked = 0
+
+    for path in json_files(roots):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+
+        if not isinstance(payload, dict) or not pipe_components(payload):
+            continue
+
+        checked += 1
+        block_type = payload["BlockType"]
+        components = block_type["BlockEntity"]["Components"]
+
+        state = block_type.get("State")
+        definitions = state.get("Definitions") if isinstance(state, dict) else None
+        if not isinstance(definitions, dict):
+            problems.append((path, "declares a pipe component but no BlockType.State.Definitions"))
+            continue
+
+        expected = {f"Conn_{mask}" for mask in range(PIPE_STATE_COUNT)}
+        for name in sorted(expected - definitions.keys()):
+            problems.append((path, f"missing block state {name}"))
+
+        for name, definition in sorted(definitions.items()):
+            if not isinstance(definition, dict):
+                continue
+
+            hitbox = definition.get("HitboxType")
+            if isinstance(hitbox, str) and hitbox not in hitboxes:
+                problems.append((path, f"{name} names unknown HitboxType {hitbox}"))
+
+        # The three marker models the wrench spawns on an INPUT or OUTPUT face. A pipe that names
+        # none of them inherits the defaults, which HytechCore ships.
+        for component in components.values():
+            if not isinstance(component, dict):
+                continue
+
+            for key, fallback in PIPE_MODEL_KEYS.items():
+                name = component.get(key, fallback)
+                if isinstance(name, str) and name not in models:
+                    problems.append((path, f"{key} names unknown ModelAsset {name}"))
+
+    return problems, checked
+
+
+# --------------------------------------------------------------------------------------------
+# UI documents
+# --------------------------------------------------------------------------------------------
 
 # Properties in a .ui document whose value names a file. Everything else that happens to be a
 # quoted string -- a label, a tooltip -- is left alone.
@@ -159,57 +317,83 @@ def resolve_ui_path(document: Path, reference: str) -> Path:
     return (document.parent / reference).resolve()
 
 
-def check_ui(vanilla: set[str]) -> tuple[list[tuple[Path, str]], int]:
+def check_ui(roots: list[Path], vanilla: set[str]) -> tuple[list[tuple[Path, str]], int]:
     """Texture and document references inside .ui files."""
     missing: list[tuple[Path, str]] = []
     checked = 0
 
-    for document in sorted(UI_ROOT.rglob("*.ui")):
-        text = document.read_text(encoding="utf-8")
-        text = re.sub(r"//[^\n]*", "", text)
+    for root in roots:
+        ui_root = root / "Common" / "UI" / "Custom"
+        if not ui_root.is_dir():
+            continue
 
-        references = UI_PATH_PATTERN.findall(text) + UI_DOCUMENT_PATTERN.findall(text)
+        for document in sorted(ui_root.rglob("*.ui")):
+            text = document.read_text(encoding="utf-8")
+            text = re.sub(r"//[^\n]*", "", text)
 
-        for reference in references:
-            checked += 1
+            references = UI_PATH_PATTERN.findall(text) + UI_DOCUMENT_PATTERN.findall(text)
 
-            target = resolve_ui_path(document, reference)
-            if target.exists():
-                continue
+            for reference in references:
+                checked += 1
 
-            # The game ships most UI art only at @2x and references it without the suffix.
-            retina = target.with_name(target.stem + "@2x" + target.suffix)
-            if retina.exists():
-                continue
+                target = resolve_ui_path(document, reference)
+                if ui_reference_resolves(target, root, roots, vanilla):
+                    continue
 
-            try:
-                relative = target.relative_to(RESOURCES).as_posix()
-            except ValueError:
                 missing.append((document, reference))
-                continue
-
-            if relative in vanilla:
-                continue
-
-            stem, _, suffix = relative.rpartition(".")
-            if f"{stem}@2x.{suffix}" in vanilla:
-                continue
-
-            missing.append((document, reference))
 
     return missing, checked
 
 
+def ui_reference_resolves(target: Path, root: Path, roots: list[Path],
+                          vanilla: set[str]) -> bool:
+    """Whether a resolved UIPath exists in any pack, or in the game's own assets."""
+    candidates = [target]
+
+    # The same relative location in another mod's tree: `Common/` is one namespace at runtime, so
+    # a document in one pack may legitimately point at art shipped by another.
+    try:
+        relative = target.relative_to(root)
+    except ValueError:
+        relative = None
+    else:
+        candidates += [other / relative for other in roots if other != root]
+
+    for candidate in candidates:
+        if candidate.exists():
+            return True
+
+        # The game ships most UI art only at @2x and references it without the suffix.
+        retina = candidate.with_name(candidate.stem + "@2x" + candidate.suffix)
+        if retina.exists():
+            return True
+
+    if relative is None:
+        return False
+
+    name = relative.as_posix()
+    if name in vanilla:
+        return True
+
+    stem, _, suffix = name.rpartition(".")
+    return f"{stem}@2x.{suffix}" in vanilla
+
+
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--resources", action="append", default=[], metavar="DIR",
+                        help="a resource root to check; defaults to every */src/main/resources")
+    args = parser.parse_args()
+
+    roots = resource_roots(args.resources)
     vanilla = game_assets()
+
+    print("Checking " + ", ".join(display(root) for root in roots))
 
     missing: list[tuple[Path, str]] = []
     checked = 0
 
-    for path in sorted(RESOURCES.rglob("*.json")):
-        if path.name == "manifest.json":
-            continue
-
+    for path in json_files(roots):
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as error:
@@ -222,44 +406,59 @@ def main() -> int:
         for reference in references:
             checked += 1
 
-            if (COMMON / reference).exists():
+            if any((root / "Common" / reference).exists() for root in roots):
                 continue
             if f"Common/{reference}" in vanilla:
                 continue
 
             missing.append((path, reference))
 
-    print(f"Checked {checked} asset references across the resource tree.")
+    trees = "tree" if len(roots) == 1 else "trees"
+    print(f"Checked {checked} asset references across {len(roots)} resource {trees}.")
 
     if missing:
         print(f"\n{len(missing)} unresolved:", file=sys.stderr)
         for path, reference in missing:
-            print(f"  {path.relative_to(RESOURCES)}  ->  {reference}", file=sys.stderr)
+            print(f"  {display(path)}  ->  {reference}", file=sys.stderr)
         print("\nEach of these is a fatal asset-validation error at server start.",
               file=sys.stderr)
         return 1
 
-    print("All referenced assets resolve, in our tree or in the game's Assets.zip.")
+    print("All referenced assets resolve, in some pack or in the game's Assets.zip.")
 
-    unknown = check_recipes(vanilla)
+    unknown = check_recipes(roots, vanilla)
     if unknown:
         print(f"\n{len(unknown)} recipe references name an item that does not exist:",
               file=sys.stderr)
         for path, reference in unknown:
-            print(f"  {path.relative_to(RESOURCES)}  ->  {reference}", file=sys.stderr)
+            print(f"  {display(path)}  ->  {reference}", file=sys.stderr)
         print("\nSuch a recipe loads and then never matches, with nothing in the log.",
               file=sys.stderr)
         return 1
 
     print("All recipe item references exist.")
 
-    unresolved, ui_checked = check_ui(vanilla)
-    print(f"Checked {ui_checked} UI references across {UI_ROOT.name}/.")
+    pipe_problems, pipes_checked = check_pipes(roots, vanilla)
+    print(f"Checked {pipes_checked} pipe items.")
+
+    if pipe_problems:
+        print(f"\n{len(pipe_problems)} pipe problems:", file=sys.stderr)
+        for path, problem in pipe_problems:
+            print(f"  {display(path)}  ->  {problem}", file=sys.stderr)
+        print("\nA pipe renders from one block-state variant per connection mask. A state the"
+              "\nitem does not declare makes setBlockInteractionState a silent no-op, and the"
+              "\npipe draws as though nothing were connected.", file=sys.stderr)
+        return 1
+
+    print("Every pipe item declares all 64 connection states, with models that resolve.")
+
+    unresolved, ui_checked = check_ui(roots, vanilla)
+    print(f"Checked {ui_checked} UI references.")
 
     if unresolved:
         print(f"\n{len(unresolved)} UI references do not resolve:", file=sys.stderr)
         for document, reference in unresolved:
-            print(f"  {document.relative_to(RESOURCES)}  ->  {reference}", file=sys.stderr)
+            print(f"  {display(document)}  ->  {reference}", file=sys.stderr)
         print("\nA UIPath is relative to the document it is written in. A miss is silent: the"
               "\nclient draws a white missing-texture cross and logs nothing.", file=sys.stderr)
         return 1

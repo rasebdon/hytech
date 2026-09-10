@@ -1,0 +1,27 @@
+# The library's own strings.
+#
+# The file name is part of every key: I18nModule.getPrefix builds them as `<file>.<key>`, so a
+# line here is asked for as `hytechcore.items.X.name`. It cannot be called server.lang like the
+# content mod's -- an asset is keyed by its file name, so the two would collide and the pack that
+# loaded last would shadow the other outright.
+items.Tool_Wrench.name=Wrench
+items.Tool_Wrench.description=Cycles the input/output configuration of a block or pipe face.
+items.Multimeter.name=Multimeter
+items.Multimeter.description=Reports what every logistic container on the block you point at is holding.
+ui.itemcategory.technic.general=General
+ui.itemcategory.technic.machines=Machines
+ui.itemcategory.technic.materials=Materials
+ui.itemcategory.technic.components=Components
+
+# Debug pipes: the reference pipe a content mod copies, at a throughput high enough that
+# it never becomes the bottleneck you are trying to watch.
+items.Pipe_Debug_Energy.name=Debug Energy Pipe
+items.Pipe_Debug_Energy.description=Unlimited energy throughput, for testing. Creative only.
+items.Pipe_Debug_Items.name=Debug Item Pipe
+items.Pipe_Debug_Items.description=Unlimited item throughput, for testing. Creative only.
+items.Pipe_Debug_Fluid.name=Debug Fluid Pipe
+items.Pipe_Debug_Fluid.description=Unlimited fluid throughput, for testing. Creative only.
+items.Pipe_Debug_Gas.name=Debug Gas Pipe
+items.Pipe_Debug_Gas.description=Unlimited gas throughput, for testing. Creative only.
+items.Pipe_Debug_Heat.name=Debug Heat Pipe
+items.Pipe_Debug_Heat.description=Unlimited heat throughput, for testing. Creative only.

@@ -25,8 +25,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import pnglib  # noqa: E402  (deliberate: needs the sys.path line above)
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-RESOURCES = REPO_ROOT / "src" / "main" / "resources"
+from paths import REPO_ROOT, resources, CONTENT
+
+RESOURCES = resources(CONTENT)
 TEXTURE_DIR = RESOURCES / "Common/BlockTextures/Machines"
 
 SIZE = 16

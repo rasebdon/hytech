@@ -26,8 +26,9 @@ import sys
 import zlib
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-RESOURCES = REPO_ROOT / "src" / "main" / "resources"
+from paths import REPO_ROOT, resources, CONTENT
+
+RESOURCES = resources(CONTENT)
 
 # The authored texture every tint derives from.
 SOURCE = RESOURCES / "Common/BlockTextures/Pipes/Energy/Pipe_Energy.png"

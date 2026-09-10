@@ -4,23 +4,123 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-HytechPlugin is a Hytale server plugin (not Minecraft/Forge/Fabric) implementing logistics networks for energy and
-items. It uses the native Hytale Plugin framework with Gradle (Kotlin DSL).
+Two Hytale server plugins (not Minecraft/Forge/Fabric), built from one Gradle (Kotlin DSL) build:
+
+| Project | Plugin | Entrypoint | What it is |
+|---|---|---|---|
+| `HytechCore` | `Technic:HytechCore` | `at.rasebdon.hytech.core.HytechCorePlugin` | The logistics library: framework, five resource types, machine engine |
+| `HytechPlugin` | `Technic:HytechPlugin` | `at.rasebdon.hytech.HytechPlugin` | Hytech content: pipes, blocks, machines, materials |
 
 - **Group/Version:** `at.rasebdon` / `0.1.0`
 - **Java Version:** 25
-- **Server Version:** `0.6.0`
-- **Main Entrypoint:** `at.rasebdon.hytech.HytechPlugin`
+- **Server Version:** `^0.6.4`
+
+Each project has its own `CLAUDE.md` for what only concerns it: `HytechCore/CLAUDE.md` is the
+contract a content mod builds against, `HytechPlugin/CLAUDE.md` is the material chain and the
+progression. This file covers the build, the framework and the platform.
+
+### Who owns what
+
+The library owns everything a tech mod would otherwise copy, and **no concrete block**. A battery, a
+generator, a crusher and a cable are all content: each is a specialized implementation of a
+`LogisticContainer`, and mods will want different ones. What the library ships is what they are
+built *from* — which is also what makes two mods interoperate, because a generator from one mod and
+a machine from another meet on the same `hytech:energy:container` and the same network.
+
+| | `HytechCore` | `HytechPlugin` |
+|---|---|---|
+| Java | `core`, `energy`, `items`, `fluid`, `gas`, `heat`, `machines` | `content.generators`, `content.storage` |
+| Assets | pipe geometry and hitboxes, face overlays, the four `.ui` documents, wrench, multimeter, debug pipes | every real pipe, block, machine, material, recipe, icon |
+| Strings | `hytechcore.lang` | `server.lang`, `materials.lang` |
+
+`content.generators` is the line worth understanding. `GeneratorType{SOLAR, WIND, FUEL_SOLID,
+FUEL_LIQUID}` is a closed enum inside a codec, so a mod could never have added a generator kind
+without editing the library — that makes generation an implementation, not an engine. The machine
+engine is the opposite: a machine names its own `RecipeGroup` and the recipe index finds it, so that
+one stays in the library and a new machine is a JSON edit. Anything shaped like the generator enum
+is content; anything shaped like the machine engine is framework.
+
+Components keep the ids they always had, `hytech:energy:generator` included. `registerComponent`
+keys persistence by that id rather than by the class, so moving classes between plugins is
+invisible to existing worlds and to every item JSON naming them.
+
+### How a content plugin attaches to the library
+
+`HytechPlugin/src/main/resources/manifest.json` declares the dependency:
+
+```json
+{
+  "Dependencies": { "Hytale:LegacyModule": "*", "Technic:HytechCore": "^0.1.0" }
+}
+```
+
+That one line buys three things. `Mod.calculateLoadOrder` topologically sorts plugins, so the
+library's `setup()` and `start()` have both finished before the content plugin's runs and
+`EnergyModule.get()` cannot be premature. `AssetModule.loadAllAssetPacks` runs the *same* sort over
+asset packs, so the library's assets load first and a content pack can override or extend them.
+And `PluginManager.PluginBridgeClassLoader` resolves a plugin's declared dependencies' classes,
+which is what lets content link against the library at runtime.
+
+Content registers through **its own** `getChunkStoreRegistry()` while reading component types the
+library registered through the library's — see `content/HytechContentModule.java`. That works
+because component types are global by id and the `ChunkStore` is world-level. It was verified
+in-world rather than assumed, and it is the assumption the whole split rests on.
+
+A pack is identified by `Group:Name`, and `AssetModule.registerPack` **shuts the server down** on a
+duplicate, so every mod project needs a distinct name. `run/config.json`'s `Mods` map is keyed by
+the same string.
 
 ## Build & Development Commands
 
 ```bash
-./gradlew build          # Compile and package
-./gradlew server         # Run dev server (also syncs assets)
-./gradlew syncAssets     # Sync resources from game build folder back to src
-./gradlew tidy           # Apply the mechanical formatting fixes, then check for dead code
-./gradlew check          # spotlessCheck + pmdMain, without rewriting anything
+./gradlew build                     # Compile and package both plugins
+./gradlew server                    # Run dev server with both plugins (also syncs assets)
+./gradlew tidy                      # Mechanical formatting fixes, then check for dead code
+./gradlew check                     # spotlessCheck + pmdMain in both projects
+./gradlew :HytechCore:build         # One project only
+./gradlew :HytechCore:syncAssets    # Sync that project's resources back from the build folder
 ```
+
+`server` is an alias for `:HytechPlugin:runServer`, which is the one to use: it loads *both* packs
+and syncs both source trees back afterwards. `runServer` is the only run task the `hytale-mod`
+plugin creates — there is no `:HytechCore:server`.
+
+Shared configuration lives in the root `build.gradle.kts` `subprojects { }` block; each project's
+own build file carries only its manifest entrypoint and description. Three things there are
+load-bearing:
+
+- **`idea` and `idea-ext` are applied to the root project.** `hytale-mod` writes its IDEA run
+  configuration through the *root* project's `idea` extension and its idea-ext `ProjectSettings`,
+  but applies those two plugins to whichever project it is applied to — now a subproject. Without
+  them at the root it fails to apply at all, with `Extension with name 'idea' does not exist`.
+- **PMD's ruleset is `rootProject.file(...)`.** `resources.text.fromFile` resolves against the
+  *subproject* directory, so a relative path silently looks for `HytechCore/config/pmd/...`.
+- **`decompileServer` is enabled only in `HytechCore`.** Both projects register it and both would
+  write the same `HytaleServer-sources.jar`; two tasks racing on one output fails intermittently.
+
+The version catalog is read into locals at the top of the root script rather than inside
+`subprojects { }`: the generated `libs` accessor resolves against the project it is evaluated
+against, and a subproject has no such extension.
+
+### The dev run needs directories, not a jar
+
+`HytechPlugin`'s build script hands `runServer` the library's `classes/java/main` and
+`resources/main` **directories** instead of depending on its jar. That is not a detail.
+
+`PluginManager` discovers a classpath plugin by `getResources("manifest.json")` and takes the URL
+that manifest came from as the plugin's classloader URL. From a jar that is a `JarURLConnection`, so
+the plugin gets a *child-first* `PluginClassLoader` over the whole jar and loads its own private
+copy of every class in it. The content plugin's own classes come from the app classloader and see a
+second, uninitialised copy, so `EnergyModule.INSTANCE` is null and setup dies with
+`IllegalStateException: Not initialized`. From a directory the URL is the resources folder, which
+holds no classes, so child-first finds nothing there and everything resolves from the one app
+classloader.
+
+Real jars in `run/mods/` do not have this problem: the library's classes are then in nobody else's
+URLs, so the content plugin's loader falls through to `PluginBridgeClassLoader`, which resolves them
+from the plugin it declares as a dependency. **Dev is the odd case, not production** — which also
+means `runServer` does not exercise classloader isolation at all. To test what a third-party mod jar
+would really do, put both jars in `run/mods/`, take them off the classpath, and start the server.
 
 ### Formatting and dead code
 
@@ -94,13 +194,16 @@ sources from Maven if you need them.
 
 ### Plugin Initialization
 
-`HytechPlugin.setup()` initializes the modules in a load-bearing order:
+`HytechCorePlugin.setup()` initializes the modules in a load-bearing order:
 
 1. `HytechCoreModule` — shared components, pipe rendering, wrench, face overlay, read interaction
 2. `ItemModule` — item network, transfer, vanilla container wrapping
-3. `EnergyModule` — energy network, transfer, generation, UIs
+3. `EnergyModule` — energy network, transfer, persistence
 4. `HeatModule`, `FluidModule`, `GasModule` — network, transfer, persistence
-5. `MachineModule` — the processing engine behind the crusher and electric smelter
+5. `MachineModule` — the processing engine every processing block runs on
+
+Then, in a separate plugin the manifest guarantees runs afterwards,
+`HytechContentModule.init()` adds Hytech's generator and burner components and their systems.
 
 Machines come **last**: a machine owns no container of its own, it reads the
 `hytech:items:container` and `hytech:energy:container` of the block it sits on, so both those
@@ -492,7 +595,10 @@ Things worth knowing:
 - **A block's own `Use` interaction runs instead of the held item's.** That is why the wrench works
   on pipes, which declare no `Use`, and did nothing on a generator or battery, which do. A machine
   therefore has to honour the wrench itself: `OpenPageBlockInteraction` checks
-  `WrenchInteraction.isWrench(item)` and calls `configureTargetedFace` rather than opening its page.
+  `WrenchInteraction.isWrench(item)` and calls `configureTargetedFace` rather than opening its page. Interaction codec ids
+  carry a `Hytech_` prefix (`Hytech_Wrench`, `Hytech_OpenMachinePage`, and the rest) because
+  `Interaction.CODEC` is one registry shared with vanilla and every other plugin, and a bare
+  `Wrench` is exactly the id a second tech mod would register too.
   Any new machine with a page inherits that.
 - **Use the vanilla widget styles rather than rebuilding them.** `$C.@ProgressBar` carries the right
   height, background and effect textures; wrapping a bare `ProgressBar` in a bordered `Group` and
@@ -534,6 +640,12 @@ type inputs, several outputs, `TimeSeconds`) and the game's own validation, and 
 only has to bucket them by id. The index is built lazily and rebuilt when the asset count changes,
 because assets load on their own schedule and a machine may tick before the recipe pack is in.
 
+**The index keys on the requirement type, not on a name.** It used to skip any bench id that did not
+start with `Hytech_`, which would have hidden every other mod's machines from an engine they are
+meant to share. `BenchType.Processing` is what actually distinguishes a machine recipe -- a
+processing bench is one a block ticks through -- so any mod's machine is indexed with no
+registration call, and vanilla's crafting benches are still left to themselves.
+
 Matching still goes through vanilla: `CraftingManager.getInputMaterials`, `getOutputItemStacks` and
 `matches` are the same calls `BenchSystems.ProcessingBenchTick` makes, so a Hytech machine reads a
 recipe exactly as a vanilla bench does.
@@ -561,90 +673,67 @@ ingredients are present, how many sets of results will fit, and the consume/inse
 container helpers work on a whole container, and a crusher must not count the dust in its output as
 an ingredient.
 
-### Materials and the Progression
-
-The whole material chain is one table: `scripts/hytech_materials.py`. `generate-material-assets.py`
-turns it into item definitions, recipes and a language file, and `generate-icons.py` draws it, so a
-balance change is one edit rather than forty files.
-
-```
-vanilla ore --(crusher)--> 2 dust --(smelter)--> 1 vanilla bar --(bench)--> 1 plate
-plate --> wire, coils, circuits, casings, frames --> machines
-```
-
-Anchored on vanilla throughout: Hytech crushes the game's own ores and smelts its dusts back into
-the game's own `Ingredient_Bar_*`, so the two economies feed each other. Crushing first is what
-doubles an ore — vanilla's furnace smelts ore 1:1 and that recipe is untouched. Twelve metals carry
-a dust and a plate; **steel** is the one bar Hytech ships, because vanilla has none, and **bronze**
-gets the recipe vanilla forgot to give it (its bar exists with no way to make it).
-
-Alloys are smelted from two dusts, which is the whole reason the electric smelter has two ingredient
-slots and Hytech needs no separate mixer.
-
-Two things about generated assets:
-
-- **The generated folders are owned outright.** `--check` fails on an orphan as well as on a stale
-  file: a renamed material would otherwise leave a live item behind with no recipe and no icon.
-- **Most ingredients wins.** `MachineRecipes` sorts each group by input count, descending. Iron dust
-  alone smelts to a bar; iron dust *and* charcoal is steel, and a player who loaded both meant the
-  alloy. Without the sort that choice fell out of asset iteration order.
-
-**Everything Hytech is crafted at the Tech Bench** (`Hytech_Workbench`), an ordinary vanilla
-`Bench` of type `Crafting` with four tabs — Materials, Components, Logistics, Machines. It needs no
-code: a `Bench` block declaring `BenchBlock` in its `BlockEntity` is opened by the game's own bench
-handling, and `Bench_WorkBench` itself declares no `Use` interaction either.
-
-The bench is the one exception to its own rule: it is built at the *vanilla* workbench out of
-vanilla bars, which is what keeps the whole tree reachable from a fresh world. Everything else —
-plates, components, pipes, tanks, generators, machines — moved onto it, including the blocks that
-had no recipe at all before (wrench, multimeter, burner, solar panel, battery).
-
-Player crafting hangs off each item's own `Recipe` block, so only machine recipes need to be
-standalone assets. For hand-authored blocks the generator owns **only the `Recipe` key** and leaves
-models, block states and components alone, which is what lets the crafting ladder live in the table
-next to the materials. Plates are pressed at the bench for now; a dedicated press is a machine for
-later.
-
-**A translation key is prefixed with the file it came from.** `I18nModule.getPrefix` builds every
-key as `<file name>.<key in file>`, folding in subdirectories — which is why `server.lang` holds
-`items.X.name` and assets ask for `server.items.X.name`. Generated names live in `materials.lang`,
-so those items ask for `materials.items.X.name`. Getting this wrong is silent: the client shows the
-raw identifier and nothing is logged.
-
-`check-asset-refs.py` has a second pass for this: every `ItemId` a recipe names must exist. That
-failure is quiet in a way a missing texture is not — the recipe loads, validates, and then never
-matches, so a machine just sits there.
-
 ### Resource Assets
 
-- `src/main/resources/Common/` — client-side (textures, block models, UI, icons)
-- `src/main/resources/Server/` — server-side (item defs, interactions, languages, models)
+Each project has its own tree, and both are loaded as asset packs:
+
+- `<project>/src/main/resources/Common/` — client-side (textures, block models, UI, icons)
+- `<project>/src/main/resources/Server/` — server-side (item defs, interactions, languages, models)
 - `Assets.zip` is unpacked during the build from Hytale game files
+
+**`Common/` is one flat namespace at runtime, not one per pack.** An asset path carries no mod
+prefix and cannot, so a content pipe item pointing at `Blocks/Pipes/Generated/Default/Conn_5.blockymodel`
+in the library's tree is both correct and the intended way to reuse its geometry. Keys collide by
+file name and the pack loaded last wins, which is a supported override mechanism rather than an
+error — so two packs must not ship the same file name by accident. Language files are the trap:
+`server.lang` in both projects would produce one `server.*` namespace with the later pack shadowing
+the earlier outright, which is why the library's is `hytechcore.lang`.
+
+**A translation key is prefixed with the file it came from.** `I18nModule.getPrefix` builds every
+key as `<file name>.<key in file>`, folding in subdirectories -- which is why `server.lang` holds
+`items.X.name` and assets ask for `server.items.X.name`, generated names in `materials.lang` are
+asked for as `materials.items.X.name`, and the library's are `hytechcore.items.X.name`. Getting this
+wrong is silent: the client shows the raw identifier and nothing is logged. It is also why moving a
+key between projects means editing every asset that asks for it.
+
+`check-asset-refs.py` resolves references against *every* project's tree plus `Assets.zip`, which is
+what makes a cross-pack reference pass. To check that the library still stands alone, give it one
+root: `python scripts/check-asset-refs.py --resources HytechCore/src/main/resources`.
 
 ## Key Files for Orientation
 
-| File                                                    | Purpose                                         |
-|---------------------------------------------------------|-------------------------------------------------|
-| `HytechPlugin.java`                                     | Entry point, module init order                  |
-| `core/AbstractLogisticModule.java`                      | Generic framework all modules extend            |
-| `core/containers/LogisticContainer.java`                | The contract that makes the framework generic   |
-| `core/systems/AbstractTransferSystem.java`              | The whole transfer algorithm, once               |
-| `heat/HeatModule.java`                                  | Smallest complete resource type; copy this       |
-| `machines/MachineModule.java`                           | Machines: one engine for every processing block  |
-| `scripts/hytech_materials.py`                           | The material and component table, and the balance |
-| `machines/systems/MachineProcessingSystem.java`         | Recipe, energy and progress in one place        |
-| `energy/EnergyModule.java`                              | Richest module: generation, UIs, block states    |
-| `core/components/ContainerHolder.java`                  | Neighbor tracking base                          |
-| `core/networks/LogisticNetwork.java`                    | Network graph structure                         |
-| `core/networks/LogisticNetworkSystem.java`              | Graph algorithms (connected-component DFS)      |
-| `core/networks/ScalarNetwork.java`                      | Aggregate buffer shared by all scalar types      |
-| `core/systems/LogisticComponentRegistrationSystem.java` | Component lifecycle with Hytale stores          |
+Paths are relative to a project's `src/main/java`, and the project prefix says which plugin.
+
+| File                                                                | Purpose                                           |
+|---------------------------------------------------------------------|---------------------------------------------------|
+| `HytechCore: core/HytechCorePlugin.java`                            | Library entry point, module init order            |
+| `HytechCore: core/AbstractLogisticModule.java`                      | Generic framework all resource modules extend     |
+| `HytechCore: core/containers/LogisticContainer.java`                | The contract that makes the framework generic     |
+| `HytechCore: core/systems/AbstractTransferSystem.java`              | The whole transfer algorithm, once                |
+| `HytechCore: heat/HeatModule.java`                                  | Smallest complete resource type; copy this        |
+| `HytechCore: machines/MachineModule.java`                           | Machines: one engine for every processing block   |
+| `HytechCore: machines/systems/MachineProcessingSystem.java`         | Recipe, energy and progress in one place          |
+| `HytechCore: core/components/ContainerHolder.java`                  | Neighbor tracking base                            |
+| `HytechCore: core/networks/LogisticNetwork.java`                    | Network graph structure                           |
+| `HytechCore: core/networks/LogisticNetworkSystem.java`              | Graph algorithms (connected-component DFS)        |
+| `HytechCore: core/networks/ScalarNetwork.java`                      | Aggregate buffer shared by all scalar types       |
+| `HytechCore: core/systems/LogisticComponentRegistrationSystem.java` | Component lifecycle with Hytale stores            |
+| `HytechPlugin: HytechPlugin.java`                                   | Content entry point                               |
+| `HytechPlugin: content/HytechContentModule.java`                    | How content registers on top of the library       |
+| `HytechPlugin: content/generators/EnergyGenerationSystem.java`       | Solar, wind and fuel generation                   |
+| `scripts/paths.py`                                                  | Which project each generator writes into          |
+| `scripts/hytech_materials.py`                                       | The material and component table, and the balance |
+| `scripts/check-asset-refs.py`                                       | Multi-root asset, recipe and pipe validation      |
 
 ## Current Development
 
-Branch `feat/item-system`. Five resource modules are live — `energy`, `items`, `fluid`, `gas`,
-`heat` — plus a Burner Generator that turns any vanilla `Fuel` item into energy, and a `machines`
-module with a Basic Crusher and a Basic Electric Smelter.
+Branch `main`. Five resource modules are live — `energy`, `items`, `fluid`, `gas`, `heat` — plus a
+Burner Generator that turns any vanilla `Fuel` item into energy, and a `machines` module with a
+Basic Crusher and a Basic Electric Smelter.
+
+The plugin was recently **split in two**: `HytechCore` is the reusable logistics library and
+`HytechPlugin` is the content on top of it, so several tech mods can share one framework and
+interoperate rather than each carrying a copy. See *Who owns what* above for the seam.
 
 Machines, materials and tiers are being built in phases (the plan lives outside the repo):
 
@@ -657,13 +746,17 @@ Machines, materials and tiers are being built in phases (the plan lives outside 
    machines, from one balance table, with tier N crafted from tier N-1 plus that tier's circuit and
    frame.
 
-Module init order is **core → items → energy → heat → fluid → gas**. Items must precede energy
-because the burner reads its fuel from a `hytech:items:container`, so item pipes can feed it. The
-dependency only runs one way.
+Module init order inside the library is **core → items → energy → heat → fluid → gas → machines**.
+Items must precede energy because a burner reads its fuel from a `hytech:items:container`, so item
+pipes can feed it; the burner itself is content now, but registration order is still what the
+wrench and the side panel index resources by. Machines are last because a machine reads the item
+and energy components of the block it sits on.
 
 Adding another scalar resource type costs ~11 small classes and no new pipe geometry. Most of those
 classes are only separate because `ComponentRegistry` and `IEventRegistry` both key by class, so a
-shared generic instance would collide.
+shared generic instance would collide. Nothing in `core/` names a resource any more, so a
+mod-supplied type gets a wrench entry, a side-config tab and its own accent colour for free — up to
+the tab cap the markup declares (`#Res0`..`#Res4`, five).
 
 Known gaps:
 
@@ -672,5 +765,12 @@ Known gaps:
 - **Breaking a pipe fails when aimed at a marker-drawn arm.** The marker entity absorbs the break
   ray. Left as is by decision; the alternatives each trade one bug for another.
 - **`FUEL_LIQUID` generators return 0.** Wiring them to the fluid module is not done.
+- **The split has not been smoke-tested from real jars.** Both plugins load, both packs register in
+  dependency order and cross-plugin component registration works under `runServer` — but that run
+  puts everything on one app classloader. The jars-in-`run/mods/` case, which is what a third-party
+  mod would hit, is still unverified.
+- **The wrench and the multimeter moved to the vanilla workbench.** They cost two vanilla bars each
+  instead of Hytech plates, because a library cannot put its recipes on a bench a content mod owns.
+  That makes them reachable before the Tech Bench, which is a deliberate progression change.
 - **Fluid, gas and heat have never been tested in-world.** They compile and the assets cross-check,
   but no transfer has been observed.

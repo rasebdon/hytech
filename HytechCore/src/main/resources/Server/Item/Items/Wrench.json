@@ -1,0 +1,61 @@
+{
+  "TranslationProperties": {
+    "Name": "hytechcore.items.Tool_Wrench.name",
+    "Description": "hytechcore.items.Tool_Wrench.description"
+  },
+  "Categories": [
+    "Technic.General"
+  ],
+  "PlayerAnimationsId": "Item",
+  "Model": "Items/Tools/Wrench/Wrench.blockymodel",
+  "Texture": "Items/Tools/Wrench/Wrench_Texture.png",
+  "IconProperties": {
+    "Scale": 0.7,
+    "Rotation": [
+      0,
+      32,
+      320
+    ],
+    "Translation": [
+      -8,
+      -13
+    ]
+  },
+  "Interactions": {
+    "Secondary": {
+      "Interactions": [
+        {
+          "Type": "Hytech_Wrench"
+        }
+      ]
+    }
+  },
+  "Quality": "Common",
+  "MaxStack": 1,
+  "Tags": {
+    "Type": [
+      "Tool"
+    ]
+  },
+  "ItemSoundSetId": "ISS_Weapons_Blunt_Small",
+  "Icon": "Icons/ItemsGenerated/Wrench.png",
+  "Recipe": {
+    "Input": [
+      {
+        "ItemId": "Ingredient_Bar_Iron",
+        "Quantity": 2
+      }
+    ],
+    "BenchRequirement": [
+      {
+        "Type": "Crafting",
+        "Id": "Workbench",
+        "Categories": [
+          "Workbench_Crafting"
+        ]
+      }
+    ],
+    "OutputQuantity": 1,
+    "TimeSeconds": 2
+  }
+}

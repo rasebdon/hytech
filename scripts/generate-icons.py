@@ -25,9 +25,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import hytech_materials as table  # noqa: E402  (deliberate: needs the sys.path line above)
 import pnglib  # noqa: E402
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-RESOURCES = REPO_ROOT / "src" / "main" / "resources"
+from paths import CONTENT, CORE, REPO_ROOT, resources
+
+RESOURCES = resources(CONTENT)
 ICON_DIR = RESOURCES / "Common/Icons/ItemsGenerated"
+
+# HytechCore ships debug pipes, so it needs icons of its own: a missing Icon is a fatal
+# validation error for that item, and the game's icon renderer only fills in
+# Icons/ItemsGenerated/ *after* validation, so a placeholder has to be committed up front.
+CORE_ICON_DIR = resources(CORE) / "Common/Icons/ItemsGenerated"
 
 SIZE = 64
 
@@ -40,6 +46,17 @@ PALETTE = {
 }
 
 OUTLINE = (0x1A, 0x1A, 0x1E)
+
+# The library's debug pipes, one per resource type. Hues are the resource accents
+# SideConfigPanel paints its tabs with, so the icon, the tab and the wrench all agree on what
+# colour a resource is -- Energy and Items have no pipe tint of their own to borrow.
+DEBUG_PIPE_PALETTE = {
+    "Energy": ((0x8F, 0x68, 0x24), (0xE8, 0xA9, 0x3B)),
+    "Items": ((0x4A, 0x60, 0x7A), (0x7A, 0x9C, 0xC6)),
+    "Fluid": PALETTE["Fluid"],
+    "Gas": PALETTE["Gas"],
+    "Heat": PALETTE["Heat"],
+}
 
 # Burner casing and ember, matching generate-burner-assets.py.
 BURNER_CASING = (0x4A, 0x4A, 0x52)
@@ -277,6 +294,10 @@ def main() -> int:
                                 source_icon(body, highlight, False), args.check, stale)
         pnglib.write_if_changed(ICON_DIR / f"{name}_Void.png",
                                 source_icon(body, highlight, True), args.check, stale)
+
+    for name, (body, highlight) in DEBUG_PIPE_PALETTE.items():
+        pnglib.write_if_changed(CORE_ICON_DIR / f"Pipe_Debug_{name}.png",
+                                pipe_icon(body, highlight), args.check, stale)
 
     pnglib.write_if_changed(ICON_DIR / "Burner_Generator.png", burner_icon(), args.check, stale)
 

@@ -44,8 +44,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import hytech_materials as table  # noqa: E402  (deliberate: needs the sys.path line above)
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-RESOURCES = REPO_ROOT / "src" / "main" / "resources"
+from paths import REPO_ROOT, resources, CONTENT
+
+RESOURCES = resources(CONTENT)
 
 ITEMS_DIR = RESOURCES / "Server/Item/Items"
 MATERIALS_DIR = RESOURCES / "Server/Item/Items/Materials"

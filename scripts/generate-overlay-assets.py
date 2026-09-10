@@ -20,8 +20,9 @@ import sys
 import zlib
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-RESOURCES = REPO_ROOT / "src" / "main" / "resources"
+from paths import REPO_ROOT, resources, CORE
+
+RESOURCES = resources(CORE)
 
 MODEL_PATH = RESOURCES / "Common/VFX/Overlay/Face_Overlay.blockymodel"
 TEXTURE_DIR = RESOURCES / "Common/VFX/Overlay"
@@ -144,6 +145,24 @@ def write(path: Path, payload: bytes, check: bool, stale: list[Path]) -> None:
     path.write_bytes(payload)
 
 
+def write_json(path: Path, payload: dict, check: bool, stale: list[Path]) -> None:
+    """Text, not bytes, so a CRLF checkout is not reported as stale forever.
+
+    `write` byte-compares, which is right for the PNG and wrong for the JSON: git hands
+    us CRLF on Windows while json.dumps emits LF, so every run called these files stale.
+    Reading and writing as text lets Python translate the newlines in both directions,
+    which is what generate-pipe-assets.py already does.
+    """
+    text = json.dumps(payload, indent=2) + "\n"
+    if check:
+        if not path.exists() or path.read_text(encoding="utf-8") != text:
+            stale.append(path)
+        return
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true",
@@ -152,7 +171,7 @@ def main() -> int:
 
     stale: list[Path] = []
 
-    write(MODEL_PATH, (json.dumps(quad_model(), indent=2) + "\n").encode("utf-8"), args.check, stale)
+    write_json(MODEL_PATH, quad_model(), args.check, stale)
 
     for name, rgb in COLOURS.items():
         write(TEXTURE_DIR / f"Face_Overlay_{name}.png",
@@ -168,8 +187,8 @@ def main() -> int:
                 "Max": {"X": 0.5, "Y": 0.03, "Z": 0.5},
             },
         }
-        write(MODEL_JSON_DIR / f"Face_Overlay_{name}.json",
-              (json.dumps(model_json, indent=2) + "\n").encode("utf-8"), args.check, stale)
+        write_json(MODEL_JSON_DIR / f"Face_Overlay_{name}.json", model_json,
+                   args.check, stale)
 
     if args.check:
         if stale:
