@@ -19,7 +19,7 @@ import java.util.List;
 /// ambiguous, and two callers resolving it separately could disagree about which one they meant.
 ///
 /// Ordering is the registration order of the modules, which is fixed by
-/// [at.rasebdon.hytech.HytechPlugin]. That matters: it used to come out of a `HashSet`, so on a
+/// [at.rasebdon.hytech.core.HytechCorePlugin]. That matters: it used to come out of a `HashSet`, so on a
 /// multi-container block the wrench configured an arbitrary container and could pick a different
 /// one after a restart.
 public final class LogisticLookup {
