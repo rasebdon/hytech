@@ -1,5 +1,6 @@
 package at.rasebdon.hytech.core.interactions.ui;
 
+import at.rasebdon.hytech.core.interactions.FluidBucketInteraction;
 import at.rasebdon.hytech.core.interactions.WrenchInteraction;
 import at.rasebdon.hytech.core.ui.HytechCustomPage;
 import at.rasebdon.hytech.core.ui.HytechPages;
@@ -44,6 +45,12 @@ public abstract class OpenPageBlockInteraction extends SimpleBlockInteraction {
                 world.execute(() -> WrenchInteraction.configureTargetedFace(
                         clientState, world, context.getEntity(), blockPos));
             }
+            return;
+        }
+
+        // Same rule, same fix, for an item that pours into this block rather than configuring it.
+        var bucket = FluidBucketInteraction.heldBy(item);
+        if (bucket != null && bucket.pour(world, commandBuffer, context, blockPos)) {
             return;
         }
 

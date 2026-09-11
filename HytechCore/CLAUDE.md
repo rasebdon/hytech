@@ -68,6 +68,37 @@ To ship a pipe of your own:
 are the reference implementation to copy, and they deliberately omit step 4 so the defaults stay
 exercised.
 
+## Carried resources: `Hytech_FluidBucket`
+
+An item that holds a measure of one typed resource — a bucket of molten iron, a canister of gas —
+and empties it into a Hytech container on right-click. The item is content, so the interaction
+names no fluid: the asset carries all three values.
+
+```json
+"Interactions": { "Secondary": { "Interactions": [ {
+  "Type": "Hytech_FluidBucket",
+  "Resource": "Molten_Iron",
+  "Amount": 1000,
+  "EmptyItem": "Container_Bucket"
+} ] } }
+```
+
+`Resource` is the string a tank stores, so it has to match whatever fills the tank elsewhere;
+`EmptyItem` may be omitted, which consumes the item outright. Pouring is **all or nothing**: a
+container that already holds another resource, or has less than `Amount` of room, is left alone.
+
+The awkward part is which code runs. **A block's own `Use` interaction runs instead of the held
+item's** — the same rule that makes the wrench invisible to a machine — so this interaction fires
+only on blocks that declare no `Use` of their own. Every Hytech block with a page therefore checks
+for a bucket itself, in `OpenPageBlockInteraction`, exactly as it already checks for the wrench:
+`FluidBucketInteraction.heldBy(item)` resolves the held item's declared interaction chain (the way
+vanilla's `DoorBlockUtils` reads a door's) and `pour` returns false when there was nothing to pour
+into, letting the page open as usual.
+
+The reverse — filling an empty bucket from a tank — is not implemented, and is not symmetric: it
+would need a map from a fluid id back to the item that carries it, which is a registry the library
+deliberately does not have.
+
 ## Debug blocks
 
 `Server/Item/Items/Debug/Pipe_Debug_{Energy,Items,Fluid,Gas,Heat}.json` — one per resource type, at
@@ -76,10 +107,11 @@ Untinted grey art, so they are visibly not one of the real pipes, and no recipe,
 creative-only. They exist to make a resource type observable in-world before any content mod ships
 a pipe for it.
 
-Their icons are drawn into *this* project's `Common/Icons/ItemsGenerated/` by
-`scripts/generate-icons.py` — a missing `Icon` is a fatal validation error for that item, and the
-game's icon renderer only fills that folder in *after* validation, so a placeholder has to be
-committed up front.
+Their icons are committed into *this* project's `Common/Icons/ItemsGenerated/` by hand — a missing
+`Icon` is a fatal validation error for that item, and the game's icon renderer only fills that
+folder in *after* validation, so a placeholder has to be there up front. (The generator that once
+drew them is gone; `generate-material-assets.py` covers only what it generates, and it writes into
+`HytechPlugin`.)
 
 The creative-library category tree (`Technic.json`) is here too, with its labels in
 `hytechcore.lang`, so that content items saying `"Categories": ["Technic.General"]` resolve against

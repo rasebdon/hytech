@@ -1,0 +1,32 @@
+{
+  "TranslationProperties": {
+    "Name": "materials.items.Hytech_Dirty_Dust_Copper.name"
+  },
+  "Categories": [
+    "Technic.Materials"
+  ],
+  "ItemLevel": 10,
+  "MaxStack": 100,
+  "Model": "Items/Materials/Dirty_Dust.blockymodel",
+  "Texture": "Items/Materials/Generated/Hytech_Dirty_Dust_Copper.png",
+  "Icon": "Icons/ItemsGenerated/Hytech_Dirty_Dust_Copper.png",
+  "PlayerAnimationsId": "Item",
+  "IconProperties": {
+    "Scale": 1.0,
+    "Translation": [
+      0.6,
+      -9.6
+    ],
+    "Rotation": [
+      22.5,
+      45.0,
+      22.5
+    ]
+  },
+  "Tags": {
+    "Type": [
+      "Ingredient"
+    ]
+  },
+  "DropOnDeath": true
+}

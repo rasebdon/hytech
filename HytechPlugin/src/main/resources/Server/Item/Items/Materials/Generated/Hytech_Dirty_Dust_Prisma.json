@@ -1,15 +1,15 @@
 {
   "TranslationProperties": {
-    "Name": "materials.items.Hytech_Dust_Iron.name"
+    "Name": "materials.items.Hytech_Dirty_Dust_Prisma.name"
   },
   "Categories": [
     "Technic.Materials"
   ],
-  "ItemLevel": 10,
+  "ItemLevel": 30,
   "MaxStack": 100,
   "Model": "Items/Materials/Dirty_Dust.blockymodel",
-  "Texture": "Items/Materials/Dirty_Dust.png",
-  "Icon": "Icons/ItemsGenerated/Dirty_Dust.png",
+  "Texture": "Items/Materials/Generated/Hytech_Dirty_Dust_Prisma.png",
+  "Icon": "Icons/ItemsGenerated/Hytech_Dirty_Dust_Prisma.png",
   "PlayerAnimationsId": "Item",
   "IconProperties": {
     "Scale": 1.0,
@@ -19,7 +19,7 @@
     ],
     "Rotation": [
       22.5,
-      45,
+      45.0,
       22.5
     ]
   },

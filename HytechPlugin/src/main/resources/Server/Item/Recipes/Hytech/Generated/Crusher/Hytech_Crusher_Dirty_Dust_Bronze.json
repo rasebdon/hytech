@@ -1,0 +1,25 @@
+{
+  "Input": [
+    {
+      "ItemId": "Ingredient_Bar_Bronze",
+      "Quantity": 3
+    }
+  ],
+  "PrimaryOutput": {
+    "ItemId": "Hytech_Dirty_Dust_Bronze",
+    "Quantity": 2
+  },
+  "Output": [
+    {
+      "ItemId": "Hytech_Dirty_Dust_Bronze",
+      "Quantity": 2
+    }
+  ],
+  "BenchRequirement": [
+    {
+      "Type": "Processing",
+      "Id": "Hytech_Crusher"
+    }
+  ],
+  "TimeSeconds": 4
+}

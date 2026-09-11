@@ -153,8 +153,9 @@ Run `python scripts/check-asset-refs.py` before launching. A missing `Icon` or t
 fatal validation error for that item, which the server reports as `SEVERE` lines and then
 carries on without the item -- so it does not fail the build and is easy to miss. Note that
 `Icons/ItemsGenerated/` is written by the game's icon renderer and copied back by `syncAssets`,
-which happens *after* validation, so every new item needs a placeholder icon committed up front
-(`scripts/generate-icons.py`).
+which happens *after* validation, so every new item needs a placeholder icon committed up front.
+`generate-material-assets.py` draws one for everything it generates; a hand-authored item needs one
+committed by hand.
 
 ### Decompiled server sources for the IDE
 
@@ -722,7 +723,8 @@ Paths are relative to a project's `src/main/java`, and the project prefix says w
 | `HytechPlugin: content/HytechContentModule.java`                    | How content registers on top of the library       |
 | `HytechPlugin: content/generators/EnergyGenerationSystem.java`       | Solar, wind and fuel generation                   |
 | `scripts/paths.py`                                                  | Which project each generator writes into          |
-| `scripts/hytech_materials.py`                                       | The material and component table, and the balance |
+| `scripts/hytech_materials.py`                                       | The material, form and process table, and the balance |
+| `scripts/generate-material-assets.py`                               | That table -> textures, items, icons, recipes, lang |
 | `scripts/check-asset-refs.py`                                       | Multi-root asset, recipe and pipe validation      |
 
 ## Current Development
@@ -738,10 +740,16 @@ interoperate rather than each carrying a copy. See *Who owns what* above for the
 Machines, materials and tiers are being built in phases (the plan lives outside the repo):
 
 1. **The processing engine** — done: the processor component, both machines at their basic tier, and
-   a starter recipe set (copper and iron ore → dust → vanilla bars, so crushing first doubles an ore).
-2. **Materials and progression** — done: dust and plate for twelve metals, a steel chain, a bronze
-   recipe, wire, coils, five circuit tiers, a casing and five machine frames, all from one table,
-   plus a Tech Bench that every Hytech recipe now lives on.
+   a recipe set generated for every vanilla metal (3 ingots crush to 2 dirty dust, 1 dust smelts
+   back to 1 ingot).
+2. **Materials and progression** — in progress. The old chain (plates, wire, coils, circuits,
+   casings, frames) was removed and is being rebuilt from `scripts/hytech_materials.py`, which
+   today carries a dirty dust for each of the eleven vanilla metals and the crusher/smelter loop
+   between dust and the game's own `Ingredient_Bar_*`. A metal vanilla has no bar for generates its
+   own ingot from the game's ingot model, which is the seam for Hytech's own metals and ores. Each
+   metal also has a **molten fluid** -- a `ResourceType` asset plus a bucket that pours 1,000 units
+   into any Hytech tank -- with nothing producing one yet. The Tech Bench is still there and still
+   holds the block recipes.
 3. **Five tiers** — `Basic`, `Advanced`, `Elite`, `Ultimate`, `Quantum` across the pipes and the
    machines, from one balance table, with tier N crafted from tier N-1 plus that tier's circuit and
    frame.
@@ -765,6 +773,10 @@ Known gaps:
 - **Breaking a pipe fails when aimed at a marker-drawn arm.** The marker entity absorbs the break
   ray. Left as is by decision; the alternatives each trade one bug for another.
 - **`FUEL_LIQUID` generators return 0.** Wiring them to the fluid module is not done.
+- **Molten metals have no source and no sink.** The eleven `Molten_<Metal>` fluids are registered
+  and a bucket of each pours into a tank, but no recipe outputs one and no interaction fills an
+  empty bucket back up from a tank. They are also *not* world fluids like water and lava -- a
+  molten metal cannot be placed as a block, only held in a Hytech container.
 - **The split has not been smoke-tested from real jars.** Both plugins load, both packs register in
   dependency order and cross-plugin component registration works under `runServer` — but that run
   puts everything on one app classloader. The jars-in-`run/mods/` case, which is what a third-party
@@ -772,5 +784,9 @@ Known gaps:
 - **The wrench and the multimeter moved to the vanilla workbench.** They cost two vanilla bars each
   instead of Hytech plates, because a library cannot put its recipes on a bench a content mod owns.
   That makes them reachable before the Tech Bench, which is a deliberate progression change.
+- **The block recipes name material items that no longer exist.** Removing the old material chain
+  left the pipes, tanks, generators and machines pointing at plates, wire, coils, circuits, casings
+  and frames; `check-asset-refs.py` lists all 26. They load and never match, so those blocks cannot
+  be crafted until the forms return to the table or the recipes are rewritten.
 - **Fluid, gas and heat have never been tested in-world.** They compile and the assets cross-check,
   but no transfer has been observed.

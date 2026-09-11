@@ -1,0 +1,51 @@
+{
+  "TranslationProperties": {
+    "Name": "materials.items.Hytech_Bucket_Molten_Copper.name"
+  },
+  "Categories": [
+    "Technic.Materials"
+  ],
+  "ItemLevel": 10,
+  "MaxStack": 1,
+  "Model": "Blocks/Miscellaneous/Bucket_Full.blockymodel",
+  "Texture": "Items/Materials/Generated/Hytech_Bucket_Molten_Copper.png",
+  "Icon": "Icons/ItemsGenerated/Hytech_Bucket_Molten_Copper.png",
+  "PlayerAnimationsId": "Item",
+  "IconProperties": {
+    "Scale": 0.58823,
+    "Translation": [
+      -3.0,
+      -18.0
+    ],
+    "Rotation": [
+      0.0,
+      121.0,
+      25.0
+    ]
+  },
+  "Tags": {
+    "Type": [
+      "Ingredient"
+    ]
+  },
+  "DropOnDeath": true,
+  "ResourceTypes": [
+    {
+      "Id": "Molten_Copper",
+      "Quantity": 1000
+    }
+  ],
+  "Interactions": {
+    "Secondary": {
+      "Interactions": [
+        {
+          "Type": "Hytech_FluidBucket",
+          "Resource": "Molten_Copper",
+          "Amount": 1000,
+          "EmptyItem": "Container_Bucket"
+        }
+      ]
+    }
+  },
+  "ItemSoundSetId": "ISS_Blocks_Wood"
+}

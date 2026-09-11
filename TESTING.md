@@ -12,11 +12,7 @@ export JAVA_HOME=~/.jdks/openjdk-25.0.2      # Gradle needs a Java 25+ JVM
 python scripts/check-asset-refs.py           # catches the fatal asset errors below
 python scripts/generate-pipe-assets.py --check
 python scripts/generate-pipe-tints.py --check
-python scripts/generate-overlay-assets.py --check
-python scripts/generate-burner-assets.py --check
-python scripts/generate-machine-assets.py --check
 python scripts/generate-material-assets.py --check
-python scripts/generate-icons.py --check
 
 ./gradlew build && ./gradlew server
 ```
@@ -75,7 +71,8 @@ connection states with models that resolve, which is the one pipe failure that i
 
 Icons in particular are a trap: `Icons/ItemsGenerated/` is normally written by the game's own
 icon renderer and copied back by the `syncAssets` task — which happens *after* validation. So
-every new item needs a placeholder committed up front. `generate-icons.py` draws them.
+every new item needs a placeholder committed up front. `generate-material-assets.py` draws one for
+every item it generates; anything hand-authored needs one committed by hand.
 
 ## Debug blocks
 
@@ -187,30 +184,36 @@ Technic → Materials.
 - [ ] Wrench a machine face that has an **item pipe** against it: it cycles In / Out / Off rather
       than sticking on Off after one click. Same check on the burner and a battery with a cable.
 
-### Materials and the crafting ladder
+### Materials, molten metals and the crafting ladder
 
-Everything below is creative-library reachable: Technic → Materials for dusts, plates and the steel
-bar, Technic → Components for wire, coils, circuits, casings and frames.
+Dusts and buckets are creative-library reachable under Technic → Materials, one of each per metal.
+Everything below is generated from `scripts/hytech_materials.py`.
 
-- [ ] Crush `Ore_Copper`, `Ore_Iron` and one late-game ore (`Ore_Mithril`) — two dust each.
-- [ ] Smelt each dust back to its vanilla bar, and confirm the ore → bar slow path also works at
-      1:1 rather than doubling.
-- [ ] **Alloys**: iron dust + `Ingredient_Charcoal` in the smelter gives a **Steel Bar**, not an
-      iron one — this is the "most ingredients wins" rule doing its job. Copper dust ×3 + silver
-      dust ×1 gives four bronze bars, which vanilla has no other recipe for.
-- [ ] Crush a bar back to dust — the only way an alloy gets a dust at all.
-- [ ] Build a **Tech Bench** at the vanilla workbench (4 iron bars + 2 copper bars) — the one
-      Hytech recipe that is not on the Tech Bench itself, so a fresh world can reach it.
-- [ ] Walk the ladder at the Tech Bench: bar → plate → wire → coil → Basic Circuit → Machine
-      Casing → Basic Machine Frame → **Basic Crusher**. Each step should appear under its tab:
-      Materials, Components, Logistics, Machines.
-- [ ] Pipes, tanks, the buffer, the wrench, the multimeter, the burner, the solar panel and the
-      battery are all craftable there too — none of them had a recipe on the Tech Bench before, and
-      several had none anywhere.
-- [ ] **Names, not identifiers.** Every Hytech item shows a real name in the inventory and in the
-      bench list. A raw `materials.items.X.name` means a language key lost its file prefix.
-- [ ] Higher circuits and frames each consume the tier below, so no tier can be skipped.
-- [ ] `/recipe` lists the Hytech recipes if you need to confirm one registered.
+- [ ] **Names, not identifiers.** Every generated item shows a real name ("Dirty Iron Dust",
+      "Bucket of Molten Copper"). A raw `materials.items.X.name` means a language key lost its
+      file prefix.
+- [ ] Crush 3 `Ingredient_Bar_Iron` in the crusher — 2 Dirty Iron Dust, not 3.
+- [ ] Smelt one dust back — 1 bar. Crushing then smelting the same metal must lose material, or
+      the balance in the table is not the balance in the world.
+- [ ] Repeat on one late metal (mithril, adamantite) to confirm the recipes really are per-metal
+      and not just iron's.
+- [ ] Every dust is visually distinct in the inventory: iron and silver read grey, copper orange,
+      thorium green, onyxium purple. Two metals that look identical mean the tint sampling found
+      no colour in the vanilla ingot texture.
+- [ ] **Buckets pour.** Hold a Bucket of Molten Iron, right-click a **Fluid Tank**: the tank shows
+      `Molten_Iron` and 1,000 more units, the bucket becomes an ordinary `Container_Bucket`, and
+      the tank's page does *not* open — the pour consumed the click.
+- [ ] Right-click the same tank with a bucket of a **different** metal: nothing happens, the bucket
+      stays full, and the page opens instead. A tank holds one fluid until it is empty.
+- [ ] Pour into a tank with less than 1,000 units of room: nothing happens. A bucket is all or
+      nothing.
+- [ ] Right-click a bucket on a **crusher** or a battery: the machine page opens as usual, since
+      neither has a typed container to pour into.
+- [ ] Pipe the poured fluid out of the tank to a `Fluid_Void` — a molten metal is an ordinary fluid
+      to the network, with no special casing anywhere.
+
+Nothing produces a molten metal yet: buckets come from the creative library, and the smelter has
+no fluid output. Filling an empty bucket *from* a tank is not implemented either.
 
 ### UIs
 

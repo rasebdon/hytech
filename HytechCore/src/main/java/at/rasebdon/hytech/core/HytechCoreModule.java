@@ -5,6 +5,7 @@ import at.rasebdon.hytech.core.components.LogisticBlockComponent;
 import at.rasebdon.hytech.core.components.LogisticEntityProxyComponent;
 import at.rasebdon.hytech.core.components.LogisticPipeComponent;
 import at.rasebdon.hytech.core.components.WrenchModeComponent;
+import at.rasebdon.hytech.core.interactions.FluidBucketInteraction;
 import at.rasebdon.hytech.core.interactions.ReadLogisticContainerInteraction;
 import at.rasebdon.hytech.core.interactions.ui.OpenLogisticContainerPageInteraction;
 import at.rasebdon.hytech.core.systems.CreativeSourceSystem;
@@ -82,6 +83,11 @@ public class HytechCoreModule {
                 "Hytech_OpenLogisticContainer",
                 OpenLogisticContainerPageInteraction.class,
                 OpenLogisticContainerPageInteraction.CODEC);
+
+        Interaction.CODEC.register(
+                "Hytech_FluidBucket",
+                FluidBucketInteraction.class,
+                FluidBucketInteraction.CODEC);
 
         Interaction.CODEC.register(
                 "Hytech_ReadLogisticContainer",
