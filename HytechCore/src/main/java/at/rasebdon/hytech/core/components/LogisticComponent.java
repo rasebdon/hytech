@@ -65,19 +65,14 @@ public abstract class LogisticComponent<TContainer>
         return getFaceConfigTowards(target) == BlockFaceConfigType.OUTPUT;
     }
 
-    /// Whether cycling this face would change nothing, so the wrench and the side panel should
-    /// leave it alone. See [BlockFaceConfig#isConfigurable].
-    ///
-    /// Stated as the negative because that is the question both callers ask -- the side panel
-    /// assigns the answer straight to a variable it calls `locked`.
+    /// Whether cycling this face would change nothing. See [BlockFaceConfig#isConfigurable].
     public boolean isFaceLocked(BlockFace face) {
         return !this.blockFaceConfig.isConfigurable(face);
     }
 
     public void cycleBlockFaceConfig(BlockFace face) {
         if (isPipeToPipe(face)) {
-            // Direction is meaningless between two pipes -- they are the same network, so a
-            // pipe-to-pipe face is only ever connected or not.
+            // Direction is meaningless between two pipes: only connected or not.
             blockFaceConfig.toggleFace(face);
         } else {
             blockFaceConfig.cycleFace(face);
@@ -87,12 +82,8 @@ public abstract class LogisticComponent<TContainer>
         this.reloadNeighborHolder(face);
     }
 
-    /// True when *both* sides of this face are pipes.
-    ///
-    /// Both halves matter. Testing only the neighbour made every machine face with a pipe on it
-    /// toggle-only: a crusher side permitted INPUT, OUTPUT and NONE but not BOTH, so toggling took
-    /// it to NONE and then had nowhere to go, and the side looked stuck off. The same was true of
-    /// the burner and of any battery with a cable against it.
+    /// True when *both* sides of this face are pipes -- testing only the neighbour would make a
+    /// block face with no BOTH state (e.g. a crusher's) toggle to NONE and stick.
     private boolean isPipeToPipe(BlockFace face) {
         if (!(this instanceof LogisticPipeComponent<?>)) return false;
 
@@ -127,10 +118,6 @@ public abstract class LogisticComponent<TContainer>
     @Nullable
     public abstract Component<ChunkStore> clone();
 
-    /// Comma-separated per-face configuration, for `toString` and the read interaction.
-    ///
-    /// Every component printed this the same way; keeping it here means the format stays
-    /// consistent across resource types.
     protected String describeFaces() {
         return Arrays.stream(this.blockFaceConfig.getCurrentStates())
                 .map(BlockFaceConfigState::toString)

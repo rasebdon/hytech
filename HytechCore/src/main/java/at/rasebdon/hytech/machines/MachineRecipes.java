@@ -10,22 +10,11 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 
-/// Which recipes each machine may run.
-///
-/// Machine recipes are ordinary vanilla `CraftingRecipe` assets tagged with a `Processing`
-/// `BenchRequirement` whose id names the machine -- Hytech's own live under
-/// `Server/Item/Recipes/Hytech/` and name `Hytech_Crusher` or `Hytech_Smelter`. That buys the whole
-/// authoring format -- item or resource type inputs, multiple outputs, `TimeSeconds` -- and the
-/// game's own validation, for the price of this index. Such a bench id belongs to no block, which
-/// vanilla is content with: `CraftingPlugin` creates a registry for whatever id a recipe names.
-///
-/// Nothing here is Hytech-specific. Any mod's machine is indexed the same way, so a processor
-/// component naming that mod's group finds its recipes with no registration call -- which is what
-/// lets a content mod add a machine in assets alone.
-///
-/// Built on first use rather than at plugin setup, because assets load on their own schedule and a
-/// machine may well tick before the recipe pack is in. Rebuilt when the asset count changes, which
-/// is enough to pick up a reload without listening for one.
+/// Which recipes each machine may run: ordinary vanilla `CraftingRecipe` assets tagged with a
+/// `Processing` `BenchRequirement` naming the machine group, indexed here with no registration call
+/// needed -- any mod's machine is found the same way, which is what lets a content mod add one in
+/// assets alone. Built lazily and rebuilt on asset-count change, since a machine may tick before the
+/// recipe pack loads.
 public final class MachineRecipes {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
@@ -37,9 +26,6 @@ public final class MachineRecipes {
     private MachineRecipes() {
     }
 
-    /// Every recipe tagged for `group`, in no particular order. Empty when the group has none --
-    /// a typo in `RecipeGroup` or a missing recipe pack look the same from here, which is why the
-    /// index logs what it found.
     @Nonnull
     public static List<CraftingRecipe> forGroup(@Nullable String group) {
         if (group == null || group.isEmpty()) return List.of();
@@ -47,18 +33,9 @@ public final class MachineRecipes {
         return index().getOrDefault(group, List.of());
     }
 
-    /// Whether `stack` is an ingredient of *any* recipe this machine knows.
-    ///
-    /// Deliberately not positional. Vanilla's own `CraftingManager.matchesAnyRecipe` asks whether an
-    /// item fits one specific input slot, which is right for a bench whose slots are laid out to
-    /// match a recipe -- but a Hytech machine's ingredient slots are interchangeable:
-    /// [MachineSlots#countInputSets] scans the whole input range and does not care which slot holds
-    /// the dust and which holds the charcoal. Asking positionally here would refuse loads the
-    /// machine would happily have processed.
-    ///
-    /// Used to keep junk out of the input slots when a player click-transfers into them. A machine
-    /// with no recipes at all accepts nothing, which is the honest answer: it cannot process
-    /// anything either.
+    /// Deliberately non-positional, unlike vanilla's `CraftingManager.matchesAnyRecipe`: a machine's
+    /// input slots are interchangeable ([MachineSlots#countInputSets]), so matching by slot position
+    /// would refuse loads the machine would happily process.
     public static boolean acceptsIngredient(@Nullable String group, @Nonnull ItemStack stack) {
         if (ItemStack.isEmpty(stack)) return false;
 
@@ -87,20 +64,16 @@ public final class MachineRecipes {
             if (requirements == null) continue;
 
             for (var requirement : requirements) {
-                // Keyed on the requirement *type*, not on an id prefix. A `Hytech_` prefix
-                // would have hidden every other mod's machines from an engine they are meant to
-                // share, and it is not what distinguishes a machine recipe anyway: a processing
-                // bench is one a block ticks through, which is exactly what this index is for.
-                // Vanilla's own crafting benches are still left to themselves.
+                // Keyed on requirement type, not an id prefix, so any mod's machines are found --
+                // not just ones prefixed Hytech_.
                 if (requirement.type != BenchType.Processing || requirement.id.isEmpty()) continue;
 
                 built.computeIfAbsent(requirement.id, _ -> new ArrayList<>()).add(recipe);
             }
         }
 
-        // Most ingredients first, so the more specific recipe wins when several match. Iron dust
-        // alone smelts to a bar, but iron dust *and* charcoal is steel -- and a player who loaded
-        // both meant the alloy. Without this the choice would fall out of asset iteration order.
+        // Most ingredients first, so the more specific recipe wins when several match (e.g. an
+        // alloy over its base metal alone).
         built.values().forEach(recipes -> recipes.sort(
                 Comparator.comparingInt((CraftingRecipe recipe) ->
                         recipe.getInput() == null ? 0 : recipe.getInput().length).reversed()));

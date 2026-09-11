@@ -101,12 +101,8 @@ public abstract class LogisticPipeComponent<TContainer> extends LogisticComponen
                 || (this.hasInputOrBothTowards(neighborHolder) && neighbor.allowsOutputTowards(this));
     }
 
-    /// Size of this pipe's centre hub in model units, used to hit-test the arms.
-    ///
-    /// This is geometry, not configuration: it must match the source models the generator
-    /// builds each type's variants from (see PIPE_TYPES in scripts/generate-pipe-assets.py).
-    /// Deliberately not codec backed -- a persisted copy would go stale on blocks placed
-    /// before a geometry change and silently mis-aim the wrench.
+    /// Not codec backed: a persisted copy would go stale on blocks placed before a geometry
+    /// change and mis-aim the wrench. Must match scripts/generate-pipe-assets.py's PIPE_TYPES.
     public int getHubSize() {
         return PipeConnectionMask.DEFAULT_HUB_UNITS;
     }

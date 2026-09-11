@@ -12,12 +12,9 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
-/// Electric machines: blocks that turn items into other items.
-///
-/// Not an [at.rasebdon.hytech.core.AbstractLogisticModule], because a machine transports nothing --
-/// it has no network, no pipes and no containers of its own. What it has is other modules':
-/// `hytech:items:container` for the slots and `hytech:energy:container` for the buffer, which is
-/// why this initialises after both.
+/// Not an [at.rasebdon.hytech.core.AbstractLogisticModule]: a machine has no network or containers
+/// of its own, only other modules' -- `hytech:items:container` and `hytech:energy:container` --
+/// which is why this initializes after both.
 public final class MachineModule {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();

@@ -27,7 +27,6 @@ public abstract class LogisticNetwork<TContainer> extends ContainerHolder<TConta
 
         LOGGER.atFine().log("Setting Network with %d Pipes", newPipes.size());
 
-        // Detach old pipes
         for (var pipe : pipes) {
             if (!newPipes.contains(pipe)) {
                 pipe.assignNetwork(null);
@@ -46,9 +45,6 @@ public abstract class LogisticNetwork<TContainer> extends ContainerHolder<TConta
     }
 
     /// Called after any change to the pipe set, once targets have been rebuilt.
-    ///
-    /// Every subclass overrode `setPipes`/`removePipe` purely to recompute its aggregate
-    /// afterwards. One hook says the same thing and cannot be half-implemented.
     protected void onPipesChanged() {
     }
 

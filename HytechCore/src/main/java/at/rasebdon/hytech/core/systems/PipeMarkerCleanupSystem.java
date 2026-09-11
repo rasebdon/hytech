@@ -8,11 +8,8 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/// Tears down a pipe's push/pull markers when the block goes away.
-///
-/// [PipeConnectionStateSystem] is a ticking system and so never observes removal; without
-/// this the marker entities would outlive their pipe. Like its companion, this is a single
-/// shared instance because the registry allows one system per class.
+/// Tears down a pipe's push/pull markers when the block goes away, since the ticking
+/// [PipeConnectionStateSystem] never observes removal.
 public final class PipeMarkerCleanupSystem extends RefSystem<ChunkStore> {
 
     private final PipeConnectionStateSystem stateSystem;

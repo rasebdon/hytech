@@ -10,13 +10,8 @@ import com.hypixel.hytale.codec.validation.Validators;
 
 /// A storage block holding one scalar resource.
 ///
-/// Energy, heat, fluid and gas blocks are the same block with a different label on the
-/// number, so everything except the resource's name lives here.
-///
-/// The *amount* key is not declared here on purpose. Capacity and transfer speed are already
-/// spelled the same way in every asset, but the stored amount is not -- energy shipped with
-/// `Energy`, and renaming it would silently zero every battery in an existing world. So each
-/// subclass appends its own amount key and new types can simply use `Amount`.
+/// The *amount* key is deliberately not declared here: energy shipped as `Energy`, and renaming
+/// it would zero every battery in an existing world, so each subclass appends its own key.
 public abstract class AbstractScalarBlockComponent<TContainer>
         extends LogisticBlockComponent<TContainer>
         implements ScalarContainer {

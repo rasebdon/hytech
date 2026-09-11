@@ -22,10 +22,8 @@ import org.joml.Vector3i;
 
 import javax.annotation.Nonnull;
 
-/// The page for an electric machine: its charge, what it is making, and its slots.
-///
-/// One interaction for every machine, because a crusher and a smelter differ only in the numbers
-/// the same three components hold -- exactly as `OpenGeneratorPage` covers all three generators.
+/// One interaction for every machine: a crusher and a smelter differ only in the numbers the
+/// same three components hold.
 public class OpenMachinePageInteraction extends OpenPageBlockInteraction {
 
     @Nonnull
@@ -53,22 +51,18 @@ public class OpenMachinePageInteraction extends OpenPageBlockInteraction {
         var items = HytechUtil.getBlockComponent(
                 world, blockPos, ItemModule.get().getBlockComponentType());
 
-        // Non-null container is what gives the page its Slots button and the player's inventory
-        // alongside; a machine with no item component would simply not offer one.
         var container = items == null ? null : items.getItemContainer();
 
         return new MachinePage(playerRef, world, blockPos, container,
                 (_, view) -> fill(view, processor, energy.getContainer(), items));
     }
 
-    /// How long the operation in flight has left, in seconds. Zero when nothing is running.
     private static float secondsRemaining(MachineProcessorComponent processor) {
         float total = operationSeconds(processor);
 
         return total <= 0f ? 0f : Math.max(0f, total - processor.getProgress());
     }
 
-    /// The length of the current operation, or zero when there is none.
     private static float operationSeconds(MachineProcessorComponent processor) {
         var recipeId = processor.getRecipeId();
         if (recipeId == null) return 0f;
@@ -79,16 +73,12 @@ public class OpenMachinePageInteraction extends OpenPageBlockInteraction {
         return processor.operationSeconds(recipe.getTimeSeconds());
     }
 
-    /// Progress against the operation in flight, read from the recipe the machine is running.
-    ///
-    /// Zero when nothing is running: there is no operation to measure against, and a stale bar
-    /// reads as a stuck machine.
     private static float progressRatio(MachineProcessorComponent processor) {
         if (processor.getRecipeId() == null) return 0f;
 
         float operation = operationSeconds(processor);
 
-        // An instant recipe never sits at a fraction, so show it as ready rather than empty.
+        // An instant recipe shows as ready, not empty.
         return operation <= 0f ? 1f : processor.getProgress() / operation;
     }
 
@@ -106,16 +96,8 @@ public class OpenMachinePageInteraction extends OpenPageBlockInteraction {
 
         String status = status(processor, energy);
 
-        // The split is the machine's own: the leading slots take ingredients, the trailing ones
-        // hold results, and `MachineSlots` is the only other place that arithmetic lives. Drawing
-        // it means the page shows a crusher the way a crusher works -- ore on the left of the
-        // arrow, dust on the right -- rather than one undifferentiated row.
         if (items != null) {
-            // The predicate does double duty: it greys the contents summary when the machine is
-            // loaded with something it cannot use, and it is what the page checks before letting a
-            // click-transfer drop an item into an ingredient slot. Non-positional on purpose --
-            // MachineSlots matches across the whole input range, so the UI must not be stricter
-            // about which slot a dust goes in than the machine itself is.
+            // Also gates click-transfer into ingredient slots; non-positional to match MachineSlots.
             var group = processor.getRecipeGroup();
 
             view.slots("Processing", items.getItemContainer(),

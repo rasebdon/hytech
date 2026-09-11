@@ -1,18 +1,11 @@
 #!/usr/bin/env python3
 """
-Verifies every asset path our JSON references actually resolves, every item a recipe names
-actually exists, and every pipe item declares the block states its renderer needs.
+Verifies every asset path our JSON references resolves, every item a recipe names exists, and
+every pipe item declares the block states its renderer needs -- catching in a second what would
+otherwise surface as a wall of SEVERE lines (a fatal but non-failing validation error) at launch.
 
-A missing `Icon` or texture is a *fatal* validation error for that item at load time, and the
-server reports it as a wall of SEVERE lines rather than failing the build -- so it is easy to
-ship and only find out when launching. This catches the same thing in a second.
-
-References are resolved against *every* mod's `Common/` tree and then the game's `Assets.zip`,
-because plenty of our assets legitimately point at vanilla textures and models -- and because
-`Common/` is one flat, last-pack-wins namespace at runtime, so a content mod's pipe item pointing
-at geometry shipped by HytechCore is correct and must not be reported as missing.
-
-Roots are discovered as `*/src/main/resources`, so adding a mod project needs no edit here.
+References resolve against every mod's `Common/` tree plus the game's `Assets.zip`, since
+`Common/` is one flat, last-pack-wins namespace at runtime and cross-mod references are valid.
 
 Usage:
     python scripts/check-asset-refs.py
@@ -31,8 +24,8 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-# Keys whose values name a file under Common/. Kept explicit rather than "any string that looks
-# like a path", so a stray description never trips this.
+# Explicit allow-list rather than "any string that looks like a path", so a stray description
+# never trips this.
 ASSET_KEYS = {
     "Icon", "CustomModel", "Texture", "Model", "TransitionTexture",
     "All", "Sides", "UpDown", "Up", "Down", "North", "South", "East", "West",
@@ -40,12 +33,8 @@ ASSET_KEYS = {
 
 
 def resource_roots(explicit: list[str]) -> list[Path]:
-    """Every mod's resource tree in this build.
-
-    One root per Gradle subproject. They are checked together rather than one at a time because
-    the runtime merges them: a reference that resolves in any pack resolves at load time, and a
-    per-project run would report every cross-mod reference as missing.
-    """
+    """Checked together, not one at a time: the runtime merges packs, so a per-project run would
+    report every cross-mod reference as missing."""
     if explicit:
         roots = [Path(value).resolve() for value in explicit]
     else:
@@ -63,7 +52,6 @@ def resource_roots(explicit: list[str]) -> list[Path]:
 
 
 def display(path: Path) -> str:
-    """A path as a reader of this repo would write it."""
     try:
         return path.relative_to(REPO_ROOT).as_posix()
     except ValueError:
@@ -71,7 +59,7 @@ def display(path: Path) -> str:
 
 
 def game_assets() -> set[str]:
-    """Names inside the game's Assets.zip, or an empty set if it is not installed."""
+    """Empty set if Assets.zip is not installed."""
     appdata = os.environ.get("APPDATA")
     if not appdata:
         home = os.environ.get("HOME", "")
@@ -111,10 +99,7 @@ def json_files(roots: list[Path]) -> list[Path]:
 
 
 def item_ids(roots: list[Path], vanilla: set[str]) -> set[str]:
-    """Every item id the server will know: the game's, plus every mod's.
-
-    An item's id is its file name, which is how `AssetBuilderCodec` keys the store.
-    """
+    """An item's id is its file name (how `AssetBuilderCodec` keys the store)."""
     known = {
         name.split("/")[-1][:-5]
         for name in vanilla
@@ -128,7 +113,6 @@ def item_ids(roots: list[Path], vanilla: set[str]) -> set[str]:
 
 
 def collect_items(node: object, out: list[str]) -> None:
-    """Every `ItemId` under a recipe: inputs, outputs, upgrade materials."""
     if isinstance(node, dict):
         for key, value in node.items():
             if key == "ItemId" and isinstance(value, str):
@@ -141,12 +125,8 @@ def collect_items(node: object, out: list[str]) -> None:
 
 
 def check_recipes(roots: list[Path], vanilla: set[str]) -> list[tuple[Path, str]]:
-    """Recipes naming an item that does not exist.
-
-    Worth its own pass because the failure is quiet in a different way from a missing texture: the
-    recipe loads, validates, and then simply never matches anything, so a machine sits idle with no
-    log line to explain why. Generated recipes make this cheap to get wrong at scale.
-    """
+    """A recipe naming a nonexistent item loads and validates fine, then simply never matches --
+    no log line, just a machine that silently sits idle."""
     known = item_ids(roots, vanilla)
     missing: list[tuple[Path, str]] = []
 
@@ -154,7 +134,7 @@ def check_recipes(roots: list[Path], vanilla: set[str]) -> list[tuple[Path, str]
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
-            continue  # already reported by the asset pass
+            continue
 
         references: list[str] = []
         for key in ("Recipe", "Input", "Output", "PrimaryOutput"):
@@ -167,21 +147,14 @@ def check_recipes(roots: list[Path], vanilla: set[str]) -> list[tuple[Path, str]
     return missing
 
 
-# --------------------------------------------------------------------------------------------
-# Pipes
-# --------------------------------------------------------------------------------------------
-
-# Every mod ships its own pipe items, reusing the connection geometry HytechCore generates. That
-# makes a pipe the one block type whose assets have a contract the Java side cannot state: a
-# missing state is not an error anywhere, `setBlockInteractionState` simply no-ops and the pipe
-# renders as though it were unconnected.
+# A missing pipe block state is not an error anywhere -- setBlockInteractionState just no-ops and
+# the pipe renders as unconnected -- so this is the only check for that contract.
 PIPE_COMPONENT = re.compile(r"^hytech:\w+:pipe$")
 
 # Kept in step with PipeConnectionMask: six faces, so 64 masks, named `Conn_<mask>`.
 PIPE_STATE_COUNT = 64
 
-# Defaults from LogisticPipeComponent.DEFAULT_CONNECTION_MODEL_ASSETS, used for whichever of the
-# three a pipe does not name itself.
+# Defaults from LogisticPipeComponent.DEFAULT_CONNECTION_MODEL_ASSETS.
 PIPE_MODEL_KEYS = {
     "NormalConnectionModelAsset": "Pipe_Normal",
     "PullConnectionModelAsset": "Pipe_Pull",
@@ -190,7 +163,6 @@ PIPE_MODEL_KEYS = {
 
 
 def model_asset_ids(roots: list[Path], vanilla: set[str]) -> set[str]:
-    """Every `ModelAsset` id, which like an item id is just the file name."""
     known = {
         name.split("/")[-1][:-5]
         for name in vanilla
@@ -234,7 +206,6 @@ def pipe_components(payload: dict) -> list[str]:
 
 
 def check_pipes(roots: list[Path], vanilla: set[str]) -> tuple[list[tuple[Path, str]], int]:
-    """The block-state contract a pipe item has to satisfy to render at all."""
     problems: list[tuple[Path, str]] = []
     models = model_asset_ids(roots, vanilla)
     hitboxes = hitbox_ids(roots, vanilla)
@@ -271,8 +242,6 @@ def check_pipes(roots: list[Path], vanilla: set[str]) -> tuple[list[tuple[Path, 
             if isinstance(hitbox, str) and hitbox not in hitboxes:
                 problems.append((path, f"{name} names unknown HitboxType {hitbox}"))
 
-        # The three marker models the wrench spawns on an INPUT or OUTPUT face. A pipe that names
-        # none of them inherits the defaults, which HytechCore ships.
         for component in components.values():
             if not isinstance(component, dict):
                 continue
@@ -284,10 +253,6 @@ def check_pipes(roots: list[Path], vanilla: set[str]) -> tuple[list[tuple[Path, 
 
     return problems, checked
 
-
-# --------------------------------------------------------------------------------------------
-# UI documents
-# --------------------------------------------------------------------------------------------
 
 # Properties in a .ui document whose value names a file. Everything else that happens to be a
 # quoted string -- a label, a tooltip -- is left alone.
@@ -307,18 +272,12 @@ UI_DOCUMENT_PATTERN = re.compile(r"^\s*\$\w+\s*=\s*\"([^\"]+\.ui)\"", re.MULTILI
 
 
 def resolve_ui_path(document: Path, reference: str) -> Path:
-    """Where a UIPath points, given the file it was written in.
-
-    A UIPath is relative to the *declaring document*, not to any root -- so vanilla's own
-    "Common/ContainerPanelPatch.png", copied into a file one directory deeper, quietly resolves
-    somewhere that does not exist. The client draws a white cross and logs nothing, which is a
-    miserable thing to debug by eye.
-    """
+    """A UIPath is relative to the declaring document, not to any root -- a miss draws a silent
+    white missing-texture cross with nothing logged."""
     return (document.parent / reference).resolve()
 
 
 def check_ui(roots: list[Path], vanilla: set[str]) -> tuple[list[tuple[Path, str]], int]:
-    """Texture and document references inside .ui files."""
     missing: list[tuple[Path, str]] = []
     checked = 0
 
@@ -347,11 +306,9 @@ def check_ui(roots: list[Path], vanilla: set[str]) -> tuple[list[tuple[Path, str
 
 def ui_reference_resolves(target: Path, root: Path, roots: list[Path],
                           vanilla: set[str]) -> bool:
-    """Whether a resolved UIPath exists in any pack, or in the game's own assets."""
     candidates = [target]
 
-    # The same relative location in another mod's tree: `Common/` is one namespace at runtime, so
-    # a document in one pack may legitimately point at art shipped by another.
+    # Also try the same relative location in another mod's tree: `Common/` is one namespace.
     try:
         relative = target.relative_to(root)
     except ValueError:

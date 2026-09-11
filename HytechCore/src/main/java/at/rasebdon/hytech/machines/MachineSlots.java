@@ -10,14 +10,9 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
 
-/// A machine's container, seen as an ingredient half and a result half.
-///
-/// Vanilla's container helpers -- `getSlotMaterialsToRemove`, `canAddItemStacks` -- work on a whole
-/// container, and a machine's is deliberately one container so item pipes and the player's window
-/// see a single thing. Scoping matters though: a crusher must not count the dust in its output as
-/// an ingredient, and must not pile its results into the ore slot. So the slot-range arithmetic
-/// lives here, once, and the matching itself still defers to [CraftingManager#matches] so a Hytech
-/// machine reads a recipe exactly as a vanilla bench does.
+/// A machine's single container, seen as an ingredient half and a result half, since a crusher
+/// must not count its own dust output as an ingredient. Matching still defers to
+/// [CraftingManager#matches].
 public final class MachineSlots {
 
     private final ItemContainer container;
@@ -35,10 +30,8 @@ public final class MachineSlots {
         this.outputTo = outputTo;
     }
 
-    /// The split a machine's item component declares, or null when it declares none.
-    ///
-    /// Null rather than a whole-container fallback on purpose: a machine with no `InputSlots` /
-    /// `OutputSlots` would otherwise crush its own output back into dust forever.
+    // Null, not a whole-container fallback: without InputSlots/OutputSlots a machine would
+    // otherwise crush its own output back into dust forever.
     @Nullable
     public static MachineSlots of(@Nonnull ItemBlockComponent items) {
         var container = items.getItemContainer();
@@ -54,10 +47,6 @@ public final class MachineSlots {
         return new MachineSlots(container, (short) 0, inputs, inputs, (short) (inputs + outputs));
     }
 
-    /// How many whole sets of `materials` the ingredient slots hold, capped at `limit`.
-    ///
-    /// Counting sets rather than answering yes/no is what makes a factory tier possible: the
-    /// machine completes as many operations at once as it has both ingredients and room for.
     public int countInputSets(@Nonnull List<MaterialQuantity> materials, int limit) {
         if (materials.isEmpty() || limit <= 0) return 0;
 
@@ -81,13 +70,8 @@ public final class MachineSlots {
         return sets;
     }
 
-    /// The largest number of `sets` of `outputs` the result slots can actually take, so a full
-    /// machine stops instead of destroying what it made.
-    ///
-    /// Found by halving rather than by summing free space, because free space is not additive
-    /// across outputs: two results both want the one empty slot, and counting a whole stack of
-    /// room for each of them would promise space that is not there. Vanilla's bench narrows the
-    /// same way in `advanceProcessing`.
+    /// Binary search rather than summing free space: two outputs can both want the same empty
+    /// slot, so free space isn't additive across them.
     public int fittingOutputSets(@Nonnull List<ItemStack> outputs, int sets) {
         if (outputs.isEmpty() || sets <= 0) return 0;
 
@@ -107,13 +91,10 @@ public final class MachineSlots {
         return low;
     }
 
-    /// Whether `sets` of every output can be placed, allocating slot by slot so each output only
-    /// gets the room the ones before it left behind.
     private boolean fits(List<ItemStack> outputs, int sets) {
         int slots = this.outputTo - this.outputFrom;
 
-        // Room left in each slot, and what it holds. -1 room marks a slot still empty, which the
-        // first output to claim it fills in.
+        // -1 room marks a slot still empty; the first output to claim it fills it in.
         int[] room = new int[slots];
         String[] held = new String[slots];
 
@@ -134,8 +115,7 @@ public final class MachineSlots {
             int needed = Math.max(1, output.getQuantity()) * sets;
             int maxStack = Math.max(1, output.getItem().getMaxStack());
 
-            // Part-filled stacks of the same item first, the way a container's own add does, so an
-            // empty slot is only spent when there is no other home for the items.
+            // Part-filled stacks of the same item first, so an empty slot is a last resort.
             for (int index = 0; index < slots && needed > 0; index++) {
                 if (room[index] == -1 || !output.getItemId().equals(held[index])) continue;
 
@@ -159,10 +139,6 @@ public final class MachineSlots {
         return true;
     }
 
-    /// Removes `sets` worth of `materials` from the ingredient slots.
-    ///
-    /// Unfiltered: the machine is the container's owner, and the filters exist to keep *other*
-    /// things out rather than to police the machine's own bookkeeping.
     public void consumeInputs(@Nonnull List<MaterialQuantity> materials, int sets) {
         for (var material : materials) {
             int remaining = Math.max(1, material.getQuantity()) * sets;
@@ -178,8 +154,6 @@ public final class MachineSlots {
         }
     }
 
-    /// Writes `sets` worth of `outputs` into the result slots, merging into part-filled stacks
-    /// first the way a bench does.
     public void addOutputs(@Nonnull List<ItemStack> outputs, int sets) {
         for (var output : outputs) {
             int remaining = Math.max(1, output.getQuantity()) * sets;
@@ -188,8 +162,7 @@ public final class MachineSlots {
                 int before = remaining;
 
                 for (short slot = this.outputFrom; slot < this.outputTo && remaining > 0; slot++) {
-                    // withQuantity returns null only for a quantity of zero, which the loop
-                    // condition rules out. Hoisted so that is stated rather than assumed.
+                    // withQuantity returns null only for quantity zero, which the loop guards against.
                     var stack = output.withQuantity(remaining);
                     if (stack == null) break;
 
@@ -201,8 +174,7 @@ public final class MachineSlots {
                     remaining = ItemStack.isEmpty(leftover) ? 0 : leftover.getQuantity();
                 }
 
-                // Nothing moved anywhere: the output is full, and looping again would spin
-                // forever. fittingOutputSets should have caught this, so say so.
+                // Nothing moved: output full, would otherwise spin forever.
                 if (remaining == before) break;
             }
         }

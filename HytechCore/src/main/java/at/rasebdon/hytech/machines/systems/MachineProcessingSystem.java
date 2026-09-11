@@ -16,15 +16,9 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-/// Runs every electric machine: pick a recipe, spend energy, hand over the results.
-///
-/// One system for all of them, the way [at.rasebdon.hytech.core.systems.AbstractTransferSystem] is
-/// one algorithm for every resource. A crusher and an electric smelter differ only in the recipes
-/// their `RecipeGroup` selects and the numbers on their processor component.
-///
-/// Energy is denominated **per tick**, matching how generation pays out in
-/// `EnergyGenerationSystem` -- a machine that cannot afford this tick simply does not advance, and
-/// nothing is consumed or lost while it waits.
+/// Runs every electric machine: pick a recipe, spend energy, hand over the results. Energy is
+/// per tick, matching `EnergyGenerationSystem`: a machine that can't afford a tick simply doesn't
+/// advance, and nothing is consumed while it waits.
 public final class MachineProcessingSystem extends EntityTickingSystem<ChunkStore> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
@@ -34,8 +28,6 @@ public final class MachineProcessingSystem extends EntityTickingSystem<ChunkStor
     private final ComponentType<ChunkStore, EnergyBlockComponent> energyType;
     private final Archetype<ChunkStore> archetype;
 
-    /// Whether a badly configured machine has already been reported. One line per server, not one
-    /// per machine per tick.
     private boolean warnedAboutSlots;
     private boolean warnedAboutGroup;
 
@@ -84,8 +76,6 @@ public final class MachineProcessingSystem extends EntityTickingSystem<ChunkStor
         var inputs = CraftingManager.getInputMaterials(recipe);
         var outputs = CraftingManager.getOutputItemStacks(recipe);
 
-        // How much work is even possible this pass: ingredients on hand, room for the results, and
-        // the machine's own parallelism. Established before any energy is spent.
         int sets = slots.countInputSets(inputs, processor.getParallelOperations());
         sets = slots.fittingOutputSets(outputs, sets);
 
@@ -96,7 +86,6 @@ public final class MachineProcessingSystem extends EntityTickingSystem<ChunkStor
 
         long cost = processor.getEnergyPerTick() * sets;
         if (cost > 0L && energy.getAmount() < cost) {
-            // Held, not lost: progress stays where it is and resumes when power comes back.
             processor.setActive(false);
             return;
         }
@@ -116,19 +105,14 @@ public final class MachineProcessingSystem extends EntityTickingSystem<ChunkStor
         slots.consumeInputs(inputs, sets);
         slots.addOutputs(outputs, sets);
 
-        // The ingredients that were on hand are gone, so the next tick re-derives the recipe
-        // rather than assuming this one still applies.
         if (slots.countInputSets(inputs, 1) <= 0) {
             processor.clearOperation();
         }
     }
 
-    /// The recipe in flight if its ingredients are still there, otherwise the first candidate the
-    /// ingredient slots satisfy.
-    ///
-    /// Sticking to the saved recipe matters when several would match: without it a machine could
-    /// bank progress on one and pay it out on another, and the choice would flicker as the input
-    /// slots change.
+    /// The recipe in flight if its ingredients are still there, else the first candidate that
+    /// matches -- sticking to the saved one prevents banking progress on one recipe and spending
+    /// it on another.
     @Nullable
     private CraftingRecipe resolveRecipe(MachineProcessorComponent processor, MachineSlots slots) {
         var candidates = MachineRecipes.forGroup(processor.getRecipeGroup());
@@ -151,7 +135,6 @@ public final class MachineProcessingSystem extends EntityTickingSystem<ChunkStor
         for (var candidate : candidates) {
             if (slots.countInputSets(CraftingManager.getInputMaterials(candidate), 1) <= 0) continue;
 
-            // A new recipe starts from zero: progress earned on the last one is not transferable.
             processor.setRecipeId(candidate.getId());
             processor.consumeProgress(Float.MAX_VALUE);
 

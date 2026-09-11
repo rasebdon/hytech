@@ -14,25 +14,16 @@ import java.util.function.Predicate;
 /// What a machine puts on its page, written once per refresh.
 ///
 /// The page document declares every section; a machine fills in the ones it has and this hides the
-/// rest. So a battery, a fluid tank and the burner generator all render through the same document
-/// and the same code, and a new resource type needs neither.
+/// rest, so every block renders through the same document and code.
 ///
-/// This is also the *only* writer on the page. Everything -- the side configurator, the player's
-/// inventory, the machine's own readouts -- goes through [#write], because every value sent has to
-/// land in the change signature. A page that updates when nothing moved eats its own button clicks:
-/// `updateCustomPage` increments an outstanding-acknowledgment counter and `PageManager` drops
-/// incoming Data events while that counter is non-zero.
+/// The *only* writer on the page: every value goes through [#write] so it lands in the change
+/// signature, since an update that changes nothing drops the page's own incoming clicks.
 public final class MachineView {
 
-    /// Detail rows the document declares.
     private static final int DETAIL_ROWS = 6;
 
-    /// Ingredient and result cells in the split view. Four each is generous for what the mod
-    /// ships -- the widest is the smelter's two in, two out -- and a machine wanting more slots
-    /// than that wants the undivided grid.
-    ///
-    /// The four cell counts are package-private because [MachinePage] binds a click handler to
-    /// every declared cell and must bind exactly as many as this draws.
+    /// Ingredient and result cells in the split view; package-private because [MachinePage] must
+    /// bind exactly as many click handlers as this draws.
     static final int SPLIT_CELLS = 4;
 
     /// Cells in the undivided view, for a fuel slot or an item buffer.
@@ -42,15 +33,9 @@ public final class MachineView {
     static final int STORAGE_CELLS = 36;
     static final int HOTBAR_CELLS = 9;
 
-    /// Pixel metrics, mirroring `Hytech.ui`.
-    ///
-    /// The page is sized by the server rather than by intrinsic height: the two containers sit in a
-    /// horizontal stack, and a child of a horizontal stack stretches to its parent on the cross
-    /// axis, so "as tall as its content" is not something the layout will work out on its own.
-    /// Adding up what was actually drawn is what makes a solar panel's page short and a smelter's
-    /// tall, instead of every block paying for the worst case.
-    ///
-    /// Kept together and named so the arithmetic below reads as a layout rather than as constants.
+    /// Pixel metrics, mirroring `Hytech.ui`. The page is sized here rather than by intrinsic
+    /// height: a horizontal stack's children stretch on the cross axis instead of sizing to
+    /// content, so height has to be computed from what was actually drawn.
     private static final int SLOT_PITCH = 56;
     private static final int PANEL_CHROME = 20;      // @Panel's padding, top and bottom
     private static final int HEADING = 28;           // a panel heading and its gap
@@ -70,11 +55,9 @@ public final class MachineView {
     private static final int MAIN_WIDTH = 760;
     private static final int CONTAINER_GAP = 14;
 
-    /// Cells per row in the undivided grid, at the width the contents panel gets.
     private static final int FLAT_PER_ROW = 6;
 
-    /// Cell backgrounds. Duplicated from `Hytech.ui`, which paints the same values on open --
-    /// the document owns the resting look, and this owns it from the first refresh onwards.
+    /// Duplicated from `Hytech.ui`, which paints the same resting-state values on open.
     private static final String CELL_IDLE = "#1b2530";
     private static final String CELL_IDLE_HOVER = "#2a3846";
     private static final String CELL_HELD = "#c9a050";
@@ -83,33 +66,28 @@ public final class MachineView {
     private final UICommandBuilder commands;
 
     /// Everything written this pass, so the page can skip an update that would change nothing.
-    /// Cheap and exact: the values are the strings and numbers already being sent.
     private final StringBuilder signature = new StringBuilder();
 
-    /// Which container and slot each drawn cell stands for, so a click on `#OutSlot2` can be
-    /// resolved without the page having to re-derive a machine's ingredient/result split.
+    /// Which container and slot each drawn cell stands for, so a click can be resolved without
+    /// re-deriving a machine's ingredient/result split.
     private final Map<String, SlotRef> cells = new HashMap<>();
 
-    /// Which of the machine's slots take ingredients.
-    ///
-    /// What lets a click-transfer refuse junk: a container filter already stops items entering a
-    /// *result* slot, but nothing stops a player putting cobblestone in a crusher, and a machine
-    /// sitting full of something it cannot process looks broken.
+    /// Which of the machine's slots take ingredients, so a click-transfer can refuse junk a
+    /// container filter wouldn't otherwise catch.
     private final Set<Integer> ingredientSlots = new HashSet<>();
 
     @Nullable
     private final SlotTransfer transfer;
 
-    /// The cell painted as held last pass, so exactly two style writes repaint the selection
-    /// instead of four per cell across a hundred of them.
+    /// The cell painted as held last pass, so only the changed cells get repainted.
     @Nullable
     private final String previouslyHeld;
 
     @Nullable
     private String held;
 
-    /// The machine's own test for an item it cannot use, kept so the page can refuse a transfer
-    /// into an ingredient slot rather than only colouring the summary.
+    /// The machine's own test for an item it cannot use, kept so a transfer into an ingredient
+    /// slot can be refused, not just greyed out.
     @Nullable
     private Predicate<ItemStack> incompatible;
 
@@ -146,11 +124,8 @@ public final class MachineView {
         return String.format("%dm %02ds", whole / 60, whole % 60);
     }
 
-    /// Writes one value and records it in the change signature.
-    ///
-    /// Public because the side configurator writes through this view rather than touching the
-    /// command builder: a value written around the signature is a value that can go stale on the
-    /// page without the refresh ever noticing.
+    /// Writes one value and records it in the change signature. Public so the side configurator
+    /// writes through this view rather than around the signature.
     public void write(@Nonnull String selector, @Nonnull String value) {
         this.commands.set(selector, value);
         note(selector, value);
@@ -212,18 +187,10 @@ public final class MachineView {
     // Readouts
     // -------------------------------------------------------------------------------------------
 
-    /// Replaces an element's whole anchor.
-    ///
-    /// `.Anchor.Height` looks like it should work -- style objects nest that way, and
-    /// `#Button.Style.Default.Background` is exactly how the faces are recoloured -- but the client
-    /// rejects it with "selector doesn't match a markup property". Only `Anchor` as a whole is
-    /// settable, which is what vanilla's own MemoriesPage does. It *replaces* rather than merges,
-    /// so every field the markup declared has to be restated, not just the one being changed.
-    ///
-    /// Takes the fields rather than a built `Anchor` because `Anchor` exposes setters and no
-    /// getters, so a built one cannot be summarised for the change signature afterwards -- and a
-    /// signature entry that came out as an identity hash would differ on every pass and defeat the
-    /// skip that keeps the page's own clicks alive.
+    /// Replaces an element's whole anchor. `.Anchor.Height` is rejected by the client — only
+    /// `Anchor` as a whole is settable, and it replaces rather than merges, so every field the
+    /// markup declared must be restated. Takes raw fields rather than a built `Anchor` because
+    /// `Anchor` has no getters, so it can't be summarised into the signature afterwards.
     private void writeAnchor(@Nonnull String selector, @Nullable Integer width, int height,
                              @Nullable Integer right, @Nullable Integer bottom) {
         var anchor = new Anchor();
@@ -239,11 +206,8 @@ public final class MachineView {
                 .append(right).append(',').append(bottom).append(';');
     }
 
-    /// The machine's headline number: what it holds, and how full.
-    ///
-    /// No heading of its own -- the panel is called Status and the value says what it is ("12,400 /
-    /// 50,000 RF"), so a third line reading "Energy" was telling the player something they had just
-    /// read.
+    /// The machine's headline number: what it holds, and how full. No heading of its own — the
+    /// value already says what it is ("12,400 / 50,000 RF").
     public void primary(@Nonnull String value, float ratio, @Nonnull String caption) {
         this.primaryShown = true;
 
@@ -252,8 +216,7 @@ public final class MachineView {
         write("#PrimaryCaption.Text", caption);
     }
 
-    /// One label/value line. Extra calls beyond what the document declares are ignored rather than
-    /// throwing, since a machine adding a seventh stat should not take its page down.
+    /// One label/value line. Calls beyond what the document declares are ignored rather than thrown.
     public void detail(@Nonnull String label, @Nonnull String value) {
         if (this.detailsUsed >= DETAIL_ROWS) return;
 
@@ -273,9 +236,7 @@ public final class MachineView {
         write("#SecondaryCaption.Text", caption);
     }
 
-    /// Records a written value in the change signature. `commands.set` is overloaded per type
-    /// and has no common supertype to dispatch on, so the overloads above split on the `set`
-    /// call and share this.
+    // Shared by the write() overloads since commands.set has no common supertype to dispatch on.
     private void note(@Nonnull String selector, @Nonnull Object value) {
         this.signature.append(selector).append('=').append(value).append(';');
     }
@@ -284,11 +245,8 @@ public final class MachineView {
     // Contents
     // -------------------------------------------------------------------------------------------
 
-    /// The machine's own slots.
-    ///
-    /// A machine that declares an ingredient half and a result half gets the split view: inputs,
-    /// an arrow, outputs. Everything else -- the burner's fuel slot, an item buffer -- gets one
-    /// undivided grid, which is what `inputSlots` and `outputSlots` of zero mean.
+    /// A machine declaring both an ingredient half and a result half gets the split view; zero for
+    /// either means an undivided grid instead (a fuel slot, an item buffer).
     public void slots(@Nonnull String heading,
                       @Nullable ItemContainer container,
                       int inputSlots,
@@ -325,8 +283,7 @@ public final class MachineView {
             int shown = Math.min(container.getCapacity(), FLAT_CELLS);
             this.flatCellsShown = shown;
 
-            // Undivided: every slot takes what goes in, so every cell is an ingredient cell.
-            // That is what makes the burner refuse a non-fuel through the same path.
+            // Undivided: every cell is an ingredient cell.
             drawCells(container, "#FlatSlot", 0, shown, 0, SlotTransfer.ZONE_MACHINE, true);
             hideCells("#FlatSlot", shown, FLAT_CELLS);
 
@@ -335,15 +292,9 @@ public final class MachineView {
         }
     }
 
-    /// How far through whatever it is doing the block is, and how long is left.
-    ///
-    /// One call for every kind of timed operation the mod has -- a recipe in a crusher, a lump of
-    /// charcoal in a burner -- so they are worded and drawn identically and the reading transfers
-    /// between them. Drawn under the slots rather than in the status column: an operation in flight
-    /// belongs next to the things it is consuming.
-    ///
-    /// `secondsRemaining` of zero or less prints no countdown, which is the honest rendering of a
-    /// machine that is idle or blocked.
+    /// How far through whatever it is doing the block is, and how long is left. One call for
+    /// every kind of timed operation so they read identically. `secondsRemaining` <= 0 prints no
+    /// countdown (idle or blocked).
     public void progress(float ratio, float secondsRemaining, @Nonnull String status) {
         this.progressShown = true;
 
@@ -353,10 +304,7 @@ public final class MachineView {
                 : status);
     }
 
-    /// The player's own inventory along the bottom of the page.
-    ///
-    /// Storage first, then the hotbar, in one flat run of cells -- the same order the document
-    /// declares them, so the panel needs no layout knowledge here.
+    /// The player's own inventory along the bottom of the page: storage, then hotbar.
     public void inventory(@Nullable ItemContainer storage, @Nullable ItemContainer hotbar) {
         this.inventoryShown = storage != null || hotbar != null;
 
@@ -376,11 +324,8 @@ public final class MachineView {
         write("#CancelTransferButton.Visible", this.transfer != null && this.transfer.isPending());
     }
 
-    /// Draws `count` cells, `prefix`+`firstCell` onwards, from `firstSlot` of `container`.
-    ///
-    /// Values only -- the cells exist in the document and are hidden when unused. Clearing and
-    /// re-appending children would restructure the page on every refresh, and a page that keeps
-    /// sending structural updates is a page whose button clicks get dropped.
+    /// Draws `count` cells, `prefix`+`firstCell` onwards, from `firstSlot` of `container`. Values
+    /// only — the cells exist in the document already; restructuring the page would drop clicks.
     private void drawCells(@Nonnull ItemContainer container, @Nonnull String prefix,
                            int firstSlot, int count, int firstCell, @Nonnull String zone,
                            boolean ingredient) {
@@ -403,9 +348,7 @@ public final class MachineView {
             if (filled) {
                 write(cell + " #Icon.ItemId", stack.getItemId());
 
-                // Drawn as a label rather than by the slot: a page-hosted ItemSlot rejects
-                // `.Quantity` with a "CustomUI Set command error", which is also why vanilla's own
-                // DroppedItemSlot carries a label of its own.
+                // A label, not `.Quantity`: a page-hosted ItemSlot rejects that selector.
                 write(cell + " #Count.Text",
                         stack.getQuantity() > 1 ? String.valueOf(stack.getQuantity()) : "");
             } else {
@@ -438,9 +381,7 @@ public final class MachineView {
         write("#ProgressRow.Visible", this.progressShown);
         write("#DetailSection.Visible", this.detailsUsed > 0);
 
-        // The contents column and the inventory stand or fall together. A battery has nothing you
-        // could move an item into, so showing the player's inventory beneath it would be offering
-        // a control that cannot do anything -- and the remaining columns flex to take the space.
+        // The contents column and the inventory stand or fall together — no slots, nothing to move items into.
         write("#ProcessPanel.Visible", this.slotsShown);
         write("#InventorySection.Visible", this.slotsShown && this.inventoryShown);
 
@@ -453,9 +394,6 @@ public final class MachineView {
     }
 
     /// Sizes both containers to what was drawn.
-    ///
-    /// Writing an anchor *replaces* the one the markup declared, so each call restates every field
-    /// that element was given -- the width and gaps included, not just the height being changed.
     private void resize() {
         int status = HEADING
                 + (this.primaryShown ? PRIMARY_BLOCK + SECTION_GAP : 0)
@@ -479,25 +417,16 @@ public final class MachineView {
                 ? INVENTORY_ROWS * SLOT_PITCH + INVENTORY_EXTRAS + PANEL_CHROME
                 : 0;
 
-        // Every box whose height would otherwise have to be inferred gets told. `#Columns` is a
-        // horizontal stack, and a horizontal stack's own height is exactly the quantity its
-        // children are waiting on to know theirs -- so left alone the whole row can resolve to
-        // nothing. Writing it breaks the circle.
+        // #Columns is a horizontal stack, whose own height would otherwise wait on its children's — a circle broken by writing it.
         int container = CONTAINER_CHROME + columns + PANEL_GAP
                 + (inventory > 0 ? inventory + PANEL_GAP : 0) + FOOTER;
 
-        // Every field the markup gives these three is restated here, because setting an anchor
-        // replaces it rather than merging into it.
         writeAnchor("#Columns", null, columns, null, PANEL_GAP);
         writeAnchor("#InventorySection", null, inventory, null, PANEL_GAP);
         writeAnchor("#MainContainer", MAIN_WIDTH, container, CONTAINER_GAP, null);
     }
 
-    /// Two style writes rather than four per cell.
-    ///
-    /// A page carrying the player's inventory draws over fifty cells; repainting every one of them
-    /// every second to say "still not selected" would triple the update for no visible difference.
-    /// Only the cell that gained the highlight and the one that lost it need touching.
+    /// Repaints only the cell that gained the highlight and the one that lost it, not all fifty-plus.
     private void repaintSelection() {
         if (Objects.equals(this.previouslyHeld, this.held)) return;
 

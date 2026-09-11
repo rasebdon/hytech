@@ -13,10 +13,7 @@ import org.joml.Vector3i;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-/// Fills a generator block's energy container according to its generator type.
-///
-/// Rates are per tick, matching how energy transfer is denominated -- see
-/// [at.rasebdon.hytech.core.containers.LogisticContainer#getTransferSpeed].
+/// Rates are per tick, matching [at.rasebdon.hytech.core.containers.LogisticContainer#getTransferSpeed].
 public class EnergyGenerationSystem extends EntityTickingSystem<ChunkStore> {
 
     private final ComponentType<ChunkStore, EnergyGeneratorComponent> generatorType;
@@ -75,9 +72,7 @@ public class EnergyGenerationSystem extends EntityTickingSystem<ChunkStore> {
             case SOLAR -> generateSolar(gen, store);
             case WIND -> generateWind(gen, pos);
             case FUEL_SOLID -> generateSolidFuel(gen, container, archetypeChunk, index, dt);
-            // Liquid fuel needs the fluid module, which does not exist yet. Returning 0
-            // rather than falling through to the solid path keeps a mis-declared block inert
-            // instead of silently burning items.
+            // Fluid fuel isn't wired up yet; return 0 rather than falling through to solid fuel.
             case FUEL_LIQUID -> 0L;
         };
     }
@@ -116,10 +111,8 @@ public class EnergyGenerationSystem extends EntityTickingSystem<ChunkStore> {
         return Math.max(0L, (long) energy);
     }
 
-    /// Burns solid fuel from the block's own item container.
-    ///
-    /// The fuel items live in `hytech:items:container` rather than on the burner component,
-    /// so an item pipe can feed the generator exactly as it would feed a chest.
+    /// Fuel lives in `hytech:items:container`, not the burner component, so pipes can feed it
+    /// like a chest.
     private long generateSolidFuel(
             EnergyGeneratorComponent gen,
             EnergyBlockComponent container,
@@ -130,17 +123,15 @@ public class EnergyGenerationSystem extends EntityTickingSystem<ChunkStore> {
         var burner = archetypeChunk.getComponent(index, burnerType);
         if (burner == null) return 0L;
 
-        // A full buffer must not take another item out of the fuel slot: the energy it made
-        // would be discarded by the clamp in `add`. The item already alight is a different
-        // matter -- it was spent the moment it was lit -- so it burns down as normal and only
-        // ignition waits for room.
+        // A full buffer must not ignite a new item (its energy would be clamped away in `add`);
+        // an item already alight keeps burning regardless.
         if (!burner.isBurning()) {
             if (container.isFull()) return 0L;
             if (!ignite(burner, fuelContainer(archetypeChunk, index))) return 0L;
         }
 
-        // Scaled by how much of the tick was actually fuelled, so the last partial tick of an
-        // item pays out proportionally rather than in full.
+        // Scaled by the fraction of the tick actually fuelled, so a partial final tick pays out
+        // proportionally.
         float burnt = burner.consume(dt);
         if (burnt <= 0f || dt <= 0f) return 0L;
 

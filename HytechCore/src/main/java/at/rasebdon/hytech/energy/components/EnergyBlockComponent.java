@@ -20,10 +20,6 @@ import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
 
-/// An energy store: battery, generator buffer, machine buffer.
-///
-/// Adds only the charge-level block states to [AbstractScalarBlockComponent]; the amount,
-/// capacity and transfer bookkeeping is shared with every other scalar resource.
 public class EnergyBlockComponent extends AbstractScalarBlockComponent<HytechEnergyContainer>
         implements HytechEnergyContainer {
 
@@ -34,8 +30,7 @@ public class EnergyBlockComponent extends AbstractScalarBlockComponent<HytechEne
     public static final BuilderCodec<EnergyBlockComponent> CODEC =
             BuilderCodec.builder(EnergyBlockComponent.class, EnergyBlockComponent::new,
                             AbstractScalarBlockComponent.CODEC)
-                    // "Energy" rather than the generic "Amount": shipped assets and existing
-                    // worlds already use this key, and renaming it would zero every battery.
+                    // "Energy" not "Amount": renaming would zero every existing battery on load.
                     .append(new KeyedCodec<>("Energy", Codec.LONG),
                             (c, v) -> c.amount = v,
                             (c) -> c.amount)
@@ -87,8 +82,6 @@ public class EnergyBlockComponent extends AbstractScalarBlockComponent<HytechEne
         return this;
     }
 
-    /// The highest declared charge-level state at or below the current fill, or null when the
-    /// block declares none.
     @Nullable
     public String getEnergyLevelBlockState() {
         int percent = (int) (getFillRatio() * 100);

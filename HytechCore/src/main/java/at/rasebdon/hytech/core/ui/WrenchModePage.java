@@ -13,11 +13,6 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 
 /// Picks which resource the wrench configures. Crouch and right-click with the wrench to open.
-///
-/// Replaced a crouch-and-scroll gesture: the only trace of a scroll a plugin can see is the hotbar
-/// active slot changing, so the client switched slots optimistically and the server-side restore was
-/// always a tick behind, which showed as a flicker. A menu has neither that nor the discoverability
-/// problem.
 public final class WrenchModePage extends HytechCustomPage {
 
     private static final String DOCUMENT = "Hytech/WrenchModePage.ui";
@@ -25,8 +20,7 @@ public final class WrenchModePage extends HytechCustomPage {
     private static final String ACTION_CLOSE = "close";
     private static final String ACTION_MODE = "mode:";
 
-    /// Mode buttons the document declares. More resource types than this leaves the extras
-    /// unreachable from the menu rather than breaking the page.
+    /// Mode buttons the document declares; extra resource types beyond this are just unreachable.
     private static final int MAX_BUTTONS = 6;
 
     private final Ref<EntityStore> owner;
@@ -46,9 +40,6 @@ public final class WrenchModePage extends HytechCustomPage {
     @Override
     protected String render(@Nonnull UICommandBuilder commands) {
         renderInto(commands);
-
-        // Null means "always send": these pages only change in response to a click, so they
-        // are never refreshed on a timer and have nothing to compare against.
         return null;
     }
 
@@ -71,9 +62,7 @@ public final class WrenchModePage extends HytechCustomPage {
             commands.set(selector + ".Visible", true);
             commands.set(selector + ".Text", resource.label());
 
-            // The selected resource is disabled rather than prefixed with a marker: the vanilla
-            // disabled style already reads as "you are here", and re-picking what is already picked
-            // is a click that would do nothing.
+            // Disabled rather than marker-prefixed: the vanilla disabled style already reads as "you are here".
             commands.set(selector + ".Disabled", active);
         }
     }

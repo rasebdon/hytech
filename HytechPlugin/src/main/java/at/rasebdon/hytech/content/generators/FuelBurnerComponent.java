@@ -9,18 +9,13 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
 import javax.annotation.Nonnull;
 
-/// Burn state for a generator that consumes solid fuel.
-///
-/// Kept separate from [EnergyGeneratorComponent] so solar and wind generators do not carry
-/// three fields they never use, and so a block declares its burner-ness by attaching this
-/// rather than by a flag.
-///
-/// The fuel *items* live in the block's `hytech:items:container`, not here -- which is what
-/// lets an item pipe feed the burner automatically.
+/// Separate from [EnergyGeneratorComponent] so solar/wind carry none of these fields, and so
+/// burner-ness is attaching this component rather than a flag. Fuel items live in
+/// `hytech:items:container`, not here, so pipes can feed the burner directly.
 public class FuelBurnerComponent implements Component<ChunkStore> {
 
-    /// How long one point of an item's `FuelQuality` burns for. Vanilla charcoal is quality
-    /// 6, so the default gives it 12 seconds -- close to a vanilla furnace's feel.
+    /// Seconds burned per point of `FuelQuality`; charcoal (quality 6) gets ~12s, close to a
+    /// vanilla furnace.
     private static final float DEFAULT_SECONDS_PER_QUALITY = 2f;
 
     @Nonnull
@@ -64,7 +59,6 @@ public class FuelBurnerComponent implements Component<ChunkStore> {
         return this.burnTimeRemaining > 0f;
     }
 
-    /// Fraction of the current item's burn left, for the UI. Zero when nothing is alight.
     public float getBurnRatio() {
         if (this.currentFuelBurnTime <= 0f) return 0f;
 
@@ -75,7 +69,6 @@ public class FuelBurnerComponent implements Component<ChunkStore> {
         return this.burnTimeRemaining;
     }
 
-    /// Lights a fresh item of the given fuel quality.
     public void ignite(double fuelQuality) {
         float duration = (float) (fuelQuality * this.secondsPerQuality);
         if (duration <= 0f) return;
@@ -84,9 +77,7 @@ public class FuelBurnerComponent implements Component<ChunkStore> {
         this.burnTimeRemaining = duration;
     }
 
-    /// Burns for `dt` seconds. Returns the seconds actually burnt, which is less than `dt`
-    /// on the tick the fuel runs out -- so a partial tick generates a partial amount rather
-    /// than a full one.
+    /// Returns seconds actually burnt, which is less than `dt` on the tick fuel runs out.
     public float consume(float dt) {
         if (dt <= 0f || !isBurning()) return 0f;
 
@@ -101,10 +92,8 @@ public class FuelBurnerComponent implements Component<ChunkStore> {
         return burnt;
     }
 
-    /// Copy-constructed rather than `super.clone()`d. `Component` extends `Cloneable`, but
-    /// `Object.clone` is a shallow field copy, which for a component means the copy and the
-    /// original share their mutable state -- a face config, a container. Every component here
-    /// builds a fresh instance instead, and the ones holding a mutable field copy it explicitly.
+    /// Copy-constructed, not `super.clone()`d: `Object.clone` is a shallow copy, which would share
+    /// mutable state with the original.
     @SuppressWarnings({"CloneDoesntCallSuperClone", "MethodDoesntCallSuperMethod"})
     @Override
     @Nonnull

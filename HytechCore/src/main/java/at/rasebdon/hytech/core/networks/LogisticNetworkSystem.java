@@ -13,9 +13,6 @@ public abstract class LogisticNetworkSystem<TContainer> {
 
     protected static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
-    /**
-     * All currently active networks.
-     */
     protected final Set<LogisticNetwork<TContainer>> networks = new HashSet<>();
 
     public Set<LogisticNetwork<TContainer>> getNetworks() {
@@ -50,10 +47,7 @@ public abstract class LogisticNetworkSystem<TContainer> {
             return;
         }
 
-        // Remove pipe from its network
         detachPipe(pipe, old);
-
-        // Rebuild remaining structure
         rebuildFromPipes(old.getPipes());
     }
 
@@ -62,9 +56,6 @@ public abstract class LogisticNetworkSystem<TContainer> {
         rebuildFromPipe(pipe);
     }
 
-    /**
-     * Rebuilds all networks connected to the given pipe.
-     */
     private void rebuildFromPipe(LogisticPipeComponent<TContainer> pipe) {
 
         Set<LogisticPipeComponent<TContainer>> reachable =
@@ -73,23 +64,17 @@ public abstract class LogisticNetworkSystem<TContainer> {
         rebuildFromPipes(reachable);
     }
 
-    /**
-     * Rebuilds networks from a given pipe set.
-     */
     private void rebuildFromPipes(Set<LogisticPipeComponent<TContainer>> pipes) {
 
         if (pipes.isEmpty()) {
             return;
         }
 
-        // Remove any old networks containing these pipes
         removeOldNetworks(pipes);
 
-        // Find connected components
         List<Set<LogisticPipeComponent<TContainer>>> components =
                 NetworkGraphUtil.findConnectedComponents(pipes);
 
-        // Create new networks deterministically
         for (Set<LogisticPipeComponent<TContainer>> component : components) {
 
             LogisticNetwork<TContainer> network =
@@ -166,10 +151,6 @@ public abstract class LogisticNetworkSystem<TContainer> {
         pipe.assignNetwork(null);
     }
 
-    /**
-     * Debug invariant check.
-     * Ensures no pipe is assigned to multiple networks or desynced.
-     */
     private void validate() {
 
         for (var network : networks) {

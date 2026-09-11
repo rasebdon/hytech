@@ -9,15 +9,8 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-/// Marks a block as an infinite source or an infinite sink, for testing a resource network.
-///
-/// Attached alongside a normal logistic container -- of any resource type -- and
-/// [at.rasebdon.hytech.core.systems.CreativeSourceSystem] keeps that container pinned full or
-/// empty. That is enough to exercise a whole network without any generating machinery
-/// existing yet, which is how fluid, gas and heat become testable at all.
-///
-/// Resource-type agnostic on purpose: one component and one system cover every type, because
-/// both talk only to the container interfaces.
+/// Marks a block as an infinite source or sink, for testing a resource network without any
+/// generating machinery existing yet. Resource-type agnostic: talks only to container interfaces.
 public class CreativeSourceComponent implements Component<ChunkStore> {
 
     @Nonnull
@@ -68,10 +61,8 @@ public class CreativeSourceComponent implements Component<ChunkStore> {
         return this.resourceType;
     }
 
-    /// Copy-constructed rather than `super.clone()`d. `Component` extends `Cloneable`, but
-    /// `Object.clone` is a shallow field copy, which for a component means the copy and the
-    /// original share their mutable state -- a face config, a container. Every component here
-    /// builds a fresh instance instead, and the ones holding a mutable field copy it explicitly.
+    /// Copy-constructed, not `super.clone()`d: `Object.clone` is a shallow copy that would share
+    /// mutable state with the original.
     @SuppressWarnings({"CloneDoesntCallSuperClone", "MethodDoesntCallSuperMethod"})
     @Override
     @Nonnull

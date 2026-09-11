@@ -6,7 +6,6 @@ import at.rasebdon.hytech.energy.HytechEnergyContainer;
 
 import java.util.Set;
 
-/// A connected run of energy pipes, aggregated by [ScalarNetwork].
 public class EnergyNetwork extends ScalarNetwork<HytechEnergyContainer> implements HytechEnergyContainer {
 
     public EnergyNetwork(Set<LogisticPipeComponent<HytechEnergyContainer>> initialPipes) {

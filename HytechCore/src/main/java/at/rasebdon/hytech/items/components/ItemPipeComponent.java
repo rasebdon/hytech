@@ -22,12 +22,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Map;
 
-/// An item pipe segment.
-///
-/// Unlike the energy side -- where the network pools a scalar and a save system pushes it
-/// back onto the pipes -- each pipe owns its buffer container outright. That container is
-/// part of this component's codec, so items in transit survive a chunk unload with no
-/// separate save system and no rounding loss.
+/// Unlike energy, each pipe owns its buffer container outright, saved via its own codec --
+/// no network-level save system, no rounding loss.
 public class ItemPipeComponent extends LogisticPipeComponent<HytechItemContainer> implements HytechItemContainer {
 
     private static final short DEFAULT_SLOTS = 4;

@@ -12,13 +12,9 @@ import java.util.Map;
 
 /// A pipe segment carrying one scalar resource.
 ///
-/// A pipe is a *holder*, not a container: it reports its network's container as its own, and
-/// deliberately does not implement the container interface itself. An earlier version of the
-/// energy pipe did, forwarding every method to the network, which bought nothing and made an
-/// unnetworked pipe throw on any read.
-///
-/// What it does own is its share of the network's capacity, plus whatever was in it when the
-/// chunk was last saved -- see [at.rasebdon.hytech.core.systems.ScalarNetworkSaveSystem].
+/// A pipe is a *holder*, not a container: it reports its network's container as its own rather
+/// than implementing the container interface itself, which would throw on any read before a
+/// network exists.
 public abstract class AbstractScalarPipeComponent<TContainer> extends LogisticPipeComponent<TContainer> {
 
     @SuppressWarnings("rawtypes")

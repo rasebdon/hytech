@@ -29,29 +29,21 @@ import org.jspecify.annotations.NonNull;
 import javax.annotation.Nullable;
 import java.util.*;
 
-/// Shows the face configuration of the logistic block a wrench is aimed at.
-///
-/// While a player holds the wrench, the side under their crosshair is covered with a flat
-/// coloured quad: grey for none, purple for both, red for input, blue for output. At most
-/// one entity per player, only while they are actually looking at a logistic block, so
-/// this costs nothing when nobody is wrenching.
+/// Shows the face configuration of the logistic block a wrench is aimed at, as a flat coloured
+/// quad: grey for none, purple for both, red for input, blue for output.
 public final class FaceConfigOverlaySystem extends TickingSystem<EntityStore> {
 
     private static final double REACH = 6.0;
     private static final float UPDATE_INTERVAL_SECONDS = 0.1f;
 
-    /// Lifts the quad clear of the block face so it does not z-fight with it. The quad has
-    /// no thickness, so this only needs to beat depth precision.
+    /// Lifts the quad clear of the block face to avoid z-fighting.
     private static final double SURFACE_OFFSET = 0.01;
 
-    /// Entity models render at half block scale, so 2 would cover the face exactly. Inset a
-    /// little instead: a badge that stops short of the edges reads as an overlay rather than as a
-    /// retexture of the block, and it stops the quad z-fighting with a neighbour's own face.
+    /// Entity models render at half block scale (2 = full face); inset slightly so it reads as
+    /// an overlay rather than a retexture.
     private static final float OVERLAY_SCALE = 1.6f;
 
-    // Keyed by entity index, not by Ref: Ref has no equals/hashCode, so a fresh one is
-    // handed out every tick and map lookups would never match -- which spawned a new quad
-    // every pass and never cleaned any up.
+    // Keyed by index, not Ref: Ref has no equals/hashCode, so lookups by Ref would never match.
     private final Map<Integer, Ref<EntityStore>> overlays = new HashMap<>();
     private final Map<Integer, Shown> shown = new HashMap<>();
     private float updateTime;
@@ -72,8 +64,7 @@ public final class FaceConfigOverlaySystem extends TickingSystem<EntityStore> {
         return new EyeRay(origin, headRotation.getDirection());
     }
 
-    /// Which side of the block the hit landed on: whichever local coordinate sits closest
-    /// to a face plane.
+    /// Which side of the block the hit landed on: the local coordinate closest to a face plane.
     private static BlockFace faceOfHit(@NonNull Vector3d hit, @NonNull Vector3i blockPos) {
         double x = hit.x - blockPos.x;
         double y = hit.y - blockPos.y;
@@ -111,8 +102,7 @@ public final class FaceConfigOverlaySystem extends TickingSystem<EntityStore> {
         return ModelAsset.getAssetMap().getAsset(name);
     }
 
-    /// The quad lies in the XY plane facing +Z, so south needs no rotation. Yaw sweeps it
-    /// round the horizontal faces; pitch tips it onto the top and bottom.
+    /// The quad lies in the XY plane facing +Z, so south needs no rotation.
     private static Rotation3f quadRotation(BlockFace face) {
         return switch (face) {
             case North -> new Rotation3f(0f, (float) Math.toRadians(180), 0f);
@@ -139,8 +129,7 @@ public final class FaceConfigOverlaySystem extends TickingSystem<EntityStore> {
 
         this.updateTime = 0f;
 
-        // Entities cannot be added or removed while the store is processing, so the tick
-        // only decides what should change and the work runs afterwards on the world thread.
+        // Entities cannot be added/removed while the store is processing; work runs afterwards.
         var pending = new ArrayList<Runnable>();
         var seen = new HashSet<Integer>();
 
@@ -182,15 +171,12 @@ public final class FaceConfigOverlaySystem extends TickingSystem<EntityStore> {
             return key;
         }
 
-        // Nothing moved or changed, so the existing quad is still correct.
         if (target.equals(shown.get(key))) return key;
         if (overlayAsset(target.config()) == null) return key;
 
         shown.put(key, target);
 
-        // The old entity is looked up when this runs, not now: if a second update queues
-        // before the world drains these, a captured reference would already be stale and
-        // the entity it replaced would be leaked.
+        // Old entity looked up when this runs, not now, or a queued second update would leak it.
         pending.add(() -> {
             despawn(store, overlays.remove(key));
             overlays.put(key, spawnOverlay(store, target));
@@ -203,9 +189,7 @@ public final class FaceConfigOverlaySystem extends TickingSystem<EntityStore> {
     @Nullable
     private Shown resolveTarget(Store<EntityStore> store, Ref<EntityStore> playerRef) {
         var held = InventoryComponent.getItemInHand(store, playerRef);
-        // Through WrenchInteraction rather than a second copy of the item id: the overlay and
-        // the interaction have to agree on what counts as a wrench, and two constants that must
-        // match are one that will not.
+        // Via WrenchInteraction so the overlay and the interaction agree on what is a wrench.
         if (!WrenchInteraction.isWrench(held)) return null;
 
         var world = store.getExternalData().getWorld();
@@ -213,16 +197,12 @@ public final class FaceConfigOverlaySystem extends TickingSystem<EntityStore> {
         var eye = eyeRay(store, playerRef);
         if (eye == null) return null;
 
-        // Traced against real block shapes: the cell-based helper would stop at a pipe
-        // standing beside the face being aimed at, because it only tests block ids.
+        // Traced against real block shapes: a cell-based test would stop at a pipe beside the face.
         var hit = BlockRayUtil.trace(world, eye.origin(), eye.direction(), REACH);
         if (hit == null) return null;
 
         var blockPos = hit.block();
 
-        // Only the resource the wrench is currently set to. Showing a face the wrench cannot
-        // change -- because this block has no container of that type -- is worse than showing
-        // nothing: the colour would describe something the next click will not touch.
         var component = componentForMode(store, world, playerRef, blockPos);
         if (component == null) return null;
 
@@ -238,20 +218,15 @@ public final class FaceConfigOverlaySystem extends TickingSystem<EntityStore> {
         var localFace = BlockFaceUtil.getLocalFace(
                 BlockFaceUtil.getVectorFromFace(worldFace), transform.rotation());
 
-        // A face with no configurable state is not worth a quad. `getAllowedFaceConfigs` is the
-        // block's own declaration of what it permits per side, so a side locked to one mode gets
-        // no overlay rather than one the player cannot cycle.
+        // A side locked to one mode gets no overlay rather than one the player cannot cycle.
         if (component.isFaceLocked(localFace)) return null;
 
         return new Shown(new Vector3i(blockPos), worldFace, component.getFaceConfigTowards(localFace));
     }
 
-    /// The block component for the player's currently selected resource, or null.
-    ///
-    /// Deliberately does *not* fall back to another resource. The wrench falls back so that
-    /// clicking a plain energy pipe in Items mode still does the obvious thing, but the overlay
-    /// must not: a quad implies "this is what you are about to change", and showing energy while
-    /// the mode says Items would be a lie the moment the block has both.
+    /// The block component for the player's selected resource, or null. Deliberately does *not*
+    /// fall back to another resource, unlike the wrench: the quad implies "this is what you are
+    /// about to change", so showing the wrong resource would be a lie.
     @Nullable
     private LogisticComponent<?> componentForMode(
             @NonNull Store<EntityStore> store, @NonNull World world,
@@ -263,8 +238,7 @@ public final class FaceConfigOverlaySystem extends TickingSystem<EntityStore> {
         var resource = mode == null ? null : mode.resolve();
         if (resource == null) return null;
 
-        // Pipes are excluded: their arms already show connectivity, and a quad over an arm would
-        // hide it.
+        // Pipes are excluded: their arms already show connectivity, and a quad would hide them.
         return resource.blockAt(world, blockPos);
     }
 

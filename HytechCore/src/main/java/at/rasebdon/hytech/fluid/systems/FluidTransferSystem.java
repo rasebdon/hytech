@@ -6,8 +6,7 @@ import at.rasebdon.hytech.fluid.events.FluidContainerChangedEvent;
 import at.rasebdon.hytech.fluid.events.FluidNetworkChangedEvent;
 import com.hypixel.hytale.event.IEventRegistry;
 
-/// Fluid transfer. The algorithm lives in [AbstractTransferSystem]; the single-type rule is
-/// enforced by the container canAccept check during the move itself.
+/// The single-type rule is enforced by the container's canAccept check during the move.
 public class FluidTransferSystem extends AbstractTransferSystem<HytechFluidContainer> {
 
     public FluidTransferSystem(IEventRegistry eventRegistry) {

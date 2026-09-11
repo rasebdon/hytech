@@ -14,18 +14,13 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-/// Puts the contents of a container on the ground.
-///
-/// Two paths need this and neither can hand the items anywhere else: a pipe whose run has
-/// stopped moving ([at.rasebdon.hytech.items.systems.ItemPipeEjectSystem]) and a pipe the
-/// player has just broken. Both end with items that exist but have no container to live in,
-/// and losing them silently is the one outcome that is not acceptable.
+/// Puts the contents of a container on the ground, for a stuck pipe or a broken one --
+/// items that have no container left to live in.
 public final class ItemEjector {
 
     private ItemEjector() {
     }
 
-    /// Empties `container` onto the ground at the centre of `blockPos`.
     public static void ejectAt(
             @Nullable ItemContainer container,
             Store<ChunkStore> store,
@@ -35,9 +30,7 @@ public final class ItemEjector {
                 new Vector3d(blockPos.x() + 0.5, blockPos.y() + 0.5, blockPos.z() + 0.5));
     }
 
-    /// Cleared before the drops are spawned: clearing and dropping must not both leave the
-    /// items in play. Losing a stack to a failed spawn is better than a half-cleared
-    /// container handing out a fresh copy on the next pass.
+    // Cleared before drops spawn, so a failed spawn can't leave items in both places.
     public static void eject(
             @Nullable ItemContainer container,
             Store<ChunkStore> store,

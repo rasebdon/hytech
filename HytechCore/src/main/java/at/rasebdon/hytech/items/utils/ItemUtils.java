@@ -12,9 +12,8 @@ import javax.annotation.Nullable;
 
 public class ItemUtils {
 
-    /// Returns the native container of a vanilla block, or null if the block does not hold one.
-    /// Processing benches keep their slots in separate containers, so they are exposed as one
-    /// combined container: pipes insert ingredients and pull finished goods through the same face.
+    // Processing benches keep input/output in separate containers; combine them so pipes can
+    // insert and pull through the same face.
     @Nullable
     public static ItemContainer getLegacyItemContainer(World world, Vector3i pos) {
         if (world == null) {

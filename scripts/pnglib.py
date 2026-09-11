@@ -99,11 +99,7 @@ def encode(width: int, height: int, pixels: Pixels) -> bytes:
 
 
 def encode_rgb(width: int, height: int, rows: list[list[tuple[int, int, int]]]) -> bytes:
-    """Opaque RGB PNG from rows of colours.
-
-    Block textures are not alpha blended, and an alpha channel on them is one more thing that
-    can render wrong, so the generators that draw blocks use this rather than [encode].
-    """
+    """Opaque RGB PNG; block textures aren't alpha blended, so skip the alpha channel."""
     raw = bytearray()
     for row in rows:
         raw += FILTER_NONE
@@ -123,7 +119,6 @@ def chunk(tag: bytes, data: bytes) -> bytes:
 
 
 def blank(width: int, height: int) -> Pixels:
-    """Fully transparent canvas."""
     return bytearray(width * height * 4)
 
 

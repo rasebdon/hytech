@@ -11,14 +11,10 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-/// Which resource a player's wrench is currently configuring.
+/// Which resource a player's wrench is currently configuring, held per player and persisted.
 ///
-/// A block can carry several logistic containers -- the burner generator has both energy and
-/// items -- so "cycle this face" is ambiguous until you say *which* resource's face. This is
-/// the answer, held per player and persisted so it survives a relog.
-///
-/// Stored as the resource **id** rather than an index, because indices shift the moment a module
-/// is added or reordered, which would silently repoint every player's wrench.
+/// Stored as the resource id rather than an index: an index shifts when a module is added or
+/// reordered, silently repointing every player's wrench.
 public class WrenchModeComponent implements Component<EntityStore> {
 
     @Nonnull
@@ -57,15 +53,12 @@ public class WrenchModeComponent implements Component<EntityStore> {
         return types.getFirst();
     }
 
-    /// Selects a resource directly, for the picker menu.
     public void select(@Nullable String resourceId) {
         this.resourceId = resourceId;
     }
 
-    /// Copy-constructed rather than `super.clone()`d. `Component` extends `Cloneable`, but
-    /// `Object.clone` is a shallow field copy, which for a component means the copy and the
-    /// original share their mutable state -- a face config, a container. Every component here
-    /// builds a fresh instance instead, and the ones holding a mutable field copy it explicitly.
+    /// Copy-constructed, not `super.clone()`d: `Object.clone` is a shallow copy that would share
+    /// mutable state with the original.
     @SuppressWarnings({"CloneDoesntCallSuperClone", "MethodDoesntCallSuperMethod"})
     @Override
     @Nonnull

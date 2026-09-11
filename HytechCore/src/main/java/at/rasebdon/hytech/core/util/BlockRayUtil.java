@@ -11,13 +11,8 @@ import org.joml.Vector3i;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-/// Ray tracing against the shapes blocks actually have.
-///
-/// `TargetUtil.getTargetBlock` walks whole cells and only tests the block id, so anything
-/// sharing a cell with a thin block -- a pipe, say -- counts as a hit across the entire
-/// 1x1x1 cell. That is fine for placing and breaking, but it means a pipe standing next to
-/// the face you are aiming at swallows the ray. This walks the same ray but asks each
-/// candidate's hitbox whether the point is really inside it.
+/// Ray tracing against the shapes blocks actually have, not just the 1x1x1 cell
+/// `TargetUtil.getTargetBlock` tests — which lets a thin block like a pipe swallow the ray.
 public final class BlockRayUtil {
 
     /// Step along the ray, in blocks. Small enough not to skip a pipe arm, coarse enough
@@ -50,14 +45,10 @@ public final class BlockRayUtil {
         return null;
     }
 
-    // Both the in-memory chunk read and the chunk-local block read are deprecated with no
-    // replacement offered. The comment below is why the in-memory one is the point.
     @SuppressWarnings("deprecation")
     private static boolean containsPoint(World world, Vector3i block, Vector3d point) {
-        // Deliberately the in-memory read: World.getBlockType goes through getChunk, which
-        // can load a chunk, and loading mutates the store. Called from a system tick that
-        // throws "Store is currently processing". An unloaded chunk is not something the
-        // player can be looking at anyway, so treating it as a miss is correct.
+        // Deliberately the in-memory read: World.getBlockType can load a chunk, which throws
+        // "Store is currently processing" from a system tick. An unloaded chunk is a miss.
         var chunk = world.getChunkIfInMemory(ChunkUtil.indexChunkFromBlock(block.x, block.z));
         if (chunk == null) return false;
 

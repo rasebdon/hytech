@@ -20,13 +20,11 @@ import org.joml.Vector3i;
 
 import javax.annotation.Nonnull;
 
-/// Opens the page for whichever kind of generator this block is.
-///
-/// All three share one document; they differ only in what fills the secondary bar -- sunlight for
-/// solar, altitude for wind, burn time for the burner -- and whether there are fuel slots.
+/// All three generator kinds share one page document; they differ only in what fills the
+/// secondary bar and whether there are fuel slots.
 public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
 
-    /// Wind output ramps between these heights, matching `EnergyGenerationSystem`.
+    /// Matches `EnergyGenerationSystem`'s wind ramp.
     private static final int WIND_MIN_HEIGHT = 64;
     private static final int WIND_MAX_HEIGHT = 160;
 
@@ -65,8 +63,7 @@ public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
         var fuelComponent = HytechUtil.getBlockComponent(
                 world, blockPos, ItemModule.get().getBlockComponentType());
 
-        // Non-null only for a burner, which is what makes its page open with the player's
-        // inventory while a solar panel's does not.
+        // Non-null only for a burner; that's what makes its page open with the player's inventory.
         ItemContainer fuel = burner == null || fuelComponent == null
                 ? null
                 : fuelComponent.getItemContainer();
@@ -95,8 +92,7 @@ public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
                 energy.getFillRatio(),
                 signed(generator.getCurrentRate()) + " RF/t");
 
-        // Only the burner has slots. The others say nothing, and the contents column and the
-        // player's inventory disappear with them -- the remaining panels flex to fill the row.
+        // Only the burner has slots; the others leave the contents column empty and it disappears.
         switch (generator.getGeneratorType()) {
             case SOLAR -> {
                 float sunlight = sunlight(world);
@@ -107,12 +103,10 @@ public class OpenGeneratorPageInteraction extends OpenPageBlockInteraction {
                 view.secondary("Wind", altitude, "Y " + blockPos.y + " - " + percent(altitude) + "% exposure");
             }
             case FUEL_SOLID -> {
-                // An undivided grid: fuel goes in and ash does not come out, so there is no
-                // ingredient/result split to draw.
+                // Undivided grid: fuel in, no ash out, so no ingredient/result split to draw.
                 view.slots("Fuel", fuel, 0, 0, stack -> !FuelUtil.isFuel(stack));
 
-                // The burn is a countdown, not a level, so it renders as progress beside the fuel
-                // it is consuming -- the same bar and the same "left" wording a crusher uses.
+                // Countdown, not a level, so it renders as progress like a crusher's recipe bar.
                 if (burner != null) {
                     view.progress(burner.getBurnRatio(), burner.getBurnTimeRemaining(),
                             burnStatus(burner));

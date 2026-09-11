@@ -12,19 +12,10 @@ import com.hypixel.hytale.component.system.tick.TickingSystem;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import org.jspecify.annotations.NonNull;
 
-/// Keeps creative source blocks full and creative void blocks empty.
-///
-/// One system for every resource type: it queries on [CreativeSourceComponent] and then asks
-/// the same block for whichever logistic container it happens to carry, so it works for
-/// energy, heat, fluid and gas without knowing any of them. That is what makes a brand new
-/// resource type testable the moment its module is registered.
-///
-/// Slot-based containers (items) are skipped -- "fill with items" has no single answer, and a
-/// chest already does the job.
+/// Keeps creative source blocks full and creative void blocks empty, for any resource type with
+/// a scalar container. Slot-based containers (items) are skipped -- a chest already fills that role.
 public final class CreativeSourceSystem extends TickingSystem<ChunkStore> {
 
-    /// Twice a second. Fast enough that a source keeps a network saturated, slow enough that it
-    /// is not doing this work every tick for a block that exists only for testing.
     private static final float UPDATE_INTERVAL_SECONDS = 0.5f;
 
     private final ComponentType<ChunkStore, CreativeSourceComponent> creativeType;
@@ -61,9 +52,7 @@ public final class CreativeSourceSystem extends TickingSystem<ChunkStore> {
         if (creative.isVoiding()) {
             container.reduce(container.getAmount());
 
-            // Draining alone leaves a typed tank still claiming whatever it last held, and a
-            // claimed tank rejects everything else -- so a void would silently accept one
-            // resource forever and refuse the second thing you tested. Release the claim.
+            // Release the claim too, or a void keeps rejecting every other resource after the first.
             if (container instanceof TypedScalarContainer<?> typed) {
                 typed.setResourceType(null);
             }
@@ -78,10 +67,7 @@ public final class CreativeSourceSystem extends TickingSystem<ChunkStore> {
         container.add(container.getRemainingCapacity());
     }
 
-    /// Points a typed container at the configured resource, if it is free to be pointed.
-    ///
-    /// Returns false when the tank already holds something else, so a mis-set source cannot
-    /// quietly convert one resource into another.
+    /// Points a typed container at the configured resource; false if it already holds another.
     private boolean claim(TypedScalarContainer<?> typed, String resourceType) {
         if (resourceType == null) return false;
 
@@ -90,8 +76,7 @@ public final class CreativeSourceSystem extends TickingSystem<ChunkStore> {
             return resourceType.equals(current);
         }
 
-        // The container's own parameter is String for every typed resource in the mod; this is
-        // the one place that has to state it, because the wildcard hides it.
+        // Every typed resource in the mod parameterizes on String; the wildcard hides that here.
         @SuppressWarnings("unchecked")
         var stringTyped = (TypedScalarContainer<String>) typed;
         stringTyped.setResourceType(resourceType);

@@ -14,7 +14,6 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-/// A fluid tank. All the behaviour is in [AbstractTypedScalarBlockComponent].
 public class FluidBlockComponent extends AbstractTypedScalarBlockComponent<HytechFluidContainer>
         implements HytechFluidContainer {
 

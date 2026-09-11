@@ -19,11 +19,7 @@ import org.joml.Vector3i;
 
 import javax.annotation.Nonnull;
 
-/// Base for interactions that open a Hytech page on a block.
-///
-/// Subclasses only decide *which* page. Opening it -- including opening it with an inventory window
-/// when the page has a container -- is [HytechPages]' job, so every machine that shows item slots
-/// gets the player's inventory alongside without asking for it.
+/// Base for interactions that open a Hytech page on a block; subclasses only decide which page.
 public abstract class OpenPageBlockInteraction extends SimpleBlockInteraction {
 
     @Nonnull
@@ -41,8 +37,7 @@ public abstract class OpenPageBlockInteraction extends SimpleBlockInteraction {
             @NotNull Vector3i blockPos,
             @NotNull CooldownHandler cooldownHandler) {
 
-        // A block's own Use interaction runs instead of the held item's, so a machine has to
-        // honour the wrench itself or the wrench would silently do nothing on it.
+        // A block's own Use interaction runs instead of the held item's, so honour the wrench here.
         if (WrenchInteraction.isWrench(item)) {
             var clientState = context.getClientState();
             if (clientState != null) {
@@ -81,15 +76,12 @@ public abstract class OpenPageBlockInteraction extends SimpleBlockInteraction {
         HytechPages.open(store, entityRef, page);
     }
 
-    /// The page to open, or null when this block has nothing to show.
+    /// Null when this block has nothing to show.
     @Nullable
     protected abstract HytechCustomPage createPage(@NotNull World world,
                                                    @NotNull Vector3i blockPos,
                                                    @NotNull PlayerRef playerRef);
 
-    /* ---------------- Formatting shared by machine pages ---------------- */
-
-    /// Signs a rate so a readout distinguishes gaining from losing at a glance.
     protected static String signed(long value) {
         return value > 0 ? "+" + value : String.valueOf(value);
     }

@@ -53,8 +53,6 @@ public class ItemBlockStateRegistrationSystem extends RefSystem<ChunkStore> {
         }
     }
 
-    /// Only blocks that actually hold a vanilla container are of interest. Scanning every
-    /// block entity meant two component lookups for every block in every loaded chunk.
     @Override
     public @Nullable Query<ChunkStore> getQuery() {
         return Query.or(

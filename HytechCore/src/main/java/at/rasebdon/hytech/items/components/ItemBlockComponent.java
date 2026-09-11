@@ -38,21 +38,15 @@ public class ItemBlockComponent extends LogisticBlockComponent<HytechItemContain
                     .append(new KeyedCodec<>("ItemContainer", ItemContainer.CODEC),
                             (state, o) -> state.itemContainer = o,
                             (state) -> state.itemContainer).add()
-                    // Lets a block size its own container: a burner wants one fuel slot, a buffer
-                    // wants a chestful. Enforced on read by ensureDeclaredCapacity rather than here,
-                    // so a block saved before this key existed is corrected when it loads.
+                    // Enforced on read by ensureDeclaredCapacity, not here, so a block saved before
+                    // this key existed still gets corrected on load.
                     .append(new KeyedCodec<>("Slots", Codec.SHORT),
                             (c, v) -> c.declaredSlots = v,
                             (c) -> c.declaredSlots)
-                    // Zero, not one, is the floor: it is the documented "leave the container
-                    // alone" value and it is also what the field defaults to. BuilderCodec
-                    // validates a field's *default* at registration, so a stricter bound here
-                    // fails the whole component and takes the plugin down with it.
+                    // 0 is the floor, not 1: it's both the "leave alone" value and the field's
+                    // default, and BuilderCodec validates defaults at registration.
                     .addValidator(Validators.greaterThanOrEqual((short) 0))
                     .documentation("Number of item slots this block holds, or 0 to keep the current size").add()
-                    // A machine splits its container: ingredients in the first slots, results in
-                    // the last. Both default to 0, which means "undivided" -- what a chest-like
-                    // buffer or the burner's fuel slot wants.
                     .append(new KeyedCodec<>("InputSlots", Codec.SHORT),
                             (c, v) -> c.inputSlots = v,
                             (c) -> c.inputSlots)
@@ -72,48 +66,32 @@ public class ItemBlockComponent extends LogisticBlockComponent<HytechItemContain
 
     private ItemContainer itemContainer;
 
-    /// Slot count the asset asks for, or 0 to keep whatever the container already has.
     private short declaredSlots;
 
-    /// Machine split: `inputSlots` leading slots take ingredients, the `outputSlots` after them
-    /// hold results. Both zero means the container is undivided.
     private short inputSlots;
     private short outputSlots;
 
     private long transferSpeed;
 
-    /// Whether the output slots' insertion filters have been applied to the live container.
-    ///
-    /// Filters are behaviour, not data: they are not part of the codec, so they have to be
-    /// re-applied to every container this component decodes or resizes into.
+    // Filters aren't part of the codec, so this tracks whether they've been re-applied to the
+    // live container after a decode or resize.
     private transient boolean filtersApplied;
 
-    /// The size the asset asks for: the machine split when there is one, `Slots` otherwise.
     private short requestedSlots() {
         int split = this.inputSlots + this.outputSlots;
 
         return split > 0 ? (short) Math.min(Short.MAX_VALUE, split) : this.declaredSlots;
     }
 
-    /// Brings the container to the size the asset declares, keeping what fits, and re-applies the
-    /// output slots' insertion filters.
-    ///
-    /// Enforced on read rather than only at decode, because the two do not coincide. A block placed
-    /// before `Slots` existed has a saved sixteen-slot container and no `Slots` key of its own, so a
-    /// decode-time resize would never run for it and the burner would keep showing sixteen slots.
-    /// Vanilla does the same thing for `ItemContainerBlock`, resizing to the asset capacity when the
-    /// block loads.
-    ///
-    /// Idempotent and a couple of comparisons in the common case, so calling it from the accessor
-    /// costs nothing once the container already agrees.
+    /// Enforced on read, not only at decode: a block placed before `Slots` existed has no `Slots`
+    /// key to trigger a decode-time resize, so it would never get corrected otherwise.
     private void ensureDeclaredCapacity() {
         short slots = requestedSlots();
 
         if (slots <= 0 || this.itemContainer == null) return;
 
         if (this.itemContainer.getCapacity() != slots) {
-            // Overflow when shrinking has nowhere to go: a component holds no world reference to
-            // eject into, and the alternative is refusing to shrink at all. Say so rather than
+            // No world reference to eject overflow into when shrinking; log it instead of
             // losing items silently.
             var overflow = new ArrayList<ItemStack>();
 
@@ -134,12 +112,8 @@ public class ItemBlockComponent extends LogisticBlockComponent<HytechItemContain
         }
     }
 
-    /// Closes the output slots to outside insertion, the way vanilla closes a bench's output.
-    ///
-    /// A denied `ADD` covers pipes and players in one stroke, since both go through the container's
-    /// filtered path; the machine writes its own results with filtering off. Removal stays open, so
-    /// a player can still empty the slots by hand -- keeping a pipe out of them is
-    /// [HytechItemContainer#canExtractFrom]'s job, not a filter's.
+    /// Denies ADD on output slots, covering both pipes and players; the machine writes results with
+    /// filtering off. Removal stays open -- keeping pipes out is [HytechItemContainer#canExtractFrom].
     private void applyOutputFilters() {
         if (this.itemContainer == null || this.outputSlots <= 0) return;
 
@@ -155,10 +129,8 @@ public class ItemBlockComponent extends LogisticBlockComponent<HytechItemContain
                 SimpleItemContainer.getNewContainer(DEFAULT_SLOTS), (short) 0, (short) 0, (short) 0);
     }
 
-    /// `declaredSlots` is a constructor parameter rather than a field set afterwards so that
-    /// `clone` cannot silently drop it. It did, and since placing a block clones the asset's
-    /// template component, every burner was placed with a declared size of zero -- which reads as
-    /// "leave the container alone" and left the fuel window showing sixteen slots.
+    /// `declaredSlots` is a constructor param, not set afterwards, so `clone` can't drop it --
+    /// it did once, and a dropped value reads as "leave the container alone".
     public ItemBlockComponent(
             BlockFaceConfig blockFaceConfig,
             int transferPriority,
@@ -221,21 +193,18 @@ public class ItemBlockComponent extends LogisticBlockComponent<HytechItemContain
         return transferSpeed;
     }
 
-    /// How many leading slots take ingredients; 0 when the container is undivided.
     public short getInputSlots() {
         ensureDeclaredCapacity();
 
         return inputSlots;
     }
 
-    /// How many trailing slots hold results; 0 when the container is undivided.
     public short getOutputSlots() {
         ensureDeclaredCapacity();
 
         return outputSlots;
     }
 
-    /// Only the result slots are the network's to empty; see [HytechItemContainer#canExtractFrom].
     @Override
     public boolean canExtractFrom(short slot) {
         return this.outputSlots <= 0 || slot >= this.inputSlots;

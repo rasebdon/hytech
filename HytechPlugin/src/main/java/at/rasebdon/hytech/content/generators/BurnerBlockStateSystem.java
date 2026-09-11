@@ -6,10 +6,8 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
 
-/// Lights a burner's firebox while it has fuel alight.
-///
-/// Both states are named rather than only the lit one, because a block state cannot be
-/// cleared -- so going out means switching to `Idle`, not unsetting `Burning`.
+/// A block state can't be cleared, so going idle means switching to `Idle`, not unsetting
+/// `Burning`.
 public final class BurnerBlockStateSystem extends AbstractBlockStateSystem<FuelBurnerComponent> {
 
     private static final String STATE_BURNING = "Burning";

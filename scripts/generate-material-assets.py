@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """
-Generates the material and component assets from the table in `hytech_materials.py`.
-
-Forty-odd items, each with an item definition, a recipe and a language line, all following the same
-few shapes. Written by a script rather than by hand so the progression is reviewable as a table and
-a balance change is one edit instead of forty.
+Generates the material and component assets (item definitions, recipes, language lines) from the
+table in `hytech_materials.py`, so a balance change is one edit instead of forty.
 
 What it writes:
 
@@ -14,18 +11,13 @@ What it writes:
     Server/Item/Recipes/Hytech/Smelter/    dust -> bar, ore -> bar, and the alloys
     Server/Languages/en-US/materials.lang  every generated item's name
 
-Player crafting hangs off each item's own `Recipe` block; only the machine recipes are standalone
-assets, because only they need a Hytech bench id. That includes the hand-authored blocks -- pipes,
-tanks, generators, the machines themselves -- whose `Recipe` key this script owns and whose every
-other key it leaves alone, so the whole crafting ladder is reviewable in one table.
+Also rewrites the `Recipe` key of the hand-authored blocks named in `table.BLOCK_RECIPES`,
+leaving every other key alone.
 
-Names live in `materials.lang`, and the key a translation is looked up by is
-`<file name>.<key in file>` -- `I18nModule.getPrefix` builds it that way. So a name in
-`materials.lang` is `materials.items.X.name`, not `server.items.X.name`, and the item definitions
-this script writes ask for exactly that.
+A translation key is `<file name>.<key in file>` (`I18nModule.getPrefix`), so names here are
+`materials.items.X.name`, not `server.items.X.name`.
 
-Icons are `generate-icons.py`'s job -- and they are not optional: a missing `Icon` is a fatal
-validation error for that item.
+Icons are `generate-icons.py`'s job; a missing `Icon` is a fatal validation error for that item.
 
 Usage:
     python scripts/generate-material-assets.py           # write assets
@@ -65,10 +57,7 @@ INGOT_TEXTURE = "Resources/Materials/Ingot_Textures/Copper.png"
 
 def item(item_id: str, category: str, level: int, model: str, texture: str,
          recipe: dict | None, scale: float, translation: list[float]) -> dict:
-    """The shape every generated item shares."""
     definition = {
-        # `materials.` rather than `server.`: a language key is prefixed with the file it came
-        # from, and these names live in materials.lang.
         "TranslationProperties": {"Name": f"materials.items.{item_id}.name"},
         "Categories": [category],
         "ItemLevel": level,
@@ -94,7 +83,6 @@ def item(item_id: str, category: str, level: int, model: str, texture: str,
 
 def bench_recipe(inputs: list[tuple[str, int]], quantity: int, seconds: float,
                  category: str) -> dict:
-    """A player crafting recipe on the item's own definition. Output is the item itself."""
     requirement = (table.VANILLA_WORKBENCH if category == "Workbench_Crafting"
                    else table.bench(category))
 
@@ -108,7 +96,6 @@ def bench_recipe(inputs: list[tuple[str, int]], quantity: int, seconds: float,
 
 def machine_recipe(inputs: list[tuple[str, int]], output_id: str, quantity: int,
                    group: str, seconds: float) -> dict:
-    """A standalone recipe asset for one of the Hytech machines."""
     return {
         "Input": [{"ItemId": ingredient, "Quantity": count} for ingredient, count in inputs],
         "PrimaryOutput": {"ItemId": output_id, "Quantity": quantity},
@@ -119,7 +106,6 @@ def machine_recipe(inputs: list[tuple[str, int]], output_id: str, quantity: int,
 
 
 def build() -> tuple[dict[Path, str], dict[str, str]]:
-    """Every file to write, and every language line, keyed so `--check` can compare."""
     files: dict[Path, str] = {}
     names: dict[str, str] = {}
 
@@ -127,54 +113,47 @@ def build() -> tuple[dict[Path, str], dict[str, str]]:
         files[path] = json.dumps(payload, indent=2) + "\n"
 
     for metal in table.METALS:
-        # ---- dust: crushed ore, or a crushed bar for an alloy ----
         write(MATERIALS_DIR / f"{metal.dust}.json",
               item(metal.dust, "Technic.Materials", 10, POUCH_MODEL, POUCH_TEXTURE,
                    None, 0.7, [0.6, -9.6]))
         names[metal.dust] = f"{metal.name} Dust"
 
-        # ---- plate: pressed from a bar at the bench, until a press machine exists ----
         write(MATERIALS_DIR / f"{metal.plate}.json",
               item(metal.plate, "Technic.Materials", 14, INGOT_MODEL, INGOT_TEXTURE,
                    bench_recipe([(metal.bar, 1)], 1, 2, table.CATEGORY_MATERIALS),
                    1, [0, -3]))
         names[metal.plate] = f"{metal.name} Plate"
 
-        # ---- the one bar vanilla does not have ----
         if metal.owns_bar:
             write(MATERIALS_DIR / f"{metal.bar}.json",
                   item(metal.bar, "Technic.Materials", 16, INGOT_MODEL, INGOT_TEXTURE,
                        None, 1, [0, -3]))
             names[metal.bar] = f"{metal.name} Bar"
 
-        # ---- crusher: ore doubles into dust ----
         if metal.ore is not None:
             write(CRUSHER_DIR / f"Hytech_Crush_Ore_{metal.name}.json",
                   machine_recipe([(metal.ore, 1)], metal.dust, 2, table.CRUSHER_GROUP, 4))
 
-            # The slow path: a smelter alone still gets you a bar, at vanilla's 1:1, so the
-            # crusher is a choice about yield rather than the only way through.
+            # Smelting ore directly still works, at vanilla's 1:1 -- crushing is a yield choice,
+            # not the only path.
             write(SMELTER_DIR / f"Hytech_Smelt_Ore_{metal.name}.json",
                   machine_recipe([(metal.ore, 1)], metal.bar, 1, table.SMELTER_GROUP,
                                  metal.smelt_seconds + 4))
 
-        # ---- crusher: a bar back down to dust, which is how an alloy gets a dust at all ----
+        # How an alloy gets a dust at all: crushing its bar back down.
         write(CRUSHER_DIR / f"Hytech_Crush_Bar_{metal.name}.json",
               machine_recipe([(metal.bar, 1)], metal.dust, 1, table.CRUSHER_GROUP, 4))
 
-        # ---- smelter: dust to bar ----
         write(SMELTER_DIR / f"Hytech_Smelt_Dust_{metal.name}.json",
               machine_recipe([(metal.dust, 1)], metal.bar, 1, table.SMELTER_GROUP,
                              metal.smelt_seconds))
 
-    # ---- smelter: alloys, in the two ingredient slots ----
     for alloy in table.ALLOYS:
         metal = table.BY_NAME[alloy.metal]
         write(SMELTER_DIR / f"Hytech_Alloy_{alloy.metal}.json",
               machine_recipe(alloy.inputs, metal.bar, alloy.output_quantity,
                              table.SMELTER_GROUP, alloy.seconds))
 
-    # ---- components ----
     for component in table.COMPONENTS:
         write(COMPONENTS_DIR / f"{component.id}.json",
               item(component.id, "Technic.Components", component.item_level,
@@ -188,11 +167,7 @@ def build() -> tuple[dict[Path, str], dict[str, str]]:
 
 
 def block_recipes() -> dict[Path, str]:
-    """The hand-authored block definitions, with only their `Recipe` key rewritten.
-
-    Read-modify-write rather than generate: these files carry models, block states and component
-    configuration that no table should own. Only the recipe comes from here.
-    """
+    """Read-modify-write: these files carry models and block states no table should own."""
     files: dict[Path, str] = {}
 
     for entry in table.BLOCK_RECIPES:
@@ -232,9 +207,7 @@ def main() -> int:
         stale = [path for path, payload in files.items()
                  if not path.exists() or path.read_text(encoding="utf-8") != payload]
 
-        # A renamed or dropped material leaves an orphan behind, and an orphan item is a live
-        # item in the game with no recipe and no icon. The generated folders are ours entirely,
-        # so anything in them we did not just write is stale.
+        # A renamed or dropped material otherwise leaves an orphan item with no recipe or icon.
         for folder in owned:
             if not folder.exists():
                 continue

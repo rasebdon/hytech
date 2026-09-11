@@ -8,21 +8,16 @@ import org.joml.Vector3i;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-/// Shared geometry for the generated pipe connection variants.
-///
-/// A pipe renders as a centre hub plus one arm per connected face. Which arms exist is
-/// encoded as a 6-bit mask, and each mask has a matching block state, model and hitbox
-/// produced by `scripts/generate-pipe-assets.py`. Both the renderer and the wrench read
-/// this class so the block state, the collision boxes and the click targets cannot drift
-/// apart — if you change the extents here, re-run the generator.
+/// Shared geometry for the generated pipe connection variants: which arms exist is a 6-bit mask,
+/// and each mask has a matching block state, model and hitbox from `scripts/generate-pipe-assets.py`.
+/// Changing the extents here means re-running the generator.
 public final class PipeConnectionMask {
 
     /// A block model spans 32 units, so a hub of N units occupies N/32 of the block.
     public static final int BLOCK_UNITS = 32;
 
-    /// Default hub size in model units (the energy/default pipe). Item pipes use a larger
-    /// hub, which is why this is per-component rather than a single constant -- keep in
-    /// step with PIPE_TYPES in scripts/generate-pipe-assets.py.
+    /// Default hub size in model units; item pipes use a larger one (keep in step with
+    /// PIPE_TYPES in scripts/generate-pipe-assets.py).
     public static final int DEFAULT_HUB_UNITS = 8;
 
     /// Faces in `BlockFace` order, so bit index is `face.getValue() - 1`.
@@ -44,12 +39,8 @@ public final class PipeConnectionMask {
         return "Conn_" + mask;
     }
 
-    /// Faces the block model should draw arms for.
-    ///
-    /// A face explicitly set to input or output is left out: its arm is drawn by a marker
-    /// entity carrying the full connection model, tip included. The push tip is smaller
-    /// than the plain collar, so it can only be shown by replacing the arm rather than
-    /// overlaying it.
+    /// Faces the block model should draw arms for. A face pinned to input or output is left out:
+    /// its arm is drawn instead by a marker entity carrying the full connection model.
     public static <TContainer> int renderMaskOf(@Nonnull LogisticPipeComponent<TContainer> pipe) {
         int mask = 0;
 
@@ -86,14 +77,9 @@ public final class PipeConnectionMask {
         return 0.5 + hubUnits / 2.0 / BLOCK_UNITS;
     }
 
-    /// Resolves which side of the pipe the given ray hits first.
-    ///
-    /// The client only reports the face of the block's overall bounding box -- the engine
-    /// exposes one bounding box per hitbox set, not per box -- so the pipe is hit-tested
-    /// here against its own geometry. Arms return their own face regardless of which side
-    /// of the arm was struck; a hit on the hub returns the hub face the ray entered, so
-    /// the core configures over its own sides. [BlockFace#None] means the ray missed the
-    /// pipe entirely, leaving the caller to fall back.
+    /// Resolves which side of the pipe the given ray hits first, since the client only reports
+    /// the block's overall bounding-box face rather than which sub-box. [BlockFace#None] means
+    /// the ray missed the pipe entirely.
     @Nonnull
     public static BlockFace faceAlongRay(
             int mask,

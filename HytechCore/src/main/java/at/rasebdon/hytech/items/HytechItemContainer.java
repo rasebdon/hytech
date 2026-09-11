@@ -6,14 +6,8 @@ import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 
 import javax.annotation.Nullable;
 
-/// The odd one out among logistic containers.
-///
-/// Every other resource -- energy, heat, fluid, gas -- is a scalar and gets
-/// [at.rasebdon.hytech.core.containers.ScalarContainer] for free. Items are not: capacity is
-/// bounded by slots, and what fits depends on what is already in them, so there is no
-/// meaningful "remaining capacity". This implements the bare [LogisticContainer] contract
-/// instead and delegates the actual moving to the vanilla [ItemContainer], which already
-/// handles slot selection, stack merging and filters.
+/// Bare [LogisticContainer], not [at.rasebdon.hytech.core.containers.ScalarContainer]: slot
+/// capacity depends on what's already in the slots, so there's no scalar "remaining capacity".
 public interface HytechItemContainer extends LogisticContainer {
 
     private static long movedQuantity(
@@ -33,11 +27,8 @@ public interface HytechItemContainer extends LogisticContainer {
     @Nullable
     ItemContainer getItemContainer();
 
-    /// Maximum number of items this container will move per transfer pass.
     @Override
     long getTransferSpeed();
-
-    /* ---------------- Derived values ---------------- */
 
     default int getSlotCount() {
         var container = getItemContainer();
@@ -81,20 +72,15 @@ public interface HytechItemContainer extends LogisticContainer {
         return getItemCount();
     }
 
-    /// Unbounded on purpose: a free slot takes a whole stack, and a partly filled one takes
-    /// an unknown amount of its own item, so there is no scalar answer. The transfer system
-    /// sums these with [LogisticContainer#saturatingSum] and clamps by the source instead.
+    /// Unbounded on purpose: no scalar "remaining capacity" exists. Sum with
+    /// [LogisticContainer#saturatingSum], not `+`.
     @Override
     default long getAcceptable() {
         return isFull() ? 0L : Long.MAX_VALUE;
     }
 
-    /// Full only when every slot holds a stack that is itself at its item's max stack size.
-    ///
-    /// "Every slot occupied" is not the same test, and using it starved single-slot machines:
-    /// the transfer system filters full targets out before calling [#moveTo], so a burner
-    /// whose one slot held 8 of a 64-stack coal counted as full and took nothing more until a
-    /// player emptied it by hand -- which is why fuel arrived in 8-item dribbles.
+    /// Full only when every slot is at its item's max stack size, not merely occupied -- else a
+    /// single-slot machine with a partial stack reads as full and starves.
     @Override
     default boolean isFull() {
         var container = getItemContainer();
@@ -107,8 +93,7 @@ public interface HytechItemContainer extends LogisticContainer {
             var stack = container.getItemStack(slot);
             if (ItemStack.isEmpty(stack)) return false;
 
-            // An unknown item resolves to Item.UNKNOWN, whose max stack can be 0; treat such
-            // a slot as closed rather than as infinitely deep.
+            // Item.UNKNOWN's max stack can be 0; treat as closed, not infinitely deep.
             int maxStack = stack.getItem().getMaxStack();
             if (stack.getQuantity() < Math.max(1, maxStack)) return false;
         }
@@ -116,23 +101,16 @@ public interface HytechItemContainer extends LogisticContainer {
         return true;
     }
 
-    /// Whether the network may draw items out of this slot.
-    ///
-    /// A plain container says yes to every slot. A machine says no to its input slots: a pipe on
-    /// an OUTPUT face is there to collect results, and without this it would cheerfully carry the
-    /// unprocessed ore straight back out again. Insertion needs no such hook -- the vanilla
-    /// container's own `ADD` filters already refuse the output slots.
+    /// A machine returns false for its input slots, so a pipe on an OUTPUT face can't carry
+    /// unprocessed ore back out. Insertion needs no such hook; the container's ADD filters cover it.
     default boolean canExtractFrom(short slot) {
         return true;
     }
 
-    /// Moves up to `maxItems` items into `target`, returning how many actually moved.
-    /// Stack merging and destination slot choice are the vanilla container's job.
     @Override
     default long moveTo(@Nullable LogisticContainer target, long maxItems) {
         if (maxItems <= 0) return 0L;
 
-        // A network only ever holds one container family, so a mismatch is a wiring bug.
         if (!(target instanceof HytechItemContainer itemTarget)) return 0L;
 
         var from = getItemContainer();

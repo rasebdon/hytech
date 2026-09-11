@@ -1,27 +1,19 @@
-"""The Hytech material and component table.
-
-One table, read by every generator that needs it: `generate-material-assets.py` turns it into item
-definitions, recipes and language lines, and `generate-icons.py` draws it. Balance therefore lives
-in exactly one readable place rather than spread across forty JSON files.
-
-The chain, top to bottom:
+"""The Hytech material and component table: one source of balance, read by every generator.
 
     vanilla ore --(crusher)--> 2 dust --(smelter)--> 1 vanilla bar --(bench)--> 1 plate
     plate --> wire, coils, circuits, casings, frames --> machines and pipes
 
-Crushing before smelting is what doubles an ore, since vanilla's own furnace smelts ore 1:1 and
-that recipe is left alone. Alloys are smelted from two dusts, which is why the electric smelter has
-two ingredient slots and Hytech needs no separate mixer.
+Crushing before smelting is what doubles an ore. Alloys smelt from two dusts, hence the electric
+smelter's two ingredient slots.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-# Mekanism-style tier names, used for circuits, frames, machines and (in a later phase) pipes.
 TIERS = ["Basic", "Advanced", "Elite", "Ultimate", "Quantum"]
 
-# Accent per tier, so a tier reads the same on a circuit icon as on a frame icon.
+# Shared accent per tier, so a circuit and a frame of the same tier read the same.
 TIER_COLOURS = {
     "Basic": ((0x6E, 0x76, 0x82), (0x9C, 0xA6, 0xB4)),
     "Advanced": ((0x3E, 0x7A, 0x4A), (0x6D, 0xB0, 0x7C)),
@@ -33,13 +25,8 @@ TIER_COLOURS = {
 
 @dataclass(frozen=True)
 class Metal:
-    """One metal in the chain.
-
-    `ore` is None for an alloy, which has no ore to crush -- its dust comes from crushing the bar
-    back down, and its bar from the alloy recipe. `bar` names a *vanilla* item wherever one exists,
-    so Hytech feeds the game's own economy instead of shadowing it; steel is the one metal vanilla
-    has no bar for, so Hytech ships that one item.
-    """
+    """`ore` is None for an alloy (its dust comes from crushing the bar). `bar` names a vanilla
+    item wherever one exists; steel is the one metal vanilla has none for, so Hytech ships it."""
 
     name: str
     ore: str | None
@@ -58,12 +45,10 @@ class Metal:
 
     @property
     def owns_bar(self) -> bool:
-        """Whether the bar is ours to define rather than vanilla's."""
         return self.bar.startswith("Hytech_")
 
 
-# Smelt times follow vanilla's own furnace recipes where there is one, so a Hytech smelter is
-# recognisably the same material taking the same effort.
+# Smelt times match vanilla's own furnace recipes where one exists.
 METALS = [
     Metal("Copper", "Ore_Copper", "Ingredient_Bar_Copper", (0xB5, 0x6B, 0x38), (0xE2, 0x93, 0x5A), 6),
     Metal("Iron", "Ore_Iron", "Ingredient_Bar_Iron", (0x8E, 0x8E, 0x96), (0xBD, 0xBD, 0xC6), 8),
@@ -75,8 +60,7 @@ METALS = [
     Metal("Adamantite", "Ore_Adamantite", "Ingredient_Bar_Adamantite", (0x8C, 0x2E, 0x3A), (0xC7, 0x5A, 0x66), 12),
     Metal("Onyxium", "Ore_Onyxium", "Ingredient_Bar_Onyxium", (0x3A, 0x33, 0x44), (0x6B, 0x5F, 0x7A), 4),
     Metal("Prisma", "Ore_Prisma", "Ingredient_Bar_Prisma", (0xB0, 0x5C, 0xC6), (0xE0, 0x96, 0xF0), 4),
-    # Alloys. Vanilla ships a bronze bar with no recipe at all, so Hytech gives it one rather than
-    # inventing a second bronze; steel it has to introduce outright.
+    # Alloys: vanilla's bronze bar has no recipe, so Hytech gives it one; steel it must add outright.
     Metal("Bronze", None, "Ingredient_Bar_Bronze", (0xA2, 0x7B, 0x3C), (0xD0, 0xA5, 0x5E), 8),
     Metal("Steel", None, "Hytech_Bar_Steel", (0x6E, 0x76, 0x82), (0x9C, 0xA6, 0xB4), 12),
 ]
@@ -86,8 +70,6 @@ BY_NAME = {metal.name: metal for metal in METALS}
 
 @dataclass(frozen=True)
 class Alloy:
-    """A bar smelted from two or more dusts, in the electric smelter's two ingredient slots."""
-
     metal: str
     inputs: list[tuple[str, int]]
     output_quantity: int
@@ -95,21 +77,15 @@ class Alloy:
 
 
 ALLOYS = [
-    # Iron plus carbon, the real recipe, using the charcoal a burner generator already produces.
     Alloy("Steel", [("Hytech_Dust_Iron", 1), ("Ingredient_Charcoal", 1)], 1, 12),
-    # Copper hardened with silver. Hytale has no tin, and bronze needs *some* way to exist.
+    # Silver stands in for tin, which Hytale has none of.
     Alloy("Bronze", [("Hytech_Dust_Copper", 3), ("Hytech_Dust_Silver", 1)], 4, 10),
 ]
 
 
 @dataclass(frozen=True)
 class Component:
-    """A crafted part: wire, a coil, a circuit, a casing, a frame.
-
-    `kind` picks the icon; `tier` is None for the parts that are not tiered. Recipes are player
-    crafting rather than machine processing -- they hang off the item's own `Recipe` block, at the
-    vanilla workbench, which is also where the machines themselves are built.
-    """
+    """A crafted part: wire, a coil, a circuit, a casing, a frame. `tier` is None when untiered."""
 
     id: str
     name: str
@@ -175,14 +151,13 @@ COMPONENTS = [
         metal="Steel",
         item_level=24,
     ),
-    # Circuits climb by adding the previous tier to a better plate, so a Quantum circuit carries
-    # the whole ladder inside it and no tier can be skipped.
+    # Each circuit tier includes the previous one, so no tier can be skipped.
     _circuit("Basic", [("Hytech_Plate_Copper", 1), ("Hytech_Wire_Copper", 2)], 20),
     _circuit("Advanced", [("Hytech_Circuit_Basic", 1), ("Hytech_Plate_Silver", 1), ("Hytech_Coil", 1)], 30),
     _circuit("Elite", [("Hytech_Circuit_Advanced", 1), ("Hytech_Plate_Gold", 1), ("Hytech_Coil", 2)], 40),
     _circuit("Ultimate", [("Hytech_Circuit_Elite", 1), ("Hytech_Plate_Mithril", 1), ("Hytech_Plate_Prisma", 1)], 50),
     _circuit("Quantum", [("Hytech_Circuit_Ultimate", 1), ("Hytech_Plate_Adamantite", 1), ("Hytech_Plate_Onyxium", 1)], 60),
-    # Frames do the same with the structural metals, so the two ladders never compete for a plate.
+    # Frames climb the same way, on structural metals, so the two ladders never share a plate.
     _frame("Basic", [("Hytech_Casing", 1), ("Hytech_Plate_Steel", 4)], 24),
     _frame("Advanced", [("Hytech_Frame_Basic", 1), ("Hytech_Plate_Bronze", 4)], 34),
     _frame("Elite", [("Hytech_Frame_Advanced", 1), ("Hytech_Plate_Cobalt", 4)], 44),
@@ -190,10 +165,8 @@ COMPONENTS = [
     _frame("Quantum", [("Hytech_Frame_Ultimate", 1), ("Hytech_Plate_Adamantite", 4)], 64),
 ]
 
-# Every Hytech recipe is crafted at Hytech's own bench, so a player looks in one place rather than
-# hunting four vanilla category tabs for parts that have nothing to do with them. The bench itself
-# is the exception -- it is built at the vanilla workbench out of vanilla bars, which is what keeps
-# the whole tree reachable from a fresh world.
+# Every Hytech recipe crafts at this one bench. The bench itself is the exception: built at the
+# vanilla workbench from vanilla bars, so the tree is reachable from a fresh world.
 BENCH_ID = "Hytech_Workbench"
 
 CATEGORY_MATERIALS = "Hytech_Materials"
@@ -212,18 +185,13 @@ VANILLA_WORKBENCH = [{"Type": "Crafting", "Id": "Workbench", "Categories": ["Wor
 
 
 def bench(category: str) -> list[dict]:
-    """The bench requirement for a Hytech recipe, in one of the bench's own tabs."""
     return [{"Type": "Crafting", "Id": BENCH_ID, "Categories": [category]}]
 
 
 @dataclass(frozen=True)
 class BlockRecipe:
-    """A recipe for a block that already has a hand-authored item definition.
-
-    The generator owns only the `Recipe` key of these files, leaving their models, components and
-    block states alone. Keeping the costs here rather than scattered across fifteen JSON files is
-    the same argument as for the materials: the ladder should be readable in one place.
-    """
+    """A recipe for a block with an existing hand-authored item definition; the generator only
+    rewrites that file's `Recipe` key."""
 
     path: str
     category: str
@@ -233,11 +201,9 @@ class BlockRecipe:
 
 
 BLOCK_RECIPES = [
-    # The wrench and the multimeter are not here: they belong to HytechCore, and a library cannot
-    # put its recipes on a bench a content mod owns. They craft at the vanilla workbench out of
-    # vanilla bars, which is what keeps HytechCore usable on its own.
+    # Wrench and multimeter aren't here: they belong to HytechCore, which can't put recipes on a
+    # bench HytechPlugin owns, so they craft at the vanilla workbench instead.
 
-    # ---- logistics: eight pipes a craft, since a run eats them by the dozen ----
     BlockRecipe("Pipes/Energy/Pipe_Energy.json", CATEGORY_LOGISTICS,
                 [("Hytech_Plate_Copper", 6), ("Hytech_Wire_Copper", 2)], output_quantity=8),
     BlockRecipe("Pipes/Items/Pipe_Items.json", CATEGORY_LOGISTICS,
@@ -258,7 +224,6 @@ BLOCK_RECIPES = [
     BlockRecipe("Storage.Batteries/Battery_Tier_1.json", CATEGORY_LOGISTICS,
                 [("Hytech_Casing", 1), ("Hytech_Wire_Copper", 4), ("Hytech_Circuit_Basic", 2)]),
 
-    # ---- machines ----
     BlockRecipe("Generators/Burner_Generator.json", CATEGORY_MACHINES,
                 [("Hytech_Casing", 1), ("Hytech_Plate_Copper", 2)]),
     BlockRecipe("Generators/Solar_Panel_Tier_1.json", CATEGORY_MACHINES,
@@ -270,21 +235,17 @@ BLOCK_RECIPES = [
                 [("Hytech_Frame_Basic", 1), ("Hytech_Circuit_Basic", 2), ("Hytech_Coil", 2)],
                 seconds=6),
 
-    # ---- the bench itself: vanilla bars only, so it is reachable before any of the above ----
+    # The bench itself: vanilla bars only, so it's reachable before anything above it.
     BlockRecipe("Hytech_Workbench.json", "Workbench_Crafting",
                 [("Ingredient_Bar_Iron", 4), ("Ingredient_Bar_Copper", 2)], seconds=5),
 ]
 
-# Creative-only test blocks keep whatever recipe they shipped with; they are a debugging aid, not
-# part of the progression. See TESTING.md.
-
-# The two machine recipe groups, matching the RecipeGroup on each machine's processor component.
+# Must match the RecipeGroup on each machine's processor component.
 CRUSHER_GROUP = "Hytech_Crusher"
 SMELTER_GROUP = "Hytech_Smelter"
 
 
 def display_name(item_id: str) -> str:
-    """Player-facing name for a generated item id."""
     for metal in METALS:
         if item_id == metal.dust:
             return f"{metal.name} Dust"

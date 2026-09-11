@@ -16,10 +16,7 @@ import org.joml.Vector3i;
 
 import javax.annotation.Nonnull;
 
-/// The default page for a logistic block with no bespoke UI: tanks, buffers, the test blocks.
-///
-/// Reports the block's first scalar container as the headline and lists the rest as detail rows, so
-/// a new resource type gets a working page with no UI code at all.
+/// Default page for a logistic block with no bespoke UI: tanks, buffers, the test blocks.
 public class OpenLogisticContainerPageInteraction extends OpenPageBlockInteraction {
 
     @Nonnull
@@ -31,8 +28,6 @@ public class OpenLogisticContainerPageInteraction extends OpenPageBlockInteracti
                     .documentation("Opens the generic Hytech container page for the target block.")
                     .build();
 
-    /// Reads live state on every refresh rather than closing over a snapshot, so a tank being
-    /// filled by a pipe updates while the page is open.
     private static void fill(MachineView view, World world, Vector3i blockPos) {
         var resources = LogisticResourceType.presentAt(world, blockPos);
 
@@ -52,13 +47,10 @@ public class OpenLogisticContainerPageInteraction extends OpenPageBlockInteracti
                 continue;
             }
 
-            // Anything past the headline, and anything not scalar (items), becomes a detail line.
-            // Each component already formats itself, which is why this needs no per-type code.
             view.detail(resource.label(), summarise(component.getContainer()));
         }
 
         if (!headlineShown) {
-            // A block with only slot-based containers still deserves a headline.
             var first = LogisticLookup.allBlockComponentsAt(world, blockPos).stream().findFirst();
             first.ifPresent(component -> view.primary(
                     summarise(component.getContainer()), 0f, "Contents"));
@@ -77,7 +69,6 @@ public class OpenLogisticContainerPageInteraction extends OpenPageBlockInteracti
                 (_, view) -> fill(view, world, blockPos));
     }
 
-    /// "1,200 / 8,000  Water" -- amount, capacity and, for a typed tank, what it holds.
     private static String describe(ScalarContainer scalar) {
         String amounts = String.format("%,d / %,d", scalar.getAmount(), scalar.getTotalCapacity());
 

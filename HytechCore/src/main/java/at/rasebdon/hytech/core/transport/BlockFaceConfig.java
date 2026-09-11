@@ -27,24 +27,17 @@ public class BlockFaceConfig implements Cloneable {
     private static final int INITIAL_PACKED;
 
     static {
-        // Pre-calculate allowed mask and default initial state (BOTH_0)
         long mask = 0L;
         for (BlockFaceConfigType type : PRIORITY) mask |= (1L << combine(type, 0));
         DEFAULT_MASK = mask;
         INITIAL_PACKED = combine(PRIORITY[0], 0);
 
-        // Codec Definition
         var builder = BuilderCodec.builder(BlockFaceConfig.class, BlockFaceConfig::new);
         for (BlockFace face : BlockFace.VALUES) {
             builder.append(new KeyedCodec<>(face.name(), Codec.STRING_ARRAY),
                     (c, v) -> c.setAllowed(face, v), (c) -> c.getAllowed(face)).add();
         }
-        // Sets the starting state of every face *without* restricting what it may become.
-        //
-        // The per-face keys above are an allow-list: "Up": ["OUTPUT"] means OUTPUT is the only
-        // permitted state, so the wrench cannot cycle that side and the face overlay correctly
-        // shows nothing. A generator wants to *default* to output while still being configurable,
-        // which is what this expresses. Declared after the per-face keys so it is applied last.
+        // Must come after the per-face allow-list keys so "Default" sets the starting state without restricting it.
         builder.append(new KeyedCodec<>("Default", Codec.STRING),
                 BlockFaceConfig::setAllFaces, (_) -> null).add();
 
@@ -109,10 +102,7 @@ public class BlockFaceConfig implements Cloneable {
         return getType(face).isOutputOrBoth();
     }
 
-    /// Points every face at `typeName`, leaving the allowed set alone.
-    ///
-    /// Ignores a value the face does not permit rather than throwing: an asset combining a
-    /// restrictive allow-list with a conflicting default is a mistake worth surviving.
+    /// Ignores a value a face doesn't permit rather than throwing, so a conflicting asset default can't crash the plugin.
     private void setAllFaces(@Nonnull String typeName) {
         BlockFaceConfigType type;
         try {
@@ -156,12 +146,7 @@ public class BlockFaceConfig implements Cloneable {
         return res.toArray(String[]::new);
     }
 
-    /// Whether this face has more than one permitted state, i.e. whether cycling it does
-    /// anything.
-    ///
-    /// A block can pin a side to a single mode through its `BlockFaceConfig` asset -- a
-    /// generator that only ever outputs, say. Cycling such a face is a no-op, so the wrench
-    /// overlay uses this to avoid promising a change it cannot make.
+    /// Whether cycling this face would do anything, i.e. whether an asset pinned it to one allowed state.
     public boolean isConfigurable(BlockFace face) {
         return Long.bitCount(allowedMasks[face.getValue()]) > 1;
     }
@@ -183,9 +168,7 @@ public class BlockFaceConfig implements Cloneable {
         }
     }
 
-    /// Packed states in the order the wrench should present them.
-    /// Precomputed because it is a pure function of compile-time constants, and the wrench
-    /// asked for it on every single click.
+    /// Wrench cycle order; precomputed since it's a pure function of compile-time constants.
     private static final int[] CYCLE_ORDER = buildCycleOrder();
 
     private static int[] buildCycleOrder() {
@@ -202,8 +185,7 @@ public class BlockFaceConfig implements Cloneable {
         return order;
     }
 
-    /// Flips a face between fully connected and disconnected, skipping the directional
-    /// states. Used where direction has no meaning, such as a pipe facing another pipe.
+    /// Toggles between fully connected and disconnected, skipping directional states — for faces where direction is meaningless (pipe-to-pipe).
     public void toggleFace(BlockFace face) {
         var next = getType(face) == BlockFaceConfigType.NONE
                 ? BlockFaceConfigType.BOTH
@@ -216,9 +198,7 @@ public class BlockFaceConfig implements Cloneable {
         }
     }
 
-    /// Advances a face to the next allowed state in [#PRIORITY] order: BOTH, then pull,
-    /// then push, then none. The packed values sort differently (none is zero), so the
-    /// cycle walks the priority list rather than counting.
+    /// Advances to the next allowed state in [#PRIORITY] order; walks the list rather than counting since packed values don't sort that way.
     public void cycleFace(BlockFace face) {
         long mask = allowedMasks[face.getValue()];
         int current = extract(face);

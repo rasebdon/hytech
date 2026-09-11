@@ -6,8 +6,8 @@ import at.rasebdon.hytech.gas.events.GasContainerChangedEvent;
 import at.rasebdon.hytech.gas.events.GasNetworkChangedEvent;
 import com.hypixel.hytale.event.IEventRegistry;
 
-/// Gas transfer. The algorithm lives in [AbstractTransferSystem]; the single-type rule is
-/// enforced by the container canAccept check during the move itself.
+/// Gas transfer; the algorithm lives in [AbstractTransferSystem], the single-type rule is
+/// enforced by the container's canAccept check.
 public class GasTransferSystem extends AbstractTransferSystem<HytechGasContainer> {
 
     public GasTransferSystem(IEventRegistry eventRegistry) {

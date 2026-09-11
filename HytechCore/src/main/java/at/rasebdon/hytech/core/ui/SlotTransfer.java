@@ -6,18 +6,9 @@ import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-/// Moving items on a page that cannot be dragged on.
-///
-/// A window and a custom page are different systems rather than layers: a window lives on the Bench
-/// screen, and a custom page *replaces* that screen, so nothing drawn here can be picked up however
-/// much it looks like a slot. What a page can do is report clicks -- `ItemSlotButton` fires
-/// `Activating` like any other button -- so a move becomes two clicks: pick a slot up, then put it
-/// down. Clicking the same slot again, or Cancel Move, drops the selection.
-///
-/// The engine still performs the move. `moveItemStackFromSlotToSlot` with filtering on is what
-/// enforces the rules the rest of the mod already relies on: a machine's result slots carry a
-/// `SlotFilter.DENY` on ADD, so a player can take dust out of a crusher but cannot stuff ore into
-/// the slot the dust comes out of.
+/// Moving items on a page that cannot be dragged on: a click picks a slot up, a second click puts
+/// it down. `moveItemStackFromSlotToSlot` with filtering on still performs the actual move, so a
+/// machine's result slots keep refusing insertions exactly as they do for a pipe or a window.
 public final class SlotTransfer {
 
     /// The machine's own container.
@@ -35,8 +26,7 @@ public final class SlotTransfer {
     @Nullable
     private String zone;
     private short slot;
-    /// What was picked up, for the hint line. Read when the selection is made rather than on every
-    /// refresh, so the hint survives the source slot emptying out from under it.
+    /// What was picked up, for the hint line; captured at selection so it survives the slot emptying.
     @Nullable
     private String held;
 
@@ -70,12 +60,7 @@ public final class SlotTransfer {
         return "Moving " + this.held + " -- click a slot to place it, or Cancel Move.";
     }
 
-    /// One click on a cell.
-    ///
-    /// Returns true when something happened and the page should redraw. A click on an empty slot
-    /// with nothing in hand is not "something happened" -- redrawing then would spend an
-    /// acknowledgment round trip to change nothing, and the page drops incoming clicks while an
-    /// update is outstanding.
+    /// Returns true when something happened and the page should redraw.
     public boolean click(@Nonnull String zone, int slot, int quantity,
                          @Nonnull Zones zones, @Nonnull Filter filter) {
         var container = zones.container(zone);
@@ -83,8 +68,6 @@ public final class SlotTransfer {
 
         if (!isPending()) return pickUp(zone, (short) slot, container);
 
-        // Clicking the held cell again puts it back down, which is the cancel every player tries
-        // first.
         if (isSelected(zone, slot)) {
             clear();
             return true;
@@ -106,14 +89,11 @@ public final class SlotTransfer {
 
     private boolean place(@Nonnull String toZone, short toSlot, int quantity,
                           @Nonnull Zones zones, @Nonnull Filter filter) {
-        // `zone` is non-null whenever this runs -- place() is only called while pending -- but
-        // that invariant lives in isPending(), so it is folded into the guard below instead.
         var fromZone = this.zone;
         var from = fromZone == null ? null : zones.container(fromZone);
         var to = zones.container(toZone);
 
-        // The block can be broken while its page is open, and the page outlives it by up to a
-        // refresh. Dropping the selection is the only sane answer.
+        // The block can be broken while its page is open; dropping the selection is the only sane answer.
         if (from == null || to == null || this.slot >= from.getCapacity()) {
             clear();
             return true;
@@ -125,39 +105,28 @@ public final class SlotTransfer {
             return true;
         }
 
-        // Refused rather than silently dropped: the selection stays in hand so the player can put
-        // it somewhere that will take it, and the rejected click costs them nothing.
+        // Refused, not dropped: the selection stays in hand so the player can retry elsewhere.
         if (!filter.accepts(toZone, toSlot, stack)) return false;
 
         int moving = Math.min(quantity, stack.getQuantity());
 
-        // Filtering on: this is the same path a pipe and the player's own window take, so a
-        // machine's result slots keep refusing insertions and its ingredient slots keep accepting
-        // them without this having to know anything about machines.
         from.moveItemStackFromSlotToSlot(this.slot, moving, to, toSlot, true);
 
-        // A partial move leaves the rest behind rather than keeping it in hand: the alternative is
-        // a selection that silently points at a different item than the player thinks it does.
         clear();
 
         return true;
     }
 
-    /// Resolves a zone name to the container behind it. Supplied by the page, because a page knows
-    /// about its machine and about the player and this does not.
+    /// Resolves a zone name to the container behind it. Supplied by the page, which knows about
+    /// its machine and the player.
     @FunctionalInterface
     public interface Zones {
         @Nullable
         ItemContainer container(@Nonnull String zone);
     }
 
-    /// Whether a stack may land in a cell.
-    ///
-    /// Separate from the container's own filters on purpose. A filter is the right tool for a rule
-    /// the container enforces against everyone -- a machine's result slots refuse insertions from
-    /// pipes and players alike. This is the rule that only applies to a *person clicking*: the
-    /// machine will physically hold cobblestone in its ingredient slot, it just has no recipe for
-    /// it, and letting someone jam one in by accident is worse than saying no.
+    /// Whether a stack may land in a cell — separate from the container's own filters, which
+    /// apply to everyone; this is the rule for a person clicking specifically.
     @FunctionalInterface
     public interface Filter {
         boolean accepts(@Nonnull String zone, int slot, @Nonnull ItemStack stack);

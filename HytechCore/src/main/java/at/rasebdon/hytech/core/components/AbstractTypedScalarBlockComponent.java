@@ -9,13 +9,7 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import javax.annotation.Nullable;
 
 /// A single-type tank: holds one resource at a time and rejects anything else until drained.
-///
-/// The resource identity is a plain string id so tanks are declared entirely in assets --
-/// `"ResourceType": "Water"` -- with no enum to extend for every new fluid or gas.
-///
-/// Both the amount key and the resource-type key are declared here rather than left to
-/// subclasses, because unlike energy there is no legacy naming to preserve: fluid and gas are
-/// new, so they use the generic `Amount` and `ResourceType` from the start.
+/// The resource identity is a plain string id, so a new fluid or gas needs no enum extension.
 public abstract class AbstractTypedScalarBlockComponent<TContainer>
         extends AbstractScalarBlockComponent<TContainer>
         implements TypedScalarContainer<String> {
@@ -50,15 +44,13 @@ public abstract class AbstractTypedScalarBlockComponent<TContainer>
 
         this.resourceType = normalise(resourceType);
 
-        // An amount without a type would be unreachable -- nothing can extract from a tank
-        // that does not say what it holds, and nothing can insert while it looks occupied.
+        // An amount with no type is unreachable, so zero it.
         if (this.resourceType == null) {
             this.amount = 0L;
         }
     }
 
-    /// Treats blank as absent, so an asset can leave the key empty to mean "unclaimed" rather
-    /// than having to omit it entirely.
+    /// Blank means "unclaimed", not "absent".
     @Nullable
     protected static String normalise(@Nullable String resourceType) {
         if (resourceType == null) return null;

@@ -2,12 +2,9 @@
 """
 Generates inventory icons for the Hytech items that need one.
 
-`Icon` is validated when the asset loads, and the failure is fatal for that item -- so the
-PNG has to exist *before* the game's own icon renderer ever runs. Icons under
-`Icons/ItemsGenerated/` are normally produced by the game and synced back by the `syncAssets`
-Gradle task, which is too late. These are drawn from primitives instead: recognisable enough
-to tell a fluid pipe from a gas tank in a hotbar, and cheap to replace with the real rendered
-icons once the game has produced them.
+A missing `Icon` is a fatal validation error, and the game's own icon renderer only fills in
+`Icons/ItemsGenerated/` (via `syncAssets`) after that check -- so these are drawn from
+primitives up front, recognisable enough to tell items apart until the real icons exist.
 
 Usage:
     python scripts/generate-icons.py           # write assets
@@ -30,15 +27,12 @@ from paths import CONTENT, CORE, REPO_ROOT, resources
 RESOURCES = resources(CONTENT)
 ICON_DIR = RESOURCES / "Common/Icons/ItemsGenerated"
 
-# HytechCore ships debug pipes, so it needs icons of its own: a missing Icon is a fatal
-# validation error for that item, and the game's icon renderer only fills in
-# Icons/ItemsGenerated/ *after* validation, so a placeholder has to be committed up front.
+# HytechCore's own debug pipes need placeholder icons too, for the same fatal-validation reason.
 CORE_ICON_DIR = resources(CORE) / "Common/Icons/ItemsGenerated"
 
 SIZE = 64
 
-# Body and highlight per resource type, matching the hues in generate-pipe-tints.py so an icon
-# and its block read as the same thing.
+# Matches the hues in generate-pipe-tints.py so an icon and its block read as the same thing.
 PALETTE = {
     "Fluid": ((0x35, 0x6E, 0x8F), (0x5C, 0xA8, 0xD1)),
     "Gas": ((0x4A, 0x77, 0x31), (0x7C, 0xB8, 0x55)),
@@ -47,9 +41,8 @@ PALETTE = {
 
 OUTLINE = (0x1A, 0x1A, 0x1E)
 
-# The library's debug pipes, one per resource type. Hues are the resource accents
-# SideConfigPanel paints its tabs with, so the icon, the tab and the wrench all agree on what
-# colour a resource is -- Energy and Items have no pipe tint of their own to borrow.
+# Hues match SideConfigPanel's tab accents, so the icon, tab and wrench agree on a resource's
+# colour -- Energy and Items have no pipe tint of their own to borrow.
 DEBUG_PIPE_PALETTE = {
     "Energy": ((0x8F, 0x68, 0x24), (0xE8, 0xA9, 0x3B)),
     "Items": ((0x4A, 0x60, 0x7A), (0x7A, 0x9C, 0xC6)),
@@ -72,15 +65,12 @@ MACHINE_COIL = (0xFF, 0xA5, 0x2B)
 
 
 def pipe_icon(body: tuple[int, int, int], highlight: tuple[int, int, int]) -> bytes:
-    """A horizontal pipe run with a hub, drawn on the diagonal-ish axis the block icons use."""
     px = pnglib.blank(SIZE, SIZE)
 
-    # Arms out to both edges.
     pnglib.rect(px, SIZE, 4, 26, 59, 37, OUTLINE)
     pnglib.rect(px, SIZE, 4, 28, 59, 35, body)
     pnglib.rect(px, SIZE, 4, 29, 59, 30, highlight)
 
-    # Centre hub, slightly taller so the shape is not a plain bar.
     pnglib.rect(px, SIZE, 22, 20, 41, 43, OUTLINE)
     pnglib.rect(px, SIZE, 24, 22, 39, 41, body)
     pnglib.rect(px, SIZE, 24, 23, 39, 25, highlight)
@@ -89,18 +79,16 @@ def pipe_icon(body: tuple[int, int, int], highlight: tuple[int, int, int]) -> by
 
 
 def tank_icon(body: tuple[int, int, int], highlight: tuple[int, int, int]) -> bytes:
-    """A tank with a fill window, so it reads as storage rather than a plain cube."""
+    """A fill window makes it read as storage rather than a plain cube."""
     px = pnglib.blank(SIZE, SIZE)
 
     pnglib.rect(px, SIZE, 12, 8, 51, 55, OUTLINE)
     pnglib.rect(px, SIZE, 14, 10, 49, 53, BURNER_CASING)
 
-    # Fill window, part full, to signal a container with contents.
     pnglib.rect(px, SIZE, 20, 18, 43, 47, OUTLINE)
     pnglib.rect(px, SIZE, 22, 30, 41, 45, body)
     pnglib.rect(px, SIZE, 22, 30, 41, 31, highlight)
 
-    # Collars top and bottom.
     pnglib.rect(px, SIZE, 16, 10, 47, 13, body)
     pnglib.rect(px, SIZE, 16, 50, 47, 53, body)
 
@@ -108,13 +96,12 @@ def tank_icon(body: tuple[int, int, int], highlight: tuple[int, int, int]) -> by
 
 
 def burner_icon() -> bytes:
-    """A casing with a lit firebox, mirroring the block's own front texture."""
+    """Mirrors the block's own front texture."""
     px = pnglib.blank(SIZE, SIZE)
 
     pnglib.rect(px, SIZE, 8, 8, 55, 55, OUTLINE)
     pnglib.rect(px, SIZE, 10, 10, 53, 53, BURNER_CASING)
 
-    # Firebox in the lower two thirds, barred like the block texture.
     pnglib.rect(px, SIZE, 18, 24, 45, 49, OUTLINE)
     pnglib.rect(px, SIZE, 20, 26, 43, 47, BURNER_EMBER)
     for y in range(26, 48, 6):
@@ -124,11 +111,8 @@ def burner_icon() -> bytes:
 
 
 def machine_icon(working: tuple[int, int, int], coil: bool) -> bytes:
-    """A cased machine seen face-on, its working face either toothed or wound.
-
-    Deliberately the same silhouette as the burner's icon so the machines read as one family,
-    with the face doing the distinguishing.
-    """
+    """Same silhouette as the burner's icon so the machines read as one family, distinguished
+    only by the working face."""
     px = pnglib.blank(SIZE, SIZE)
 
     pnglib.rect(px, SIZE, 8, 8, 55, 55, OUTLINE)
@@ -138,11 +122,9 @@ def machine_icon(working: tuple[int, int, int], coil: bool) -> bytes:
     pnglib.rect(px, SIZE, 20, 22, 43, 45, MACHINE_RECESS)
 
     if coil:
-        # Three windings, the lowest one hottest, as on the smelter's front texture.
         for offset, y in enumerate(range(26, 44, 6)):
             pnglib.rect(px, SIZE, 22, y, 41, y + 2, working if offset == 2 else MACHINE_STEEL)
     else:
-        # Interlocking jaws either side of a charged gap.
         pnglib.rect(px, SIZE, 22, 24, 41, 31, MACHINE_STEEL)
         pnglib.rect(px, SIZE, 22, 36, 41, 43, MACHINE_STEEL)
         pnglib.rect(px, SIZE, 22, 32, 41, 35, working)
@@ -154,13 +136,11 @@ def dust_icon(body: tuple[int, int, int], highlight: tuple[int, int, int]) -> by
     """A heaped pile, so a dust never reads as an ingot or a nugget."""
     px = pnglib.blank(SIZE, SIZE)
 
-    # Stepped heap: widest at the base, and none of it touching the icon's edge.
     for step, y in enumerate(range(44, 20, -4)):
         half = 20 - step * 3
         pnglib.rect(px, SIZE, 32 - half - 1, y - 4, 32 + half + 1, y, OUTLINE)
         pnglib.rect(px, SIZE, 32 - half, y - 3, 32 + half, y - 1, body)
 
-    # A couple of glints so the pile has a top rather than a flat cap.
     pnglib.rect(px, SIZE, 28, 24, 33, 27, highlight)
     pnglib.rect(px, SIZE, 38, 32, 43, 35, highlight)
 
@@ -174,7 +154,6 @@ def plate_icon(body: tuple[int, int, int], highlight: tuple[int, int, int]) -> b
     pnglib.rect(px, SIZE, 10, 20, 53, 43, OUTLINE)
     pnglib.rect(px, SIZE, 12, 22, 51, 41, body)
 
-    # A lit top edge and a shadowed bottom one give it thickness.
     pnglib.rect(px, SIZE, 12, 22, 51, 25, highlight)
     pnglib.rect(px, SIZE, 12, 38, 51, 41, OUTLINE)
 
@@ -227,7 +206,6 @@ def circuit_icon(body: tuple[int, int, int], highlight: tuple[int, int, int]) ->
     pnglib.rect(px, SIZE, 10, 12, 53, 51, OUTLINE)
     pnglib.rect(px, SIZE, 12, 14, 51, 49, body)
 
-    # Traces: two runs down the board with a bright pad at each end.
     for x in (20, 42):
         pnglib.rect(px, SIZE, x, 18, x + 2, 45, highlight)
         pnglib.rect(px, SIZE, x - 2, 16, x + 4, 19, highlight)
@@ -250,7 +228,6 @@ def frame_icon(body: tuple[int, int, int], highlight: tuple[int, int, int], soli
         pnglib.rect(px, SIZE, 18, 18, 45, 45, MACHINE_CASING)
         pnglib.rect(px, SIZE, 18, 18, 45, 21, highlight)
     else:
-        # Hollowed out, leaving four corner posts and a lit top rail.
         pnglib.rect(px, SIZE, 18, 18, 45, 45, MACHINE_RECESS)
         pnglib.rect(px, SIZE, 10, 10, 53, 13, highlight)
 
@@ -268,7 +245,7 @@ def source_icon(body: tuple[int, int, int], highlight: tuple[int, int, int], voi
     pnglib.rect(px, SIZE, 10, 10, 53, 53, OUTLINE)
     pnglib.rect(px, SIZE, 12, 12, 51, 51, body)
 
-    # A chunky arrow: pointing out of the block for a source, into it for a void.
+    # Arrow points out of the block for a source, into it for a void.
     rows = range(20, 44, 2)
     for offset, y in enumerate(rows):
         half = offset if voiding else len(list(rows)) - 1 - offset
@@ -301,8 +278,6 @@ def main() -> int:
 
     pnglib.write_if_changed(ICON_DIR / "Burner_Generator.png", burner_icon(), args.check, stale)
 
-    # The bench shares the machines' silhouette with a tool board for a face, since it is one of
-    # them as far as a player is concerned.
     pnglib.write_if_changed(ICON_DIR / "Hytech_Workbench.png",
                             machine_icon(MACHINE_STEEL, False), args.check, stale)
     pnglib.write_if_changed(ICON_DIR / "Crusher_Basic.png",
@@ -310,8 +285,6 @@ def main() -> int:
     pnglib.write_if_changed(ICON_DIR / "Electric_Smelter_Basic.png",
                             machine_icon(MACHINE_COIL, True), args.check, stale)
 
-    # Materials and components, straight off the table the assets are generated from, so an icon
-    # can never go missing for an item that exists (a missing Icon is fatal for that item).
     icons = 0
 
     for metal in table.METALS:

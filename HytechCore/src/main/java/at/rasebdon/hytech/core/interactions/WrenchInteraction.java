@@ -36,19 +36,14 @@ import javax.annotation.Nullable;
 
 public class WrenchInteraction extends SimpleInteraction {
 
-    /// Asset id of the wrench item, so a machine can recognise it in the player's hand.
     private static final String WRENCH_ITEM_ID = "Wrench";
 
     public static final BuilderCodec<WrenchInteraction> CODEC = BuilderCodec.builder(
             WrenchInteraction.class, WrenchInteraction::new, SimpleInteraction.CODEC
     ).build();
 
-    /// Cycles the face the player is aiming at on `targetBlock`, honouring their wrench mode.
-    ///
-    /// Public because a block that declares its own `Use` interaction never lets the held
-    /// item's interaction run -- so a machine has to call this itself when the player is
-    /// holding a wrench. Pipes need no such handling; they declare no Use interaction, so the
-    /// wrench's own interaction reaches them.
+    /// Public: a block with its own `Use` interaction must call this itself, since the wrench's
+    /// interaction never runs on it otherwise.
     public static void configureTargetedFace(
             @Nonnull InteractionSyncData clientState,
             @Nonnull World world,
@@ -73,20 +68,12 @@ public class WrenchInteraction extends SimpleInteraction {
         cycleFace(containerComponent, localFace, playerRef);
     }
 
-    /// Whether this stack is a wrench, for blocks deciding whether to defer.
     public static boolean isWrench(@Nullable ItemStack stack) {
         return !ItemStack.isEmpty(stack) && WRENCH_ITEM_ID.equals(stack.getItemId());
     }
 
-    /// Works out which face the player actually aimed at.
-    ///
-    /// A pipe renders as a hub plus one arm per connection, and clicking an arm should
-    /// configure that connection rather than whichever outer face the ray crossed. The
-    /// client is no help here: it sends no raycast data for a block interaction, and the
-    /// engine only exposes one bounding box per hitbox set, so the highlighted box is the
-    /// union of hub and arms. So the ray is recomputed here from the player's own eye and
-    /// look direction, and tested against this pipe's arm boxes. A hit on the hub, or on
-    /// no arm at all, falls back to the face the client reported.
+    /// The client sends no raycast data for a block interaction, so a click on a pipe arm is
+    /// re-derived here from the player's own eye and look direction against the arm boxes.
     @Nonnull
     private static BlockFace resolveTargetedFace(
             @Nonnull InteractionSyncData clientState,
@@ -104,7 +91,6 @@ public class WrenchInteraction extends SimpleInteraction {
         return clientState.blockFace;
     }
 
-    /// Casts the player's eye ray against the pipe's arm boxes.
     @Nonnull
     private static BlockFace faceUnderCrosshair(
             @Nonnull LogisticPipeComponent<?> pipe,
@@ -119,8 +105,7 @@ public class WrenchInteraction extends SimpleInteraction {
 
         var eye = new Vector3d(transform.getPosition());
 
-        // Eye height comes from the player's model so crouching and sitting are accounted
-        // for; without a model we would be casting from the feet.
+        // Accounts for crouching/sitting; without a model the ray casts from the feet.
         var modelComponent = store.getComponent(playerRef, ModelComponent.getComponentType());
         if (modelComponent != null && modelComponent.getModel() != null) {
             eye.y += modelComponent.getModel().getEyeHeight(playerRef, store);
@@ -140,13 +125,7 @@ public class WrenchInteraction extends SimpleInteraction {
                 "Side " + localFace.name() + " changed to: " + containerComponent.getFaceConfigTowards(localFace).name());
     }
 
-    /// The component this wrench should configure on the target block.
-    ///
-    /// A block can carry several containers -- the burner generator has both energy and items --
-    /// so the player's selected wrench mode decides which. Crouch and scroll to change it.
-    /// If the block has nothing of the selected resource, this falls back to whatever it does
-    /// have, so wrenching a plain energy pipe while in Items mode still does the obvious thing
-    /// rather than silently nothing.
+    /// Falls back to whatever the block has if it lacks the player's selected wrench-mode resource.
     @Nullable
     private static LogisticComponent<?> getContainer(
             World world, Ref<EntityStore> playerRef, Vector3i targetBlock) {
@@ -215,8 +194,8 @@ public class WrenchInteraction extends SimpleInteraction {
         var entityStore = playerRef.getStore();
         var world = entityStore.getExternalData().getWorld();
 
-        // Crouching means "pick the resource", not "configure this face". Checked before the
-        // target is considered, so it also works aiming at nothing.
+        // Crouching picks the resource instead of configuring a face; checked before the target
+        // so it also works aiming at nothing.
         if (HytechUtil.isCrouching(world, playerRef)) {
             var store = world.getEntityStore().getStore();
             var pageTarget = store.getComponent(playerRef, PlayerRef.getComponentType());
@@ -243,8 +222,7 @@ public class WrenchInteraction extends SimpleInteraction {
             return;
         }
 
-        // A face set to push or pull is drawn by a marker entity rather than the block
-        // model, so aiming at that arm targets the entity and never the block.
+        // A push/pull face is drawn by a marker entity, so aiming at it targets the entity.
         var targetEntity = interactionContext.getTargetEntity();
         if (targetEntity != null) {
             doMarkerInteraction(entityStore, targetEntity, playerRef);

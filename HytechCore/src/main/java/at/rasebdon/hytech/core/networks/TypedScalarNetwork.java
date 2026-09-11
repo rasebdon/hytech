@@ -8,9 +8,6 @@ import javax.annotation.Nullable;
 import java.util.Set;
 
 /// A connected run of typed pipes, carrying exactly one resource at a time.
-///
-/// The run adopts the resource of whatever first enters it and releases it once drained, so a
-/// player can repurpose a pipe network by emptying it rather than rebuilding it.
 public abstract class TypedScalarNetwork<TContainer> extends ScalarNetwork<TContainer>
         implements TypedScalarContainer<String> {
 
@@ -25,9 +22,7 @@ public abstract class TypedScalarNetwork<TContainer> extends ScalarNetwork<TCont
     protected void recalculateStats() {
         super.recalculateStats();
 
-        // Derive the run's resource from its pipes' saved state, and keep only what matches.
-        // Two differently-typed runs being joined is the interesting case: the first type
-        // found wins and the mismatched contents are dropped rather than silently converted.
+        // Joining two differently-typed runs: the first type found wins, mismatched contents drop.
         String found = null;
         long matching = 0L;
 

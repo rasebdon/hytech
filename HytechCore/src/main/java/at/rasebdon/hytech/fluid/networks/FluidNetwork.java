@@ -6,7 +6,6 @@ import at.rasebdon.hytech.fluid.HytechFluidContainer;
 
 import java.util.Set;
 
-/// A connected run of fluid pipes, carrying one fluid at a time.
 public class FluidNetwork extends TypedScalarNetwork<HytechFluidContainer>
         implements HytechFluidContainer {
 

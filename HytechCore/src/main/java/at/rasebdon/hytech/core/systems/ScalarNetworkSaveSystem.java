@@ -10,10 +10,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-/// Periodically writes a network's contents back onto its pipes, so they persist with the
-/// blocks rather than only in the live network object.
-///
-/// Subclassed per resource type because `ComponentRegistry` keys systems by class.
+/// Periodically writes a network's contents back onto its pipes so they persist with the
+/// blocks. Subclassed per resource type since `ComponentRegistry` keys systems by class.
 @SuppressWarnings("rawtypes")
 public abstract class ScalarNetworkSaveSystem<TContainer> extends TickingSystem<ChunkStore> {
 
@@ -39,20 +37,13 @@ public abstract class ScalarNetworkSaveSystem<TContainer> extends TickingSystem<
         }
     }
 
-    /// Distributes the network's contents across its pipes, weighted by capacity.
-    ///
-    /// Whatever integer division leaves over is carried into the following pipes rather than
-    /// dropped. The original energy implementation divided evenly and discarded the remainder
-    /// while the network read those rounded values straight back, so every save destroyed up
-    /// to (pipeCount - 1) units and a mixed-capacity run over-filled its small pipes and
-    /// clipped the excess. Both losses compounded every five seconds.
+    /// Distributes the network's contents across its pipes, weighted by capacity. Any remainder
+    /// from integer division carries into the following pipes rather than being dropped.
     private void save(LogisticNetwork<TContainer> network) {
         var container = network.getContainer();
         if (container == null) return;
 
-        // Raw element type: only the capacity/amount accessors are used here, none of which
-        // mention the container type, and a wildcard element cannot be collected into a List
-        // without the capture leaking into the stream's type.
+        // Raw type: a wildcard element cannot be collected into a List without the capture leaking.
         List<AbstractScalarPipeComponent> pipes = network.getPipes().stream()
                 .filter(AbstractScalarPipeComponent.class::isInstance)
                 .map(AbstractScalarPipeComponent.class::cast)
@@ -77,15 +68,14 @@ public abstract class ScalarNetworkSaveSystem<TContainer> extends TickingSystem<
         for (var pipe : pipes) {
             long capacity = pipe.getPipeCapacity();
 
-            // Skipping empty pipes also keeps them out of the divisor, which would otherwise
-            // be zero if a zero-capacity pipe sorted last.
+            // Keeps zero-capacity pipes out of the divisor.
             if (capacity <= 0L) {
                 writePipe(pipe, 0L, network);
                 continue;
             }
 
-            // Proportional to what is left of both the contents and the capacity, so the
-            // final pipe receives exactly the remainder instead of a rounded-down share.
+            // Proportional to what remains of both contents and capacity, so the final pipe
+            // gets exactly the remainder instead of a rounded-down share.
             long share = Math.min(capacity, remaining * capacity / totalCapacity);
 
             writePipe(pipe, share, network);
@@ -106,12 +96,10 @@ public abstract class ScalarNetworkSaveSystem<TContainer> extends TickingSystem<
         }
     }
 
-    /// The network's current contents. Abstract because the container type is only known to
-    /// the concrete resource module.
+    /// Abstract because the container type is only known to the concrete resource module.
     protected abstract long amountOf(LogisticNetwork<TContainer> network);
 
-    /// Writes one pipe's share. Overridden by typed resources, which must also record *what*
-    /// the segment is holding, not just how much.
+    /// Overridden by typed resources, which must also record *what* the segment holds.
     protected void writePipe(
             AbstractScalarPipeComponent pipe,
             long amount,

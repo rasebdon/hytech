@@ -19,13 +19,7 @@ import org.joml.Vector3i;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-/// Prints whatever logistic component the targeted block carries.
-///
-/// Energy and items each had their own copy of this that differed only in which module it
-/// asked for the component type. Since every component already describes itself through
-/// `toString`, one interaction that walks the registered component types covers every
-/// resource type -- including a block that carries several, such as the burner generator
-/// holding both energy and items.
+/// Prints whatever logistic component(s) the targeted block carries.
 public class ReadLogisticContainerInteraction extends SimpleBlockInteraction {
 
     @Nonnull
@@ -42,8 +36,6 @@ public class ReadLogisticContainerInteraction extends SimpleBlockInteraction {
             @Nonnull World world,
             @Nonnull Vector3i targetBlock) {
 
-        // Every container, not just the first: the burner generator reports both its energy
-        // buffer and its fuel slots, which is exactly what you want when inspecting a machine.
         for (var component : LogisticLookup.allComponentsAt(world, targetBlock)) {
             report(context, component);
         }

@@ -10,20 +10,11 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-/// A machine that turns items into other items, on electricity.
-///
-/// Everything specific to a *kind* of machine lives in its asset rather than in code: which recipes
-/// it may run, how fast, what it draws, and how many operations it runs at once. So the crusher and
-/// the electric smelter are the same component with different numbers, and a later factory tier is
-/// another set of numbers rather than another class.
-///
-/// The items themselves live in the block's `hytech:items:container`, split into ingredient and
-/// result slots, exactly as the burner keeps its fuel in one -- which is what lets item pipes feed
-/// and drain a machine with no transfer code of its own.
+/// Everything specific to a machine *kind* lives in its asset, not in code -- a crusher and an
+/// electric smelter are the same component with different numbers. Items live in the block's
+/// `hytech:items:container`, so item pipes feed and drain it with no transfer code of its own.
 public class MachineProcessorComponent implements Component<ChunkStore> {
 
-    /// A machine with no group declared can never match a recipe; naming the mistake beats
-    /// silently idling, and the processing system logs it once.
     public static final String UNSET_GROUP = "";
 
     @Nonnull
@@ -40,9 +31,6 @@ public class MachineProcessorComponent implements Component<ChunkStore> {
                     .addValidator(Validators.greaterThanOrEqual(0L))
                     .documentation("Energy drawn per tick per running operation")
                     .add()
-                    // Higher is faster: recipe time is divided by this. A validator is checked
-                    // against the field's *default*, so the default has to be a passing value --
-                    // hence 1 in the constructor rather than a bare field.
                     .append(new KeyedCodec<>("SpeedMultiplier", Codec.FLOAT),
                             (c, v) -> c.speedMultiplier = v,
                             (c) -> c.speedMultiplier)
@@ -78,10 +66,7 @@ public class MachineProcessorComponent implements Component<ChunkStore> {
     @Nullable
     private String recipeId;
 
-    /// Whether the machine made progress on the last tick, for the block state.
-    ///
-    /// Not persisted: a freshly loaded machine reads as idle until its next tick says otherwise,
-    /// which is one tick of a dark texture rather than a saved lie.
+    // Not persisted: a freshly loaded machine reads as idle for one tick rather than saving a lie.
     private transient boolean active;
 
     public MachineProcessorComponent() {
@@ -141,8 +126,6 @@ public class MachineProcessorComponent implements Component<ChunkStore> {
         this.recipeId = recipeId;
     }
 
-    /// Forgets the operation in flight. Called when the ingredients no longer match, so a machine
-    /// cannot bank progress on one recipe and spend it on another.
     public void clearOperation() {
         this.recipeId = null;
         this.progress = 0f;
@@ -157,17 +140,14 @@ public class MachineProcessorComponent implements Component<ChunkStore> {
         this.active = active;
     }
 
-    /// Seconds one operation takes at this machine's speed, or 0 for an instant recipe.
     public float operationSeconds(float recipeTimeSeconds) {
         if (recipeTimeSeconds <= 0f) return 0f;
 
         return recipeTimeSeconds / this.speedMultiplier;
     }
 
-    /// Copy-constructed rather than `super.clone()`d. `Component` extends `Cloneable`, but
-    /// `Object.clone` is a shallow field copy, which for a component means the copy and the
-    /// original share their mutable state -- a face config, a container. Every component here
-    /// builds a fresh instance instead, and the ones holding a mutable field copy it explicitly.
+    // Copy-constructed, not super.clone()'d: Object.clone is a shallow copy that would share
+    // mutable state with the original.
     @SuppressWarnings({"CloneDoesntCallSuperClone", "MethodDoesntCallSuperMethod"})
     @Override
     @Nonnull

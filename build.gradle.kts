@@ -1,14 +1,10 @@
 plugins {
-    // Declared here so both plugins land on the buildscript classpath -- `apply false` keeps them
-    // off the root project, which owns no sources of its own. Each subproject applies them below.
+    // apply false: keeps them off the sourceless root project; each subproject applies them below.
     id("hytale-mod") version "0.+" apply false
     id("com.diffplug.spotless") version "7.0.3" apply false
 
-    // Applied to the root on purpose. hytale-mod writes its IDEA run configuration through the
-    // *root* project's `idea` extension and its idea-ext `ProjectSettings`, but it applies those
-    // two plugins to the project it is applied to -- which is now a subproject. Without them here
-    // it fails with "Extension with name 'idea' does not exist", then with "Extension of type
-    // 'ProjectSettings' does not exist". Version pinned to what hytale-mod 0.8.1 depends on.
+    // hytale-mod writes IDEA run config through the root project's `idea`/idea-ext extensions but
+    // applies the plugins to itself (now a subproject), so they must be applied at root too.
     idea
     id("org.jetbrains.gradle.plugin.idea-ext") version "1.4.1"
 }
@@ -18,8 +14,8 @@ val javaVersion = 25
 val appData = System.getenv("APPDATA") ?: (System.getenv("HOME") + "/.var/app/com.hypixel.HytaleLauncher/data")
 val hytaleAssets = file("$appData/Hytale/install/release/package/game/latest/Assets.zip")
 
-// Resolved here rather than inside `subprojects`: the generated `libs` accessor reads the version
-// catalog off the project it is evaluated against, and a subproject has no such extension.
+// Resolved here, not inside `subprojects`: `libs` reads the catalog off the project it's evaluated
+// against, and a subproject has no such extension.
 val jetbrainsAnnotations = libs.jetbrains.annotations
 val jspecify = libs.jspecify
 
@@ -27,8 +23,7 @@ val jspecify = libs.jspecify
 // Shared mod configuration
 // ---------------------------------------------------------------------------------------------
 
-/// Every subproject is a Hytale plugin, so they are configured identically apart from their
-/// manifest entrypoint. What differs per project lives in the project's own build script.
+/// Every subproject is a Hytale plugin, configured identically apart from its manifest entrypoint.
 subprojects {
     apply(plugin = "java-library")
     apply(plugin = "maven-publish")
@@ -66,9 +61,8 @@ subprojects {
         withSourcesJar()
     }
 
-    // The manifest is a template, not generated: `Dependencies` and `Main` differ per plugin and
-    // live in each project's own manifest.json, while the shared metadata comes from
-    // gradle.properties. `plugin_name` is the project name, which is half of the pack identity.
+    // Manifest is a template: per-plugin values live in each project's manifest.json, shared
+    // metadata comes from gradle.properties.
     tasks.named<ProcessResources>("processResources") {
         val replaceProperties = mapOf(
             "plugin_group" to findProperty("plugin_group"),
@@ -105,8 +99,6 @@ subprojects {
 
     configure<PublishingExtension> {
         repositories {
-            // This is where you put repositories that you want to publish to.
-            // Do NOT put repositories for your dependencies here.
         }
 
         publications {
@@ -124,8 +116,7 @@ subprojects {
         }
     }
 
-    // The game writes asset edits into the build folder; this brings them back to the source tree.
-    // One per project, because each project has its own resources and its own pack root.
+    // Brings the game's asset edits in the build folder back to the source tree; one per project.
     val syncAssets = tasks.register<Copy>("syncAssets") {
         group = "hytale"
         description = "Syncs assets from this project's build output back to its source tree."
@@ -147,20 +138,15 @@ subprojects {
     // Formatting and dead-code checks
     // -----------------------------------------------------------------------------------------
 
-    /// Deliberately *not* a wholesale reformatter.
-    ///
-    /// A full google-java-format/palantir pass would rewrite every file in the repo and flatten the
-    /// hand-aligned constant blocks and the `///` markdown doc comments that carry most of the
-    /// reasoning here. These steps are the mechanical ones instead -- the edits nobody would ever
-    /// make on purpose -- so `spotlessApply` is safe to run on a whole tree without reviewing it.
+    /// Not a reformatter: a full google-java-format pass would flatten the aligned constant blocks
+    /// and doc comments here. Only mechanical edits, safe to run unreviewed.
     configure<com.diffplug.gradle.spotless.SpotlessExtension> {
         java {
             target("src/main/java/**/*.java")
 
             removeUnusedImports()
-            // No `importOrder` on purpose: Spotless separates its groups with blank lines, which
-            // reflows the import block of every file in the tree for no gain. IntelliJ already
-            // keeps the order; this only deletes what nothing uses.
+            // No `importOrder`: it'd insert blank lines and reflow every file's import block for
+            // no gain.
             trimTrailingWhitespace()
             endWithNewline()
             leadingTabsToSpaces(4)
@@ -173,26 +159,14 @@ subprojects {
         }
     }
 
-    /// Dead code.
-    ///
-    /// Nothing in the Java ecosystem *deletes* an unused method for you, and that is not a gap in
-    /// the tooling: `public` is an API surface the compiler cannot see past, and this plugin's
-    /// components, interactions and systems are instantiated by the server's asset loader by name,
-    /// so "nothing calls it" is not the same as "nothing uses it". PMD is therefore scoped to the
-    /// cases that are decidable from one file -- private members, locals, parameters, assignments --
-    /// where the fix is unambiguous.
-    ///
-    /// Anything auto-fixable is already handled: Spotless deletes unused imports on
-    /// `spotlessApply`. What is left needs the judgement call between deleting the member and
-    /// wiring it up, so this fails the build rather than filing a report nobody reads.
-    ///
-    /// PMD needs 7.26 or newer here. Older releases bundle an ASM that cannot read class file major
-    /// version 69, so on a Java 25 toolchain they fall back to unresolved types and drown the log
-    /// in parse-failure stack traces.
+    /// PMD is scoped to file-local dead code (private members/locals/params) because components,
+    /// interactions and systems are instantiated by name from assets, so "nothing calls it" doesn't
+    /// mean "nothing uses it". Requires PMD 7.26+ -- older releases can't read class file version
+    /// 69 (Java 25) and silently lose type resolution.
     configure<PmdExtension> {
         toolVersion = "7.26.0"
-        // rootProject.file, not a relative path: `resources.text.fromFile` resolves against the
-        // *subproject* directory, so a relative path silently looks for HytechCore/config/...
+        // rootProject.file, not relative: `resources.text.fromFile` resolves against the
+        // subproject dir.
         ruleSetConfig = resources.text.fromFile(rootProject.file("config/pmd/dead-code.xml"))
         ruleSets = emptyList()
         isConsoleOutput = true
@@ -219,20 +193,14 @@ subprojects {
         mustRunAfter(tasks.named("spotlessApply"))
     }
 
-    // The dev server's working directory. `hytale.runDir` is resolved against the *project*
-    // directory, so once the sources moved into subprojects each one grew its own `run/` -- and
-    // the server came up on a fresh world, with the real 93MB universe, config and permissions
-    // still sitting in the repo root. One run directory, shared, is also the only thing that makes
-    // sense: there is one dev world, and only one project starts a server on it.
+    // hytale.runDir resolves against the project dir; without this each subproject would get its
+    // own fresh run/, orphaning the real world/config in the repo root.
     configure<dev.hytalemods.gradle.hytalemod.HytaleExtension> {
         runDir = rootProject.layout.projectDirectory.dir("run").asFile.absolutePath
     }
 
-    // The decompiler runs in a forked JVM, so org.gradle.jvmargs does not reach it. Without a
-    // decent heap it spends its time in GC rather than decompiling.
-    //
-    // Only one project may own it: both would write the same HytaleServer-sources.jar next to the
-    // server jar, and two tasks racing on one output is a build that fails intermittently.
+    // Forked JVM: org.gradle.jvmargs doesn't reach it, hence maxHeapSize here. Enabled only in
+    // HytechCore -- both projects would race writing the same HytaleServer-sources.jar otherwise.
     tasks.named<JavaExec>("decompileServer") {
         maxHeapSize = "4g"
         enabled = project.name == "HytechCore"
@@ -241,9 +209,7 @@ subprojects {
         }
     }
 
-    // Bring the game's asset edits back after the server stops. `runServer` is the only run task
-    // the hytale-mod plugin creates; the content project's is the one you use, and it has to sync
-    // both trees because the server loads both packs.
+    // Syncs assets back after the server stops; the content project's runServer loads both packs.
     afterEvaluate {
         tasks.findByName("runServer")?.finalizedBy(syncAssets)
     }

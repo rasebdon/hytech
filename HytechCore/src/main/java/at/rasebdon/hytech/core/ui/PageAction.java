@@ -9,13 +9,8 @@ import javax.annotation.Nullable;
 
 /// The payload every Hytech page click sends back: which button was pressed.
 ///
-/// Hytale delivers one decoded object per page, not per element, so a page with several buttons
-/// needs a discriminator, and each binding carries its own action name.
-///
-/// The key is `Action`, deliberately *without* an `@`. A leading `@` marks a binding value as
-/// **dynamic** -- the client reads it as a selector at event time -- so `@Action` with a literal
-/// made the client try to resolve "configure" as a selector and fail with
-/// "Failed to gather CustomUI event binding". Static literals take an unprefixed key.
+/// The key is `Action`, without an `@` — a leading `@` marks a value as a selector the client
+/// resolves at event time, which fails for a literal action name.
 public final class PageAction {
 
     @Nonnull

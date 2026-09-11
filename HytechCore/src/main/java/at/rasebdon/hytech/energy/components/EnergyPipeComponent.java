@@ -27,8 +27,7 @@ public class EnergyPipeComponent extends AbstractScalarPipeComponent<HytechEnerg
     public static final BuilderCodec<EnergyPipeComponent> CODEC =
             BuilderCodec.builder(EnergyPipeComponent.class, EnergyPipeComponent::new,
                             AbstractScalarPipeComponent.CODEC)
-                    // Kept as "SavedEnergy" for the same compatibility reason the block keeps
-                    // "Energy": existing worlds already store it under this key.
+                    // "SavedEnergy": existing worlds already store it under this key.
                     .append(new KeyedCodec<>("SavedEnergy", Codec.LONG),
                             (c, v) -> c.savedAmount = v,
                             (c) -> c.savedAmount)

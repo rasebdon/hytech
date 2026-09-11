@@ -6,11 +6,9 @@ import at.rasebdon.hytech.core.containers.TypedScalarContainer;
 import at.rasebdon.hytech.core.networks.LogisticNetwork;
 import at.rasebdon.hytech.core.networks.LogisticNetworkSystem;
 
-/// Persists a typed network by writing both the amount and the resource onto each pipe.
-///
-/// Without the resource id, a reloaded run would come back holding a quantity of nothing --
-/// which [at.rasebdon.hytech.core.networks.TypedScalarNetwork] discards on principle, so the
-/// contents would simply vanish.
+/// Persists a typed network by writing both the amount and the resource onto each pipe --
+/// without the id, [at.rasebdon.hytech.core.networks.TypedScalarNetwork] discards the amount
+/// as belonging to nothing.
 @SuppressWarnings("rawtypes")
 public abstract class TypedScalarNetworkSaveSystem<TContainer> extends ScalarNetworkSaveSystem<TContainer> {
 
@@ -27,8 +25,7 @@ public abstract class TypedScalarNetworkSaveSystem<TContainer> extends ScalarNet
 
         if (!(pipe instanceof AbstractTypedScalarPipeComponent<?> typedPipe)) return;
 
-        // Setting the type after the amount matters: clearing the type zeroes the amount, so
-        // doing it the other way round would throw the share away.
+        // Order matters: clearing the type zeroes the amount, so this must run after the write.
         typedPipe.setSavedResourceType(resourceTypeOf(network));
     }
 

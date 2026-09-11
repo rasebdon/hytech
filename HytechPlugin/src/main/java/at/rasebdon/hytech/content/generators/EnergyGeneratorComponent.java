@@ -52,10 +52,8 @@ public class EnergyGeneratorComponent implements Component<ChunkStore> {
         this.currentRate = currentRate;
     }
 
-    /// Copy-constructed rather than `super.clone()`d. `Component` extends `Cloneable`, but
-    /// `Object.clone` is a shallow field copy, which for a component means the copy and the
-    /// original share their mutable state -- a face config, a container. Every component here
-    /// builds a fresh instance instead, and the ones holding a mutable field copy it explicitly.
+    /// Copy-constructed, not `super.clone()`d: `Object.clone` is a shallow copy, which would share
+    /// mutable state with the original.
     @SuppressWarnings({"CloneDoesntCallSuperClone", "MethodDoesntCallSuperMethod"})
     @Override
     public Component<ChunkStore> clone() {

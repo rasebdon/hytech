@@ -24,8 +24,7 @@ public class HeatBlockComponent extends AbstractScalarBlockComponent<HytechHeatC
     public static final BuilderCodec<HeatBlockComponent> CODEC =
             BuilderCodec.builder(HeatBlockComponent.class, HeatBlockComponent::new,
                             AbstractScalarBlockComponent.CODEC)
-                    // New resource types use the generic key. Only energy carries a
-                    // resource-specific one, for backwards compatibility with shipped assets.
+                    // "Amount" is the generic key; only energy keeps its own for save compatibility.
                     .append(new KeyedCodec<>("Amount", Codec.LONG),
                             (c, v) -> c.amount = v,
                             (c) -> c.amount)

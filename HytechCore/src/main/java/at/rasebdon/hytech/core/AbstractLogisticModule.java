@@ -41,7 +41,6 @@ public abstract class AbstractLogisticModule<
             @Nonnull BuilderCodec<TPipeComponent> pipeCodec
     ) {
 
-        // Register components
         blockComponentType = registry.registerComponent(
                 blockClass,
                 blockId,
@@ -55,17 +54,15 @@ public abstract class AbstractLogisticModule<
                 pipeCodec
         );
 
-        // Create network system
         networkSystem = createNetworkSystem();
 
-        // One registration covering both components, so the pair can never drift apart and the
-        // wrench and side UI can name the resource rather than guess at a component type.
+        // One registration for both components so they can't drift apart; lets the wrench/side UI
+        // name the resource instead of guessing a component type.
         this.resourceType = new LogisticResourceType(
                 getResourceId(), getResourceLabel(), getResourceAccent(),
                 blockComponentType, pipeComponentType);
         HytechCoreModule.get().registerResourceType(this.resourceType);
 
-        // Register core systems
         registry.registerSystem(createTransferSystem(eventRegistry));
         registrationSystem = createContainerRegistrationSystem(
                 blockComponentType,
@@ -75,7 +72,6 @@ public abstract class AbstractLogisticModule<
         );
         registry.registerSystem(registrationSystem);
 
-        // Allow subclasses to register additional systems
         registerAdditionalSystems(registry, eventRegistry);
 
         LOGGER.atInfo().log("%s initialized", getModuleName());
@@ -89,9 +85,7 @@ public abstract class AbstractLogisticModule<
     /// Player-facing name, shown by the wrench and the side-configuration UI.
     protected abstract String getResourceLabel();
 
-    /// This resource's colour, as `#rrggbb`, used for its pipe accent and its tab in the side
-    /// configurator. Not abstract: a new resource type works without picking one, it just draws
-    /// in [LogisticResourceType#DEFAULT_ACCENT] until it does.
+    /// Not abstract: falls back to [LogisticResourceType#DEFAULT_ACCENT] if unset.
     protected String getResourceAccent() {
         return LogisticResourceType.DEFAULT_ACCENT;
     }
@@ -117,9 +111,7 @@ public abstract class AbstractLogisticModule<
         return blockComponentType;
     }
 
-    /// Kept despite having no caller in this repository: it is the pipe half of the pair a
-    /// content mod reaches for, and `getBlockComponentType` above is already used from
-    /// HytechPlugin. A library's API surface is not defined by who happens to call it today.
+    /// No caller in this repo, but it's the pipe half of the pair content mods reach for.
     @SuppressWarnings("unused")
     public ComponentType<ChunkStore, TPipeComponent> getPipeComponentType() {
         return pipeComponentType;

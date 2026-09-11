@@ -1,16 +1,8 @@
 #!/usr/bin/env python3
 """
-Generates recoloured pipe textures for the resource types that share the Default geometry.
-
-Energy, fluid, gas and heat pipes are the same hub-and-arm model; only the texture differs,
-and the texture is named on each pipe's item JSON rather than baked into the generated block
-model. So a new resource type needs no new geometry at all -- just a tint of the authored
-energy texture, which is what this produces.
-
-The authored energy texture is greyscale -- a two-tone metal casing -- so recolouring means
-colourising it: each pixel keeps its brightness (which is what carries the shading) and gains
-the type's hue at a fixed saturation. Replace these PNGs with hand-drawn art whenever you
-like; nothing but this script depends on them being generated.
+Generates recoloured pipe textures for the resource types that share the Default geometry: a new
+type needs no new geometry, just a tint of the authored (greyscale) energy texture, keeping each
+pixel's brightness and applying the type's hue at a fixed saturation.
 
 Usage:
     python scripts/generate-pipe-tints.py           # write assets
@@ -30,19 +22,15 @@ from paths import REPO_ROOT, resources, CONTENT
 
 RESOURCES = resources(CONTENT)
 
-# The authored texture every tint derives from.
 SOURCE = RESOURCES / "Common/BlockTextures/Pipes/Energy/Pipe_Energy.png"
 
-# Target hue per type, in degrees. Chosen to be distinguishable at a glance and from each
-# other: water-blue fluid, sickly green gas, hot orange heat.
+# Target hue per type, in degrees: water-blue fluid, sickly green gas, hot orange heat.
 TINTS = {
     "Fluid": 205.0,
     "Gas": 95.0,
     "Heat": 25.0,
 }
 
-# How strongly to colourise. Enough to identify the pipe at a glance, low enough that it still
-# reads as painted metal rather than a solid colour swatch.
 SATURATION = 0.45
 
 # Gas sits between fluid and heat on the wheel, so it gets a touch more to stay distinct.
@@ -50,8 +38,7 @@ SATURATION_OVERRIDE = {
     "Gas": 0.55,
 }
 
-# Both the block texture and the item texture are written, mirroring how the energy pipe
-# ships the same image under two roots.
+# Block texture and item texture both get written, as the energy pipe does.
 OUT_DIRS = [
     RESOURCES / "Common/BlockTextures/Pipes",
     RESOURCES / "Common/Items/Pipes",
@@ -59,11 +46,7 @@ OUT_DIRS = [
 
 
 def decode_png(path: Path) -> tuple[int, int, bytearray]:
-    """Minimal RGBA PNG reader, including the per-scanline filters.
-
-    Hand-rolled because the repo has no image dependency and the build must not gain one for
-    three textures. Only what this file needs is supported: 8-bit RGBA, non-interlaced.
-    """
+    """8-bit RGBA, non-interlaced only."""
     data = path.read_bytes()
     if data[:8] != b"\x89PNG\r\n\x1a\n":
         raise ValueError(f"{path} is not a PNG")
@@ -130,7 +113,6 @@ def paeth(left: int, up: int, up_left: int) -> int:
 
 
 def encode_png(width: int, height: int, pixels: bytearray) -> bytes:
-    """Writes filter-0 scanlines; zlib does the compressing."""
     stride = width * 4
     rows = bytearray()
     for y in range(height):
@@ -148,13 +130,8 @@ def encode_png(width: int, height: int, pixels: bytearray) -> bytes:
 
 
 def retint(pixels: bytearray, hue_degrees: float, saturation: float) -> bytearray:
-    """Colourises every visible pixel to the target hue, keeping its brightness.
-
-    Brightness is what carries the authored shading, so preserving it keeps the bevels and
-    highlights intact. Saturation is imposed rather than scaled because the source is
-    greyscale -- scaling a saturation of zero would leave the texture untouched, which is
-    exactly the trap this walked into first time round.
-    """
+    """Saturation is imposed, not scaled: scaling a saturation of zero (the greyscale source)
+    would leave the texture untouched."""
     out = bytearray(pixels)
     hue = hue_degrees / 360.0
 

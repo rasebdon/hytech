@@ -12,12 +12,8 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Set;
 
-/// A run of connected item pipes, presented as one container.
-///
-/// The buffer is not stored here: it is the union of the member pipes' own containers,
-/// exposed through a [CombinedItemContainer]. That keeps persistence entirely in the pipe
-/// components (see [ItemPipeComponent]) so nothing has to be redistributed on save, and
-/// it means the aggregate view is always consistent with what the pipes actually hold.
+/// A run of connected item pipes, presented as one container: the union of the member pipes'
+/// own containers via [CombinedItemContainer], so persistence stays in [ItemPipeComponent].
 public class ItemNetwork extends LogisticNetwork<HytechItemContainer> implements HytechItemContainer {
 
     @Nullable
@@ -39,8 +35,6 @@ public class ItemNetwork extends LogisticNetwork<HytechItemContainer> implements
         recalculateStats();
     }
 
-    /// Rebuilds the aggregate container and the network's rate limit. The slowest pipe in
-    /// the run sets the pace, matching how the energy network derives its transfer speed.
     private void recalculateStats() {
         var containers = new ArrayList<ItemContainer>(pipes.size());
         long minSpeed = Long.MAX_VALUE;
@@ -82,21 +76,13 @@ public class ItemNetwork extends LogisticNetwork<HytechItemContainer> implements
         return transferSpeed;
     }
 
-    /// A run with nowhere to deliver cannot accept anything.
-    ///
-    /// Item pipes are a conduit, not storage: the transfer system refuses to draw into them
-    /// without a sink, and this says the same thing to everyone *else* who might insert -- a
-    /// machine with auto-push on, or a block pushing to its neighbours. Without it, switching
-    /// auto-push on next to a dead-end pipe would load the run and
-    /// [at.rasebdon.hytech.items.systems.ItemPipeEjectSystem] would put the contents on the floor
-    /// three seconds later.
+    /// A run with nowhere to deliver reads as full, so auto-push and block-push don't load a
+    /// dead-end pipe for [at.rasebdon.hytech.items.systems.ItemPipeEjectSystem] to dump on the floor.
     @Override
     public boolean isFull() {
         return !hasReachableSink() || HytechItemContainer.super.isFull();
     }
 
-    /// Whether any push target could take something. Targets never include pipes, so this asks
-    /// the blocks and wrapped containers at the ends of the run and cannot recurse.
     private boolean hasReachableSink() {
         for (var target : getPushTargets()) {
             if (!target.isAvailable()) continue;

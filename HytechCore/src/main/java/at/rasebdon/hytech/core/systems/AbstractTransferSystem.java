@@ -16,20 +16,9 @@ import java.util.List;
 
 /// The whole transfer algorithm, once, for every resource type.
 ///
-/// Energy and items each carried their own copy of this. The control flow was identical, the
-/// neighbour filter was character-identical, and the fair-share loop appeared three times
-/// across the two files. All of it is expressible against [LogisticContainer], so a new
-/// resource type inherits pull, push, priority ordering, fair-share distribution and rate
-/// limiting without writing any of it.
-///
-/// Each pass runs three phases:
-///
-/// 1. **pull** -- every network draws from the sources it is allowed to extract from
-/// 2. **block push** -- extracting blocks push to their own neighbours, in priority order
-/// 3. **network push** -- each network drains its buffer into its sinks
-///
-/// Blocks are visited in `TransferPriority` order (see [LogisticTransferSystem]), so when two
-/// sources compete for one destination the higher-priority one is served first.
+/// Each pass runs three phases: **pull** (networks draw from allowed sources), **block push**
+/// (extracting blocks push to neighbours, in `TransferPriority` order), then **network push**
+/// (each network drains into its sinks).
 public abstract class AbstractTransferSystem<TContainer extends LogisticContainer>
         extends LogisticTransferSystem<TContainer> {
 
@@ -47,20 +36,13 @@ public abstract class AbstractTransferSystem<TContainer extends LogisticContaine
         return Math.min(from.getTransferSpeed(), to.getTransferSpeed());
     }
 
-    /// Seconds between transfer passes, or 0 to run every tick.
-    ///
-    /// This is per module rather than fixed because `MaxTransfer` is denominated per *pass*:
-    /// energy moves its full rate every tick, items once a second. Unifying the two would
-    /// rebalance every existing block, so the interval stays configurable and the unit stays
-    /// documented on [LogisticContainer#getTransferSpeed].
+    /// Seconds between transfer passes, or 0 to run every tick. Per module because `MaxTransfer`
+    /// is denominated per pass, not per second -- energy ticks every frame, items once a second.
     protected float getTransferIntervalSeconds() {
         return 0f;
     }
 
     /// Snapshots each container's per-pass delta, which the UIs read as a throughput figure.
-    ///
-    /// Every scalar resource wants exactly this and items have no delta to track, so the base
-    /// does it for [ScalarContainer] and no concrete transfer system has to override anything.
     protected void onBeforePass(ContainerHolder<TContainer> holder) {
         if (!holder.isAvailable()) return;
 
@@ -100,18 +82,14 @@ public abstract class AbstractTransferSystem<TContainer extends LogisticContaine
         }
     }
 
-    /// Draws from every source the network is allowed to pull from.
-    ///
-    /// Overridable because a network is not a buffer for every resource: items must not be
-    /// parked in a pipe, so the item module replaces this with a direct source-to-sink move.
+    /// Overridable: items must not be parked in a pipe, so the item module replaces this with a
+    /// direct source-to-sink move.
     protected void pullIntoNetwork(LogisticNetwork<TContainer> network) {
         if (!network.isAvailable()) return;
 
         var buffer = network.getContainer();
         if (buffer == null || buffer.isFull()) return;
 
-        // One budget for the whole pass, so a network with many sources cannot pull
-        // (sources x speed) in a single tick.
         long budget = buffer.getTransferSpeed();
 
         for (var pullTarget : network.getPullTargets()) {
@@ -158,8 +136,7 @@ public abstract class AbstractTransferSystem<TContainer extends LogisticContaine
         var source = holder.getContainer();
         if (source == null || source.isEmpty()) return;
 
-        // Capping by the source's own speed is what stops a block with N outputs emitting
-        // N x MaxTransfer in one pass -- the bug the energy implementation had.
+        // Caps by the source's own speed, so N outputs cannot emit N x MaxTransfer in one pass.
         long budget = Math.min(source.getAvailable(), source.getTransferSpeed());
         if (budget <= 0L) return;
 

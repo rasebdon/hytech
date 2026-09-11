@@ -16,18 +16,10 @@ import javax.annotation.Nullable;
 
 /// Base for every Hytech machine page, on Hytale's own custom-UI API.
 ///
-/// Replaced HyUI, which registered element ids when its HTML was parsed, so only statically
-/// declared elements could receive events. `UIEventBuilder.addEventBinding` binds any selector,
-/// so that limit is gone -- and `.ui` gives the game's real design language rather than an
-/// approximation of it.
-///
 /// Subclasses supply a `.ui` document, write their current values into a
-/// [UICommandBuilder], and handle named actions. `.ui` is also what gives these pages the game's
-/// real look -- `$C.@Panel`, the vanilla button art and the shared colour variables -- which the
-/// HTML dialect only ever approximated.
+/// [UICommandBuilder], and handle named actions.
 public abstract class HytechCustomPage extends InteractiveCustomUIPage<PageAction> {
 
-    /// Signature of the values last sent, so an unchanged page sends nothing.
     @Nullable
     private String lastSignature;
 
@@ -39,11 +31,8 @@ public abstract class HytechCustomPage extends InteractiveCustomUIPage<PageActio
     @Nonnull
     protected abstract String document();
 
-    /// Writes the page's current values. Called on open *and* on every refresh, so it must be
-    /// safe to run repeatedly and must not assume anything about previous state.
-    ///
-    /// Returns a signature of everything written, or null to always send. [#refresh] compares it
-    /// against the last one and skips the update when nothing moved.
+    /// Called on open and on every refresh; must be safe to run repeatedly. Returns a signature
+    /// of everything written, or null to always send — [#refresh] skips the update when it matches.
     @Nullable
     protected abstract String render(@Nonnull UICommandBuilder commands);
 
@@ -57,26 +46,16 @@ public abstract class HytechCustomPage extends InteractiveCustomUIPage<PageActio
                             @Nonnull Store<EntityStore> store) {
     }
 
-    /// Binds a click to a named action.
-    ///
-    /// The action name travels as a static literal in the event payload, which is how a page with
-    /// many buttons tells them apart from a single decoded event. The key must not start with `@`:
-    /// that prefix marks a value the client resolves as a selector, not a literal.
+    /// The action name is a static literal (no `@` prefix, which would mark it as a selector).
     protected static void onClick(@Nonnull UIEventBuilder events,
                                   @Nonnull String selector,
                                   @Nonnull String action) {
-        // locksInterface = false. A locking binding leaves the client showing "Loading..." until
-        // the server answers, and PageManager silently *drops* Data events while an update is still
-        // unacknowledged -- so one refresh landing at the wrong moment could freeze a page for good.
+        // locksInterface = false: a locking binding freezes the client on "Loading..." until
+        // acknowledged, and a badly timed refresh could then never unfreeze it.
         events.addEventBinding(CustomUIEventBindingType.Activating, selector,
                 EventData.of("Action", action), false);
     }
 
-    /// Binds a right-click to a named action.
-    ///
-    /// The same payload shape as [#onClick], because one decoded event arrives per page whichever
-    /// button produced it -- the action name is the only thing that tells them apart, so a
-    /// right-click has to carry its own.
     protected static void onRightClick(@Nonnull UIEventBuilder events,
                                        @Nonnull String selector,
                                        @Nonnull String action) {
@@ -104,12 +83,8 @@ public abstract class HytechCustomPage extends InteractiveCustomUIPage<PageActio
         onAction(action, ref, store);
     }
 
-    /// Pushes fresh values to an already-open page, without rebuilding it.
-    ///
-    /// Skipped entirely when nothing changed. That is not just an optimisation: every update
-    /// increments the page's outstanding-acknowledgment count, and `PageManager` drops incoming
-    /// Data events while that count is non-zero. A page that refreshes unconditionally therefore
-    /// eats its own button clicks.
+    /// Skipped when nothing changed: an update increments the page's outstanding-acknowledgment
+    /// count, and the client drops incoming clicks while that count is non-zero.
     public void refresh() {
         var commands = new UICommandBuilder();
 

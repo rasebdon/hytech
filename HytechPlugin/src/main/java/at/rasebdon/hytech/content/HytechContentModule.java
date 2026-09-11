@@ -17,23 +17,16 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
 import javax.annotation.Nonnull;
 
-/// Hytech's own blocks, registered on top of HytechCore's resource types.
+/// Hytech's own blocks, on top of HytechCore's resource types.
 ///
-/// These used to be part of `EnergyModule.registerAdditionalSystems`, which put a closed
-/// `GeneratorType` enum and a battery's fill states inside the library. They are content: a
-/// generator kind cannot be added without editing the enum, so a second mod could never have
-/// contributed one, and a battery is only an `EnergyBlockComponent` with an asset around it.
+/// Content, not framework: a generator kind can't be added without editing the closed
+/// `GeneratorType` enum, so it lives here rather than in the library. Components keep the ids they
+/// were registered under (`hytech:energy:generator`, `hytech:energy:fuel_burner`), since
+/// `registerComponent` keys persistence by id, not by class.
 ///
-/// The components keep the ids they were registered under -- `hytech:energy:generator` and
-/// `hytech:energy:fuel_burner`. `registerComponent` keys persistence by that id rather than by the
-/// class, so moving the classes into this plugin is invisible to existing worlds and to every item
-/// JSON naming them.
-///
-/// Registration goes through *this* plugin's registries, while the components these systems read
-/// (`EnergyBlockComponent`, `ItemBlockComponent`) were registered by the library through its own.
-/// The manifest dependency on `Technic:HytechCore` is what makes that safe: the whole load order is
-/// walked in order, so the library is set up and started before this runs and `EnergyModule.get()`
-/// cannot be premature.
+/// Registers through this plugin's own registry while reading component types the library
+/// registered through its own; the manifest dependency on `Technic:HytechCore` guarantees the
+/// library is set up and started first, so `EnergyModule.get()` can't be premature.
 public final class HytechContentModule {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
@@ -60,8 +53,7 @@ public final class HytechContentModule {
                         generatorComponentType,
                         EnergyModule.get().getBlockComponentType(),
                         fuelBurnerComponentType,
-                        // A burner reads its fuel from an item container the pipes can fill, which
-                        // is why the library initialises items before energy.
+                        // Burner reads fuel from an item container, so items must init before energy.
                         ItemModule.get().getBlockComponentType())
         );
         registry.registerSystem(

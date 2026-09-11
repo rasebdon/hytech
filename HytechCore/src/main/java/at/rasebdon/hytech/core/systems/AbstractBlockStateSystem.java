@@ -11,18 +11,10 @@ import org.jspecify.annotations.NonNull;
 
 import javax.annotation.Nullable;
 
-/// Drives a block's visual state from one of its components.
+/// Drives a block's visual state from one of its components; only [#resolveState] differs per use.
 ///
-/// The resolve-and-write plumbing -- component to `BlockStateInfo` to `WorldChunk` to
-/// `setBlockInteractionState` -- is the same whether the state comes from a charge level or a
-/// burn flag, so only [#resolveState] differs per use.
-///
-/// Subclassed rather than parameterised with a resolver function because `ComponentRegistry`
-/// keys systems by class: two instances of one generic class would collide, exactly as they
-/// do for [PipeConnectionStateSystem].
-///
-/// `setBlockInteractionState` writes with settings 198, whose bit 2 makes `WorldChunk.setBlock`
-/// skip block-entity recreation -- so the block's components survive the swap.
+/// Subclassed rather than parameterised, since `ComponentRegistry` keys systems by class.
+/// Writes with settings 198 so `WorldChunk.setBlock` skips block-entity recreation.
 public abstract class AbstractBlockStateSystem<TComponent extends Component<ChunkStore>>
         extends TickingSystem<ChunkStore> {
 
@@ -38,11 +30,8 @@ public abstract class AbstractBlockStateSystem<TComponent extends Component<Chun
         this.updateTime = 0f;
     }
 
-    /// The state this block should be showing, or null to leave it alone.
-    ///
-    /// Returning null means "no opinion", not "reset" -- there is no way to clear a state, so
-    /// a system that needs an off position must name it (the burner has an explicit `Idle`
-    /// state for this, as the pipes have a mask for every topology).
+    /// The state to show, or null to leave it alone -- there is no way to clear a state, so an
+    /// off position must be named explicitly.
     @Nullable
     protected abstract String resolveState(@NonNull TComponent component);
 
@@ -62,9 +51,7 @@ public abstract class AbstractBlockStateSystem<TComponent extends Component<Chun
         });
     }
 
-    // WorldChunk's whole block-access API is deprecated with no replacement offered, and this
-    // is the call that does the job: see the note on setBlockInteractionState's write settings
-    // in CLAUDE.md. Suppressed at the narrowest scope that covers it.
+    // Deprecated with no replacement offered; this is still the call that does the job.
     @SuppressWarnings("deprecation")
     private void updateBlock(
             Store<ChunkStore> store,

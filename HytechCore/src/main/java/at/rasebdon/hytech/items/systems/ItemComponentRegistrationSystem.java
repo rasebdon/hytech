@@ -27,9 +27,7 @@ import java.util.Map;
 public class ItemComponentRegistrationSystem
         extends LogisticComponentRegistrationSystem<HytechItemContainer> {
 
-    /// Wrappers for vanilla containers, keyed by world position. Block states used to be
-    /// identity-stable objects that could key this map; components are looked up per call, so
-    /// the position is now the stable identity.
+    // Keyed by world position: components are looked up per call and aren't identity-stable.
     private final Map<Vector3i, HytechItemContainerWrapper> wrappers =
             new HashMap<>();
 
@@ -95,13 +93,8 @@ public class ItemComponentRegistrationSystem
         super.onEntityRemove(ref, reason, store, commandBuffer);
     }
 
-    /// Drops what a broken pipe was carrying, rather than deleting it with the block.
-    ///
-    /// Vanilla's break only drops the pipe item itself, and the buffer lives in the pipe
-    /// component's codec -- so it went with the block. Restricted to [RemoveReason#REMOVE]:
-    /// `UNLOAD` fires on every chunk unload, where the items are meant to be saved and are
-    /// still exactly where the player left them, and `BUILDER_TOOLS_UNDO` is undoing a
-    /// placement rather than breaking anything.
+    /// Vanilla's break only drops the pipe item; the buffer lives in the pipe's codec and would
+    /// go with the block otherwise. Restricted to [RemoveReason#REMOVE] -- not UNLOAD or undo.
     private void ejectBrokenPipeContents(
             @Nullable LogisticComponent<HytechItemContainer> component,
             RemoveReason reason,

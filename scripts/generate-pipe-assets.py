@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
 """
-Generates the per-connection-mask pipe assets.
+Generates the per-connection-mask pipe assets: for each of the 64 possible connection masks,
+a model, a matching multi-box hitbox, and a "State" entry on the pipe's item JSON -- so the
+server only has to call setBlockInteractionState(pos, blockType, "Conn_<mask>") on topology
+change, rather than spawning an entity per arm.
 
-A pipe block renders as a centre hub plus one arm per connected face. Rather than
-spawning an entity per arm at runtime, every one of the 64 possible connection
-masks gets its own block-state variant: a model, a matching multi-box hitbox, and
-a "State" entry on the pipe's item JSON. The server then only has to call
-setBlockInteractionState(pos, blockType, "Conn_<mask>") when the topology changes.
-
-Everything here is derived from the two hand-authored source models, so the arm
-geometry and texture layout stay in one place:
+Derived from two hand-authored source models:
 
     Common/Blocks/Pipes/Default/Pipe_Center.blockymodel   -> the hub node
     Common/Blocks/Pipes/Default/Pipe_Full.blockymodel     -> the arm node (+Y)
@@ -33,20 +29,10 @@ from paths import CONTENT, CORE, REPO_ROOT, resources
 CORE_RESOURCES = resources(CORE)
 CONTENT_RESOURCES = resources(CONTENT)
 
-# Each pipe type has its own hub and arm geometry with its own UV layout and size, so
-# they cannot share a generated model set: the item hub is 12 units and the default hub is
-# 8, and their textures are authored against those specific layouts.
-#
-# A geometry set is owned by whichever mod authored it, and `root` says which tree its models and
-# hitboxes are written into. `Default` belongs to HytechCore, which is the shape every mod gets to
-# reuse by pointing its own pipe item at `Blocks/Pipes/Generated/Default/` and giving it a
-# different `CustomModelTexture` -- `Common/` is one namespace at runtime, so a cross-mod model
-# path needs no prefix. `Items` is Hytech's own fatter hub, and lives with Hytech: a mod that wants
-# geometry of its own authors the two source models and adds an entry here.
-#
-# `item_jsons` are the items whose `BlockType.State` map this fills in. They are separate from
-# `root` on purpose: the shared geometry lives in the library while the items using it belong to
-# content mods.
+# Each pipe type has its own hub/arm geometry, UV layout and size (item hub 12 units, default 8),
+# so they can't share a generated model set. `root` is the tree its models/hitboxes are written
+# into (`Default` belongs to HytechCore and any mod may reuse it by retexturing); `item_jsons`
+# are the separate items whose `BlockType.State` map gets filled in.
 PIPE_TYPES = [
     {
         "name": "Default",
@@ -54,8 +40,7 @@ PIPE_TYPES = [
         "center_model": CORE_RESOURCES / "Common/Blocks/Pipes/Default/Pipe_Center.blockymodel",
         "arm_model": CORE_RESOURCES / "Common/Blocks/Pipes/Default/Pipe_Full.blockymodel",
         "hub_units": 8,
-        # Every scalar resource shares this geometry; only CustomModelTexture on each item
-        # JSON differs, so a new type costs no generated models or hitboxes at all.
+        # Every scalar resource shares this geometry; only CustomModelTexture differs per item.
         "item_jsons": [
             CONTENT_RESOURCES / "Server/Item/Items/Pipes/Energy/Pipe_Energy.json",
             CONTENT_RESOURCES / "Server/Item/Items/Pipes/Fluid/Pipe_Fluid.json",
@@ -68,9 +53,8 @@ PIPE_TYPES = [
         ],
     },
     {
-        # Both shipped shapes belong to the library, because a core component decides which one it
-        # is drawn as: ItemPipeComponent.getHubSize() returns 12, and the wrench ray-tests an arm
-        # against exactly that hub. Only the texture is content's -- that is the reskin.
+        # Both shapes belong to the library: ItemPipeComponent.getHubSize() returns 12 and the
+        # wrench ray-tests against exactly that hub. Only the texture is content's.
         "name": "Items",
         "root": CORE_RESOURCES,
         "center_model": CORE_RESOURCES / "Common/Blocks/Pipes/Items/Pipe_Items_Center.blockymodel",
@@ -89,9 +73,8 @@ BLOCK_UNITS = 32
 MODEL_SUBDIR = "Common/Blocks/Pipes/Generated"
 HITBOX_SUBDIR = "Server/Item/Block/Hitboxes/Pipes/Generated"
 
-# Bit layout mirrors com.hypixel.hytale.protocol.BlockFace, minus the None entry:
-# Up(1) -> bit 0, Down(2) -> bit 1, ... West(6) -> bit 5. Keeping the same order as
-# the enum means the Java side can do `1 << (face.getValue() - 1)` with no table.
+# Bit layout mirrors com.hypixel.hytale.protocol.BlockFace (minus None): Up(1) -> bit 0, ...
+# West(6) -> bit 5, so the Java side can do `1 << (face.getValue() - 1)` with no table.
 FACES = [
     ("Up", (0, 1, 0)),
     ("Down", (0, -1, 0)),
@@ -101,9 +84,7 @@ FACES = [
     ("West", (-1, 0, 0)),
 ]
 
-# The authored arm points +Y, so each face needs the quaternion that carries +Y onto
-# its direction. Rotating about X sweeps +Y through +/-Z; rotating about Z sweeps it
-# through -/+X.
+# The authored arm points +Y; each entry is the quaternion carrying +Y onto that face's direction.
 HALF_SQRT2 = math.sqrt(2.0) / 2.0
 ARM_ORIENTATIONS = {
     "Up": (0.0, 0.0, 0.0, 1.0),
@@ -115,7 +96,6 @@ ARM_ORIENTATIONS = {
 }
 
 def hub_extents(hub_units: int) -> tuple[float, float]:
-    """Block-local extents of the hub, derived from its size in model units."""
     half = hub_units / 2.0 / BLOCK_UNITS
     return 0.5 - half, 0.5 + half
 
@@ -137,7 +117,6 @@ def find_node(nodes: list[dict], name: str) -> dict:
 
 
 def build_model(mask: int, center_node: dict, arm_node: dict) -> dict:
-    """Centre hub plus one arm per set bit, each rotated onto its face."""
     nodes = [copy.deepcopy(center_node)]
     nodes[0]["id"] = "1"
 
@@ -151,7 +130,6 @@ def build_model(mask: int, center_node: dict, arm_node: dict) -> dict:
         x, y, z, w = ARM_ORIENTATIONS[face]
         arm["orientation"] = {"x": x, "y": y, "z": z, "w": w}
 
-        # Re-id the arm and its children so ids stay unique within the model.
         arm["id"] = str(next_id)
         next_id += 1
         for child in arm.get("children", []):
@@ -180,7 +158,6 @@ def build_hitbox(mask: int, hub_units: int) -> dict:
         lo = {"X": HUB_MIN, "Y": HUB_MIN, "Z": HUB_MIN}
         hi = {"X": HUB_MAX, "Y": HUB_MAX, "Z": HUB_MAX}
 
-        # Stretch the box from the hub out to the block edge along the arm's axis.
         for axis, component in zip("XYZ", direction):
             if component > 0:
                 hi[axis] = 1.0
@@ -193,11 +170,8 @@ def build_hitbox(mask: int, hub_units: int) -> dict:
 
 
 def keep_only_normal_cap(arm_node: dict) -> dict:
-    """
-    The authored arm carries all three end caps (Normal/Push/Pull) as siblings so
-    the modelling tool can show them together. A rendered arm wants just the plain
-    collar; push/pull are surfaced separately as marker entities.
-    """
+    """The authored arm carries all three end caps (Normal/Push/Pull) as siblings; push/pull
+    are surfaced separately as marker entities, so a rendered arm keeps only the plain collar."""
     arm = copy.deepcopy(arm_node)
     arm["children"] = [
         child for child in arm.get("children", []) if child.get("name", "").startswith("Normal")
@@ -206,19 +180,15 @@ def keep_only_normal_cap(arm_node: dict) -> dict:
 
 
 def state_definitions(type_name: str) -> dict:
-    """The "Definitions" map spliced into each pipe's BlockType.State.
-
-    State names only need to be unique within their parent block, but hitbox assets are
-    keyed globally by file name, so those carry the pipe type.
-    """
+    """Hitbox assets are keyed globally by file name (unlike state names), so those carry the
+    pipe type."""
     definitions = {}
     for mask in range(64):
         name = f"Conn_{mask}"
         definitions[name] = {
             "CustomModel": f"Blocks/Pipes/Generated/{type_name}/{name}.blockymodel",
-            # Both collision and targeting use the shaped arm boxes, so a pipe is only hit
-            # where its geometry actually is. A full-cell interaction box made breaking
-            # uniform but let a pipe swallow clicks aimed past it at anything behind.
+            # Shaped arm boxes for both collision and targeting, so a pipe doesn't swallow
+            # clicks aimed past it at whatever's behind.
             "HitboxType": f"Pipe_{type_name}_{name}",
             "InteractionHitboxType": f"Pipe_{type_name}_{name}",
         }
@@ -270,8 +240,6 @@ def main() -> int:
         definitions = state_definitions(name)
         for pipe_json in pipe_type["item_jsons"]:
             payload = load_json(pipe_json)
-            # No marker key here: BlockType.State is decoded by a strict codec, so an
-            # extra comment field would be rejected.
             payload.setdefault("BlockType", {})["State"] = {"Definitions": definitions}
             write_json(pipe_json, payload, args.check, stale)
 

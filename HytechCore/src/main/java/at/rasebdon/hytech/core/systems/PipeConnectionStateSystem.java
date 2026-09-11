@@ -16,22 +16,11 @@ import org.jspecify.annotations.NonNull;
 
 import java.util.*;
 
-/// Renders pipe connections by swapping the block to the state variant matching its
-/// connection mask, the same way an [AbstractBlockStateSystem] subclass drives a storage
-/// block's charge levels.
+/// Renders pipe connections by swapping the block to the state variant matching its connection
+/// mask. Writes with settings 198 so `WorldChunk.setBlock` leaves the block entity alone.
 ///
-/// This replaces spawning a model entity per connected face. `setBlockInteractionState`
-/// writes with settings 198, whose bit 2 tells `WorldChunk.setBlock` to leave the block
-/// entity alone -- so the pipe's own component, its face configs and any stored contents
-/// survive the swap. Cost is one palette write plus a few bytes in a batched per-section
-/// packet, and nothing at all once the topology settles.
-///
-/// The only entities left are the push/pull markers on explicitly configured faces, which
-/// this system keeps in step using the same dirty flag.
-///
-/// `ComponentRegistry` allows one instance per system class, so this is a single shared
-/// system that every resource module registers its pipe component type into, rather than
-/// one instance per module.
+/// Single shared instance across every resource module, since `ComponentRegistry` allows one
+/// instance per system class.
 public final class PipeConnectionStateSystem extends TickingSystem<ChunkStore> {
 
     private static final float UPDATE_INTERVAL_SECONDS = 0.25f;
@@ -79,9 +68,7 @@ public final class PipeConnectionStateSystem extends TickingSystem<ChunkStore> {
         }
     }
 
-    // WorldChunk's whole block-access API is deprecated with no replacement offered, and this
-    // is the call that does the job: see the note on setBlockInteractionState's write settings
-    // in CLAUDE.md. Suppressed at the narrowest scope that covers it.
+    // Deprecated with no replacement offered; this is still the call that does the job.
     @SuppressWarnings("deprecation")
     private void updatePipe(
             Store<ChunkStore> store,
@@ -107,16 +94,10 @@ public final class PipeConnectionStateSystem extends TickingSystem<ChunkStore> {
 
         applyState(store, chunk, pipe, blockPosition, blockType, transform.worldPos());
 
-        // Only clear the flag once the write went through, so a pipe whose chunk or block
-        // type was not resolvable yet is retried on the next pass.
+        // Clear the flag only once the write went through, so an unresolvable pipe retries.
         pipe.resetNeedsRenderReload();
     }
 
-    /// Generic so the pipe's container type is captured once, which the mask and marker
-    /// helpers both need.
-    // WorldChunk's whole block-access API is deprecated with no replacement offered, and this
-    // is the call that does the job: see the note on setBlockInteractionState's write settings
-    // in CLAUDE.md. Suppressed at the narrowest scope that covers it.
     @SuppressWarnings("deprecation")
     private <TContainer> void applyState(
             Store<ChunkStore> store,
@@ -126,8 +107,7 @@ public final class PipeConnectionStateSystem extends TickingSystem<ChunkStore> {
             com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType blockType,
             Vector3i worldPos) {
 
-        // Arms on configured faces are drawn by marker entities, so the block model leaves
-        // them out entirely.
+        // Arms on configured faces are drawn by marker entities, left out of the block model.
         var mask = PipeConnectionMask.renderMaskOf(pipe);
 
         chunk.setBlockInteractionState(

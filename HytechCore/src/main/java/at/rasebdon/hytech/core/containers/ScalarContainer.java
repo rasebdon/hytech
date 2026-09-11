@@ -2,18 +2,13 @@ package at.rasebdon.hytech.core.containers;
 
 import javax.annotation.Nullable;
 
-/// A container holding a single fungible quantity: energy, heat, or one fluid or gas.
-///
-/// Everything the transfer system needs is derived here, so a scalar resource type only has
-/// to supply an amount, a capacity, and the two mutators. Energy was the first of these and
-/// its interface was already this shape under resource-specific names.
+/// A container holding a single fungible quantity: energy, heat, or one fluid or gas. A scalar
+/// resource type only has to supply an amount, a capacity, and the two mutators below.
 public interface ScalarContainer extends LogisticContainer {
 
     long getAmount();
 
     long getTotalCapacity();
-
-    /* ---------------- Derived values ---------------- */
 
     default long getRemainingCapacity() {
         return Math.max(0L, getTotalCapacity() - getAmount());
@@ -45,27 +40,22 @@ public interface ScalarContainer extends LogisticContainer {
         return getRemainingCapacity();
     }
 
-    /* ---------------- Mutations ---------------- */
-
-    /// Adds `amount`, clamped to the remaining capacity.
+    /// Clamped to the remaining capacity.
     void add(long amount);
 
-    /// Removes `amount`, clamped to what is actually held.
+    /// Clamped to what is actually held.
     void reduce(long amount);
 
-    /// Change since the last [#updateDelta], for UI readouts. Purely presentational -- no
-    /// transfer decision depends on it.
+    /// Change since the last [#updateDelta]. Presentational only -- no transfer decision reads it.
     long getDelta();
 
-    /// Snapshots the current amount so the next [#getDelta] measures from here.
     void updateDelta();
 
     @Override
     default long moveTo(@Nullable LogisticContainer target, long maxAmount) {
         if (maxAmount <= 0L) return 0L;
 
-        // A network only ever holds one container family, so a mismatch here is a wiring
-        // bug rather than something to handle.
+        // A mismatch here is a wiring bug, not something to handle.
         if (!(target instanceof ScalarContainer to)) return 0L;
         if (to == this) return 0L;
 

@@ -28,8 +28,7 @@ MODEL_PATH = RESOURCES / "Common/VFX/Overlay/Face_Overlay.blockymodel"
 TEXTURE_DIR = RESOURCES / "Common/VFX/Overlay"
 MODEL_JSON_DIR = RESOURCES / "Server/Models/Overlay"
 
-# ModelAsset validates that its Model and Texture live under one of these Common roots,
-# so the quad cannot sit beside the block assets under Blocks/ or BlockTextures/.
+# ModelAsset requires Model/Texture under one of these Common roots.
 COMMON_ASSET_ROOTS = ("Characters/", "NPC/", "Items/", "VFX/")
 
 # Keep in step with BlockFaceConfigType on the Java side.
@@ -40,35 +39,19 @@ COLOURS = {
     "Output": (0x30, 0x60, 0xD0),
 }
 
-# Must be exactly the quad's size in model units, not merely at least it. Every face's UV
-# offset is (0,0), so the quad samples a QUAD_SIZE x QUAD_SIZE window: a smaller texture
-# samples past its own region and picks up neighbouring atlas entries (mixed colours, missing
-# patches), while a *larger* one gets cropped to its top-left corner -- which quietly hid the
-# right and bottom edges of the frame below.
+# Must equal the quad's size exactly: smaller samples into neighbouring atlas entries, larger
+# gets cropped to its top-left corner and silently loses its right/bottom edges.
 TEXTURE_SIZE = 32
-# Binary alpha only. This render path does cutout, not blending: a uniform 50% alpha comes
-# out fully opaque, because entity models ignore texture alpha (vanilla fades a model with
-# ModelVFX.PostColorOpacity instead). So the design works with 0/255 alpha rather than
-# against it -- a solid frame around the face, and a sparse wash inside it.
 
-# Width of the fully opaque border, in texture pixels. Two at this size: the quad is inset on
-# the face, so a thicker frame starts to swallow the wash.
+# This render path does cutout, not blending -- entity models ignore texture alpha -- so the
+# texture uses only 0/255 alpha: a solid border plus a sparse interior wash.
 BORDER_PX = 2
+FILL_PERIOD = 2  # one opaque pixel per period x period cell; 2 = 25% coverage
 
-# Interior wash: one opaque pixel per FILL_PERIOD x FILL_PERIOD cell, so 2 gives 25%
-# coverage. Raise it for a lighter tint, lower it for a denser one.
-FILL_PERIOD = 2
-
-# A block spans 32 model units. The quad covers a whole side and is one unit thick.
-QUAD_SIZE = 32
+QUAD_SIZE = 32  # a block spans 32 model units; the quad covers one whole side
 
 
 def overlay_png(rgb: tuple[int, int, int], size: int) -> bytes:
-    """Framed RGBA PNG using only 0/255 alpha, so no image library is needed.
-
-    A solid border marks the face unambiguously; the sparse interior wash tints it while
-    still letting the block's own texture read through. Both rely on cutout, not blending.
-    """
     red, green, blue = rgb
 
     rows = []
@@ -95,16 +78,9 @@ def overlay_png(rgb: tuple[int, int, int], size: int) -> bytes:
 
 
 def quad_model() -> dict:
-    """A flat plane, mirroring how vanilla builds VFX quads (Common/VFX/Fire).
-
-    A "box" with "flat" shading is the wrong shape for this: it has six faces to texture
-    and renders as a solid slab. "quad" is a single-faced plane with a 2D size, which is
-    what an overlay wants. Note that neither shape blends texture alpha -- this render path
-    does cutout only -- so the texture is designed around 0/255 alpha.
-
-    The quad lies in the XY plane facing +Z, so the overlay rotates it onto each block side
-    rather than translating a slab.
-    """
+    """A "quad" shape, not a "box": a box has six faces and renders as a solid slab, where an
+    overlay wants one single-faced plane. It lies in the XY plane facing +Z, so the overlay
+    rotates it onto each block side rather than translating a slab."""
     return {
         "nodes": [
             {
@@ -146,13 +122,8 @@ def write(path: Path, payload: bytes, check: bool, stale: list[Path]) -> None:
 
 
 def write_json(path: Path, payload: dict, check: bool, stale: list[Path]) -> None:
-    """Text, not bytes, so a CRLF checkout is not reported as stale forever.
-
-    `write` byte-compares, which is right for the PNG and wrong for the JSON: git hands
-    us CRLF on Windows while json.dumps emits LF, so every run called these files stale.
-    Reading and writing as text lets Python translate the newlines in both directions,
-    which is what generate-pipe-assets.py already does.
-    """
+    """Text, not bytes: a byte compare falsely calls every file stale on a CRLF checkout, since
+    git hands us CRLF on Windows while json.dumps emits LF."""
     text = json.dumps(payload, indent=2) + "\n"
     if check:
         if not path.exists() or path.read_text(encoding="utf-8") != text:
@@ -177,8 +148,7 @@ def main() -> int:
         write(TEXTURE_DIR / f"Face_Overlay_{name}.png",
               overlay_png(rgb, TEXTURE_SIZE), args.check, stale)
 
-        # Without an explicit HitBox the asset has no bounding box, which leaves the
-        # spawned model with nothing for the client to size or cull against.
+        # Without an explicit HitBox the client has nothing to size or cull the model against.
         model_json = {
             "Model": "VFX/Overlay/Face_Overlay.blockymodel",
             "Texture": f"VFX/Overlay/Face_Overlay_{name}.png",

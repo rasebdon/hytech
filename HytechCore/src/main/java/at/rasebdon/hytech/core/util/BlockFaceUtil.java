@@ -8,7 +8,6 @@ import org.joml.Vector3ic;
 
 public class BlockFaceUtil {
     public static BlockFace getLocalFace(Vector3ic worldDir, RotationTuple rotation) {
-        // Apply inverse rotation to the world direction to find the local face
         Rotation invYaw = Rotation.None.subtract(rotation.yaw());
         Rotation invPitch = Rotation.None.subtract(rotation.pitch());
         Rotation invRoll = Rotation.None.subtract(rotation.roll());

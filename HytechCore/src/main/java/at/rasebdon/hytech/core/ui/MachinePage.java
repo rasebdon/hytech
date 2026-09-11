@@ -24,14 +24,8 @@ import java.util.function.Predicate;
 
 /// The page every Hytech machine, tank and container opens.
 ///
-/// One class rather than one per machine: what differs between a battery and the burner generator
-/// is only which sections they fill, and that is a lambda. Side configuration, the player's own
-/// inventory and the two-click item transfer are handled here, so every machine gets all three
-/// without asking.
-///
-/// There is no longer a hand-off to a real `ContainerWindow`. Two clicks move a stack, right-click
-/// moves one, and a window would have cost the page: it switches the client to the Bench screen,
-/// which *replaces* this one.
+/// One class rather than one per machine: what differs is only which sections get filled, via a
+/// lambda. Side configuration, the player's inventory and two-click item transfer live here once.
 public final class MachinePage extends HytechCustomPage {
 
     private static final String DOCUMENT = "Hytech/MachinePage.ui";
@@ -41,12 +35,8 @@ public final class MachinePage extends HytechCustomPage {
     private static final String ACTION_CLOSE = "close";
     private static final String ACTION_SLOT = "slot:";
 
-    /// Item cells the document declares, by prefix and count. Bound once on open; which of them
-    /// are *visible*, and what each one stands for, is decided on every render.
-    ///
-    /// Counted from [MachineView]'s own constants rather than restated: a cell this binds but the
-    /// view never draws is dead, and one the view draws but this misses is a cell that ignores
-    /// clicks.
+    /// Item cells the document declares, by prefix and count. Counted from [MachineView]'s own
+    /// constants so bind and render can't drift apart.
     private static final Map<String, Integer> CELL_GROUPS = Map.of(
             "#InSlot", MachineView.SPLIT_CELLS,
             "#OutSlot", MachineView.SPLIT_CELLS,
@@ -56,8 +46,7 @@ public final class MachinePage extends HytechCustomPage {
     private final World world;
     private final Vector3i blockPos;
 
-    /// Fills the page's sections. Called on open and on every refresh, so it reads live state
-    /// rather than a snapshot taken when the page opened.
+    /// Fills the page's sections; called on open and on every refresh, so it must read live state.
     private final BiConsumer<MachinePage, MachineView> content;
 
     /// The machine's item container, if it has one.
@@ -67,20 +56,16 @@ public final class MachinePage extends HytechCustomPage {
     private final SideConfigPanel sides;
     private final SlotTransfer transfer = new SlotTransfer();
 
-    /// What each cell stood for last render, so a click can be resolved without re-deriving a
-    /// machine's ingredient/result split here.
+    /// What each cell stood for last render, so a click resolves without re-deriving the split.
     @Nonnull
     private Map<String, MachineView.SlotRef> cells = Map.of();
 
-    /// The cell painted as held last render, so the highlight moves with two writes rather than
-    /// four across every cell on the page.
+    /// The cell painted as held last render, so only the changed cells get rewritten.
     @Nullable
     private String heldCell;
 
-    /// The machine's own "this item is no use here" test, captured each render. What keeps
-    /// cobblestone out of a crusher: the container's own filters stop insertions into *result*
-    /// slots, but nothing else stops a player filling the ingredient slots with something the
-    /// machine has no recipe for.
+    /// The machine's own ingredient filter, captured each render — the container's own filters
+    /// stop insertions into result slots, but nothing else gates the ingredient slots.
     @Nullable
     private Predicate<ItemStack> incompatible;
 
@@ -141,15 +126,12 @@ public final class MachinePage extends HytechCustomPage {
 
     @Override
     protected void bind(@Nonnull UIEventBuilder events) {
-        // The X comes from @DecoratedContainer, which supplies the artwork and nothing else --
-        // vanilla's own containers bind its behaviour themselves.
+        // @DecoratedContainer draws the close-button artwork only; behavior is bound here.
         onClick(events, "#CloseButton", ACTION_CLOSE);
         onClick(events, "#ConfigureButton", ACTION_CONFIGURE);
         onClick(events, "#CancelTransferButton", ACTION_CANCEL);
 
-        // A left click moves the whole stack, a right click moves one. Both are the same action
-        // with a different quantity, so the payload carries the cell and the binding type carries
-        // the amount -- one decoded event arrives per page, and this is how it tells them apart.
+        // Left click moves the whole stack, right click moves one; same action, quantity in the payload.
         for (var group : CELL_GROUPS.entrySet()) {
             for (int cell = 0; cell < group.getValue(); cell++) {
                 String selector = group.getKey() + cell;
@@ -194,11 +176,8 @@ public final class MachinePage extends HytechCustomPage {
         }
     }
 
-    /// One click on an item cell, resolved through what that cell was last drawn as.
-    ///
-    /// A cell whose meaning changed since the page was drawn simply misses: the map is rebuilt
-    /// every render, so a stale click on a slot that no longer exists is a no-op rather than a
-    /// move to the wrong place.
+    /// Resolves a click through what the cell was last drawn as; a stale click on a
+    /// since-changed cell is a no-op rather than a move to the wrong place.
     private void clickSlot(@Nonnull String payload,
                            @Nonnull Ref<EntityStore> ref,
                            @Nonnull Store<EntityStore> store) {
@@ -219,11 +198,7 @@ public final class MachinePage extends HytechCustomPage {
                 this::accepts);
     }
 
-    /// Whether an item may be placed in a cell.
-    ///
-    /// Only ingredient slots are gated, and only by the machine's own test -- the same predicate
-    /// that already greys the contents summary, so the page never has to know what a crusher or a
-    /// burner is. Everything else, the player's own inventory included, takes anything.
+    /// Only ingredient slots are gated, by the machine's own predicate; everything else accepts anything.
     private boolean accepts(@Nonnull String zone, int slot, @Nonnull ItemStack stack) {
         if (!SlotTransfer.ZONE_MACHINE.equals(zone)) return true;
         if (!this.ingredientSlots.contains(slot)) return true;
@@ -246,11 +221,8 @@ public final class MachinePage extends HytechCustomPage {
         };
     }
 
-    /// One of the player's inventory sections, for drawing.
-    ///
-    /// Rendering has no `ref`/`store` of its own, so it goes through the page's own player
-    /// reference. Null once the player is gone, which is exactly when the page should stop drawing
-    /// their inventory rather than throwing into the refresh loop.
+    /// Rendering has no ref/store of its own; null once the player is gone, so the page just
+    /// stops drawing their inventory instead of throwing in the refresh loop.
     @Nullable
     private ItemContainer playerSection(int sectionId) {
         var ref = this.playerRef.getReference();

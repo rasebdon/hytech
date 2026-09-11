@@ -6,11 +6,11 @@ import org.joml.Vector3i;
 import javax.annotation.Nonnull;
 
 public record BlockTransform(
-        @Nonnull Vector3i worldPos,  // Global coordinates (e.g., 1500, 64, -200)
-        @Nonnull Vector3i localPos,  // Position relative to the chunk (0-31)
+        @Nonnull Vector3i worldPos,
+        @Nonnull Vector3i localPos,
         @Nonnull RotationTuple rotation,
-        int chunkX,         // Chunk X coordinate
-        int chunkZ          // Chunk Z coordinate
+        int chunkX,
+        int chunkZ
 ) {
     @Override
     @Nonnull

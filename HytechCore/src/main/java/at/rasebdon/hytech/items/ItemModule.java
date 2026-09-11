@@ -55,15 +55,10 @@ public final class ItemModule extends AbstractLogisticModule<
         var itemBlockStateRegistrationSystem = new ItemBlockStateRegistrationSystem(registrationSystem);
         registry.registerSystem(itemBlockStateRegistrationSystem);
 
-        // Nothing may sit in a pipe indefinitely: the transfer system only pulls when it has
-        // a sink, and this catches the rest -- a target broken mid-run, a pipe loaded from a
-        // world saved under the old rules -- by dropping the stranded stacks in the world.
+        // Drops item stacks stranded in a pipe with no reachable sink.
         registry.registerSystem(new ItemPipeEjectSystem(pipeComponentType));
 
-        // No save system here on purpose: unlike energy, item pipes own their buffers and
-        // those containers are part of ItemPipeComponent's codec, so contents persist with
-        // the block instead of having to be redistributed across the network on save.
-
+        // No save system: item pipes own their buffers, which persist via ItemPipeComponent's codec.
     }
 
     @Override

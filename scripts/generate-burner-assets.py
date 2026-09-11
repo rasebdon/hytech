@@ -1,15 +1,7 @@
 #!/usr/bin/env python3
 """
-Generates the Burner Generator's block textures.
-
-The burner is a cube block with a distinct front face, so it needs three textures per burn
-state: a plain metal casing for the sides and top, and a front carrying the firebox grate.
-The lit variant is the same geometry with the grate glowing, which the "Burning" block state
-swaps to while fuel is alight.
-
-Written programmatically for the same reason the overlay textures are: no image library is
-needed, the palette lives in one place, and hand-authored art can replace the PNGs later
-without touching any code.
+Generates the Burner Generator's block textures: a plain casing, plus a front with a firebox
+grate that the "Burning" block state swaps to a lit variant of.
 
 Usage:
     python scripts/generate-burner-assets.py           # write assets
@@ -31,8 +23,7 @@ TEXTURE_DIR = RESOURCES / "Common/BlockTextures/Generators/Burner"
 
 SIZE = 16
 
-# Riveted iron casing, a shade darker than the solar panel's frame so the two machines read
-# as different at a glance.
+# A shade darker than the solar panel's frame so the two machines read as different at a glance.
 CASING = (0x4A, 0x4A, 0x52)
 CASING_DARK = (0x35, 0x35, 0x3C)
 RIVET = (0x6B, 0x6B, 0x74)
@@ -40,13 +31,11 @@ RIVET = (0x6B, 0x6B, 0x74)
 GRATE_COLD = (0x1C, 0x1C, 0x20)
 GRATE_BAR = (0x2E, 0x2E, 0x34)
 
-# Fire seen through the grate. Warm enough to be obvious at distance in a dim base.
 EMBER_DIM = (0xC2, 0x4A, 0x12)
 EMBER_HOT = (0xFF, 0xA5, 0x2B)
 
 
 def png(pixels: list[list[tuple[int, int, int]]]) -> bytes:
-    """Opaque RGB PNG. Block textures are not alpha blended, so no alpha channel."""
     rows = []
     for row in pixels:
         raw = bytearray()
@@ -66,13 +55,11 @@ def png(pixels: list[list[tuple[int, int, int]]]) -> bytes:
 
 
 def casing() -> list[list[tuple[int, int, int]]]:
-    """Plain riveted plate, used for every face that is not the front."""
     out = []
     for y in range(SIZE):
         row = []
         for x in range(SIZE):
             edge = x == 0 or y == 0 or x == SIZE - 1 or y == SIZE - 1
-            # Rivets sit just inside each corner.
             rivet = x in (2, SIZE - 3) and y in (2, SIZE - 3)
 
             if rivet:
@@ -86,11 +73,7 @@ def casing() -> list[list[tuple[int, int, int]]]:
 
 
 def front(lit: bool) -> list[list[tuple[int, int, int]]]:
-    """Casing with a firebox opening in the lower two thirds.
-
-    The grate bars stay visible when lit so the block still reads as a machine rather than a
-    solid block of orange.
-    """
+    """Grate bars stay visible even when lit, so it reads as a machine, not a block of orange."""
     out = casing()
 
     top, bottom = 5, SIZE - 3
@@ -103,7 +86,6 @@ def front(lit: bool) -> list[list[tuple[int, int, int]]]:
             if on_bar:
                 out[y][x] = GRATE_BAR
             elif lit:
-                # Hotter toward the base of the firebox, where the fuel would sit.
                 depth = (y - top) / max(1, bottom - top)
                 out[y][x] = EMBER_HOT if depth > 0.45 else EMBER_DIM
             else:

@@ -23,12 +23,8 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-/// Small marker models on faces the player has explicitly set to push or pull.
-///
-/// Connections themselves are part of the block's own model, so nothing is spawned for an
-/// ordinary connection. Only a face that has been wrenched away from the default gets an
-/// entity, which keeps a typical network at zero entities and confines the per-tick entity
-/// tracking cost to the handful of faces someone actually configured.
+/// Small marker models on faces explicitly set to push or pull; an ordinary connection is
+/// part of the block's own model and spawns nothing.
 final class PipeFaceMarkers {
 
 
@@ -104,17 +100,10 @@ final class PipeFaceMarkers {
         return spawned;
     }
 
-    /// Builds the marker's model with a bounding box that matches how it is rotated.
-    ///
-    /// An entity's model bounding box is axis aligned and is not rotated along with the
-    /// transform, so an arm pointing sideways would otherwise keep the upright box it was
-    /// authored with -- leaving nothing to aim at where the arm actually is. The box is
-    /// supplied up front rather than mutated afterwards, so the asset's own box is never
-    /// touched and markers cannot fight over a shared instance.
+    /// Builds the marker's model with a bounding box rotated to match, since an entity's model
+    /// box is axis-aligned and not rotated with the transform.
     @Nonnull
     private static Model buildModel(@Nonnull ModelAsset modelAsset, @Nonnull Rotation3f rotation) {
-        // Box hugs the connection geometry: it is what the player aims at, so any padding
-        // here steals clicks from the block behind it -- including break attempts.
         var assetBox = modelAsset.getBoundingBox();
         Box rotatedBox = assetBox.enclosingRotatedAABB(rotation.pitch(), rotation.yaw(), rotation.roll());
 
@@ -135,14 +124,9 @@ final class PipeFaceMarkers {
         holder.addComponent(TransformComponent.getComponentType(),
                 new TransformComponent(worldPosition, rotation));
         holder.addComponent(ModelComponent.getComponentType(), new ModelComponent(model));
-        // Load bearing: EntityStore.NetworkIdSystem queries on NetworkId, so it only ever
-        // reallocates an existing id and never assigns one. Without this the marker is not
-        // in the (TransformComponent, NetworkId) archetype that NetworkSendableSpatialSystem
-        // replicates, so it exists server side and is invisible to every client.
+        // Load-bearing: without NetworkId the marker is server-only and invisible to clients.
         holder.addComponent(NetworkId.getComponentType(),
                 new NetworkId(store.getExternalData().takeNextNetworkId()));
-        // The block model omits this arm, so the marker is the only thing the player can
-        // aim at when cycling the face back.
         holder.addComponent(LogisticEntityProxyComponent.getComponentType(),
                 new LogisticEntityProxyComponent(pipe, face));
         holder.ensureComponent(UUIDComponent.getComponentType());
@@ -150,8 +134,7 @@ final class PipeFaceMarkers {
         return store.addEntity(holder, AddReason.SPAWN);
     }
 
-    /// Placement of a face's marker: offset within the block, and the rotation that aims
-    /// the model outwards. Carried over from the previous per-face renderer.
+    /// Offset within the block and the rotation that aims the model outwards.
     private record Placement(Vector3d offset, Rotation3f rotation) {
     }
 }
