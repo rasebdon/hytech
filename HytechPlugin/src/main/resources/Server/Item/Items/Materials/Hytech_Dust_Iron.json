@@ -7,12 +7,12 @@
   ],
   "ItemLevel": 10,
   "MaxStack": 100,
-  "Model": "Resources/Ingredients/Spore_Bag.blockymodel",
-  "Texture": "Resources/Ingredients/Spore_Bag_Boomshroom_Texture.png",
-  "Icon": "Icons/ItemsGenerated/Hytech_Dust_Iron.png",
+  "Model": "Items/Materials/Dirty_Dust.blockymodel",
+  "Texture": "Items/Materials/Dirty_Dust.png",
+  "Icon": "Icons/ItemsGenerated/Dirty_Dust.png",
   "PlayerAnimationsId": "Item",
   "IconProperties": {
-    "Scale": 0.7,
+    "Scale": 1.0,
     "Translation": [
       0.6,
       -9.6

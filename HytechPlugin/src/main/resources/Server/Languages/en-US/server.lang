@@ -1,5 +1,3 @@
-items.Example_Generator.name=Example Generator
-items.Example_Battery.name=Example Battery
 items.Battery_Tier_1.name=Battery Tier 1
 items.Solar_Panel_Tier_1.name=Solar Panel Tier 1
 items.Burner_Generator.name=Burner Generator
@@ -19,9 +17,6 @@ items.Heat_Source.name=Heat Source
 items.Heat_Void.name=Heat Void
 items.Crusher_Basic.name=Basic Crusher
 items.Electric_Smelter_Basic.name=Basic Electric Smelter
-items.Hytech_Dust_Copper.name=Copper Dust
-items.Hytech_Dust_Iron.name=Iron Dust
-items.Hytech_Workbench.name=Tech Bench
 benchCategories.hytech.materials=Materials
 benchCategories.hytech.components=Components
 benchCategories.hytech.logistics=Logistics
