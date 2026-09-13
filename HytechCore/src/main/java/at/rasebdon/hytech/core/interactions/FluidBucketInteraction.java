@@ -46,18 +46,18 @@ public class FluidBucketInteraction extends SimpleBlockInteraction {
                     .documentation("Empties a measure of one resource from the held item into the "
                             + "target block's container.")
                     .append(new KeyedCodec<>("Resource", Codec.STRING),
-                            (interaction, value) -> interaction.resource = value,
+                            (interaction, v) -> interaction.resource = v,
                             (interaction) -> interaction.resource)
                     .documentation("Resource id this item holds, as a tank spells it (\"Molten_Iron\")")
                     .add()
                     .append(new KeyedCodec<>("Amount", Codec.LONG),
-                            (interaction, value) -> interaction.amount = value,
+                            (interaction, v) -> interaction.amount = v,
                             (interaction) -> interaction.amount)
                     .documentation("How much one item empties into the container")
                     .addValidator(Validators.greaterThan(0L))
                     .add()
                     .append(new KeyedCodec<>("EmptyItem", Codec.STRING),
-                            (interaction, value) -> interaction.emptyItem = value,
+                            (interaction, v) -> interaction.emptyItem = v,
                             (interaction) -> interaction.emptyItem)
                     .documentation("Item left in the hand once poured; omit to consume the item outright")
                     .add()
@@ -65,7 +65,7 @@ public class FluidBucketInteraction extends SimpleBlockInteraction {
 
     /// Anything but 0 would fail `greaterThan` against a fresh instance at registration, taking
     /// the plugin down with it -- validators run over the default, not just over asset values.
-    private long amount;
+    private long amount = 1000L;
 
     @Nullable
     private String resource;

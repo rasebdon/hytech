@@ -14,7 +14,6 @@ import org.joml.Vector3i;
 
 import javax.annotation.Nonnull;
 
-/// An energy store: charge, flow, and its transfer limit.
 public class OpenBatteryPageInteraction extends OpenPageBlockInteraction {
 
     @Nonnull
